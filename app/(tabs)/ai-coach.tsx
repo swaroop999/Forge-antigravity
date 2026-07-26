@@ -8,6 +8,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { geminiService } from '@/lib/services/gemini-service';
 import { AppRepo } from '@/lib/db/database';
+import { useAppStore } from '@/lib/store/app-store';
 
 interface ChatMessage {
   id: string;
@@ -89,7 +90,7 @@ export default function AICoachScreen() {
       const startDate = await AppRepo.getStartDate();
       const { phase, dayNumber } = startDate ? AppRepo.calcPhaseAndDay(startDate) : { phase: 1 as const, dayNumber: 1 };
       const contextStr = `[FORGE CONTEXT - Day ${dayNumber}, Phase ${phase}]`;
-      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, {} as any);
+      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, useAppStore.getState());
       const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'ai', content: response, timestamp: Date.now() };
       const updated = [...newMsgs, aiMsg];
       setMessages(updated);
