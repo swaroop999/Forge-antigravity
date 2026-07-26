@@ -13,7 +13,7 @@ export interface GeminiMessage {
 
 export class GeminiService {
   private apiKey: string | null = null;
-  private model = 'gemini-1.5-flash-exp';
+  private model = 'gemini-1.5-flash';
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   constructor(apiKey?: string) {
