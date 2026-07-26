@@ -217,7 +217,7 @@ export default function DashboardScreen() {
     if (!l) l = await DailyLogRepo.getDefault(today, scheduleItems);
 
     const sc = scheduleItems.map(s => ({
-      ...s, completed: newCompleted[s.time + s.task] || false,
+      ...s, completed: (newCompleted as any)[String(s.time) + String(s.task)] || false,
     }));
     const completed = sc.filter(s => s.completed).length;
     l.scheduleJson = JSON.stringify(sc);
@@ -241,13 +241,13 @@ export default function DashboardScreen() {
     { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
     { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
     { icon: Sparkles, label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Wait', color: '#F472B6' },
-    { icon: Smartphone, label: 'Screen', value: log?.screenTimePhone || '-', unit: 'h', color: colors.muted },
+    { icon: Smartphone, label: 'Screen', value: log?.screenTimeHours || '-', unit: 'h', color: colors.muted },
     { icon: Ban, label: 'No Porn', value: '—', unit: 'd', color: colors.success },
     { icon: Ban, label: 'No Junk', value: '—', unit: 'd', color: colors.success },
   ];
 
   const phaseMs = DEFAULT_MILESTONES.filter(m => m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365));
-  const doneMs = milestones.filter(m => m.completed && m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365)).length;
+  const doneMs = milestones.filter(m => (m as any).completed && m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365)).length;
 
   return (
     <ScreenContainer>

@@ -53,7 +53,7 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Appearance */}
-        <Card title="Appearance" icon={Palette} color={colors.accent}>
+        <Card title="Appearance" icon={Palette} color={colors.warning}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
             <View>
               <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: '600' }}>Dark Mode</Text>

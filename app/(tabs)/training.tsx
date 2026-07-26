@@ -54,7 +54,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
         return prev - 1;
       });
     }, 1000);
-    setTimerInterval(iv);
+    setTimerInterval(iv as any);
   };
 
   const completeSet = (exerciseId: string, restSecs: number) => {
