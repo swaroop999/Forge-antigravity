@@ -7,8 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { geminiService } from '@/lib/services/gemini-service';
-import { AppRepo } from '@/lib/db/database';
-import { useForgeState } from '@/lib/store/app-store';
+import { AppRepo, ProfileRepo } from '@/lib/db/database';
 
 interface ChatMessage {
   id: string;
@@ -30,7 +29,6 @@ const QUICK_PROMPTS = [
 
 export default function AICoachScreen() {
   const colors = useColors();
-  const appState = useForgeState();
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isSetup, setIsSetup] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -90,8 +88,19 @@ export default function AICoachScreen() {
     try {
       const startDate = await AppRepo.getStartDate();
       const { phase, dayNumber } = startDate ? AppRepo.calcPhaseAndDay(startDate) : { phase: 1 as const, dayNumber: 1 };
+      const profile = await ProfileRepo.get();
+      const mockState = {
+        appState: { dayNumber, currentPhase: phase },
+        userProfile: profile,
+        mealEntries: [],
+        dailyTasks: [],
+        skincareRoutines: [],
+        habitEntries: [],
+        journalEntries: [],
+        dopamineEntries: []
+      } as any;
       const contextStr = `[FORGE CONTEXT - Day ${dayNumber}, Phase ${phase}]`;
-      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, appState);
+      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, mockState);
       const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'ai', content: response, timestamp: Date.now() };
       const updated = [...newMsgs, aiMsg];
       setMessages(updated);
