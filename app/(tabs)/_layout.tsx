@@ -1,67 +1,91 @@
 import { Tabs, router } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Alert, Animated, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/use-colors';
+import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 
 interface TabIconProps {
-  icon: string;
+  IconComponent: any;
   label: string;
   focused: boolean;
 }
 
-function TabIcon({ icon, label, focused }: TabIconProps) {
+function TabIcon({ IconComponent, label, focused }: TabIconProps) {
   const colors = useColors();
+  const scale = useRef(new Animated.Value(focused ? 1.1 : 1)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.15 : 1,
+      useNativeDriver: true,
+      friction: 5,
+    }).start();
+  }, [focused]);
+
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4, minWidth: 54 }}>
-      <Text style={{ fontSize: 20, marginBottom: 2 }}>{icon}</Text>
-      <Text
-        style={{
-          fontSize: 9.5,
-          fontWeight: focused ? '700' : '500',
-          color: focused ? colors.primary : colors.muted,
-          textAlign: 'center',
-        }}
-      >
-        {label}
-      </Text>
-      {focused && (
-        <View
-          style={{
-            position: 'absolute',
-            top: -6,
-            width: 3,
-            height: 3,
-            borderRadius: 1.5,
-            backgroundColor: colors.primary,
-          }}
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <IconComponent 
+          size={focused ? 24 : 22} 
+          color={focused ? colors.primary : colors.muted} 
+          strokeWidth={focused ? 2.5 : 2} 
         />
+      </Animated.View>
+      {focused && (
+        <Text
+          style={{
+            fontSize: 9.5,
+            fontWeight: '700',
+            color: colors.primary,
+            textAlign: 'center',
+            marginTop: 4,
+          }}
+        >
+          {label}
+        </Text>
       )}
     </View>
   );
 }
 
 const TABS = [
-  { name: 'index', icon: '🏠', label: 'Dashboard' },
-  { name: 'training', icon: '💪', label: 'Training' },
-  { name: 'nutrition', icon: '🍽️', label: 'Nutrition' },
-  { name: 'appearance', icon: '✨', label: 'Appearance' },
-  { name: 'discipline', icon: '🧠', label: 'Discipline' },
-  { name: 'ai-coach', icon: '🤖', label: 'AI Coach' },
+  { name: 'index', icon: Home, label: 'Dashboard' },
+  { name: 'training', icon: Dumbbell, label: 'Training' },
+  { name: 'nutrition', icon: Utensils, label: 'Nutrition' },
+  { name: 'appearance', icon: Sparkles, label: 'Appearance' },
+  { name: 'discipline', icon: Brain, label: 'Discipline' },
+  { name: 'ai-coach', icon: Bot, label: 'AI Coach' },
 ];
 
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [urgeModalVisible, setUrgeModalVisible] = useState(false);
+  const [selectedUrgeAction, setSelectedUrgeAction] = useState<any>(null);
 
-  const handleUrge = () => {
-    Alert.alert(
-      'EMERGENCY: URGE DETECTED',
-      'Do not negotiate with weakness. Do 20 pushups RIGHT NOW. If you still feel the urge, talk to the AI Coach immediately.',
-      [
-        { text: 'I did my pushups', style: 'cancel' },
-        { text: 'Help Me AI Coach', onPress: () => router.push('/(tabs)/ai-coach') }
-      ]
-    );
+  const URGE_ACTIONS = [
+    { id: 'pushups', icon: Dumbbell, label: '20 push-ups RIGHT NOW', color: colors.primary },
+    { id: 'shower', icon: Snowflake, label: '30-second cold shower', color: '#60A5FA' },
+    { id: 'journal', icon: PenLine, label: 'Write 3 lines in journal', color: '#818CF8' },
+    { id: 'walk', icon: ChevronRight, label: '5-minute walk outside', color: colors.success },
+    { id: 'call', icon: Phone, label: 'Call someone you care about', color: '#F472B6' },
+    { id: 'letter', icon: BookOpen, label: 'Read commitment letter', color: colors.warning },
+    { id: 'ai', icon: Bot, label: 'Talk to FORGE AI', color: colors.primary },
+  ];
+
+  const handleUrgeAction = (action: any) => {
+    setSelectedUrgeAction(action);
+    if (action.id === 'ai') {
+      setUrgeModalVisible(false);
+      setSelectedUrgeAction(null);
+      router.navigate('/(tabs)/ai-coach');
+    }
+  };
+
+  const completeAction = () => {
+    setSelectedUrgeAction(null);
+    setUrgeModalVisible(false);
   };
 
   return (
@@ -90,7 +114,7 @@ export default function TabLayout() {
             name={tab.name}
             options={{
               tabBarIcon: ({ focused }) => (
-                <TabIcon icon={tab.icon} label={tab.label} focused={focused} />
+                <TabIcon IconComponent={tab.icon} label={tab.label} focused={focused} />
               ),
             }}
           />
@@ -103,7 +127,7 @@ export default function TabLayout() {
 
       {/* Floating Urge Button */}
       <Pressable
-        onPress={handleUrge}
+        onPress={() => setUrgeModalVisible(true)}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
@@ -126,6 +150,54 @@ export default function TabLayout() {
       >
         <Text style={{ fontSize: 24 }}>🚨</Text>
       </Pressable>
+
+      {/* Urge Modal Bottom Sheet */}
+      <Modal visible={urgeModalVisible} transparent animationType="slide" onRequestClose={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 20 + insets.bottom }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: colors.error }}>🚨 Urge Mode</Text>
+              <Pressable onPress={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }} style={{ padding: 4, backgroundColor: colors.background, borderRadius: 16 }}>
+                <X size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            {!selectedUrgeAction ? (
+              <View>
+                <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 16 }}>Choose an action. The urge will pass.</Text>
+                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                  {URGE_ACTIONS.map(action => {
+                    const Icon = action.icon;
+                    return (
+                      <Pressable key={action.id} onPress={() => handleUrgeAction(action)} style={({ pressed }) => ({
+                        flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: colors.background, borderRadius: 12, marginBottom: 8, opacity: pressed ? 0.7 : 1
+                      })}>
+                        <Icon size={20} color={action.color} />
+                        <Text style={{ flex: 1, marginLeft: 12, fontSize: 15, fontWeight: '600', color: colors.foreground }}>{action.label}</Text>
+                        <ChevronRight size={18} color={colors.muted} />
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                <View style={{ marginTop: 16, padding: 12, backgroundColor: colors.success + '20', borderRadius: 12, borderColor: colors.success + '40', borderWidth: 1 }}>
+                  <Text style={{ color: colors.success, fontWeight: '600', textAlign: 'center', fontSize: 13 }}>Don't throw away your progress. You got this. 🔥</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>💪</Text>
+                <Text style={{ fontSize: 24, fontWeight: '800', color: colors.foreground, marginBottom: 8 }}>Do it now!</Text>
+                <Text style={{ fontSize: 16, color: colors.muted, marginBottom: 24 }}>{selectedUrgeAction.label}</Text>
+                <Pressable onPress={completeAction} style={({ pressed }) => ({
+                  backgroundColor: colors.primary, width: '100%', paddingVertical: 16, borderRadius: 12, alignItems: 'center', opacity: pressed ? 0.8 : 1
+                })}>
+                  <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>✓ Done! Urge beaten.</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

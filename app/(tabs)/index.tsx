@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, Dimensions, RefreshControl } from 'react-native';
+import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Moon, Smartphone } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -70,8 +71,8 @@ function ProgressRing({ percentage, size = 160, strokeWidth = 14, color, label, 
 
 // ─── Quick Stat Card ─────────────────────────────────────────────────────────
 
-function StatCard({ icon, label, value, unit, color, onPress }:
-  { icon: string; label: string; value: string | number; unit?: string; color: string; onPress?: () => void }) {
+function StatCard({ IconComponent, label, value, unit, color, onPress }:
+  { IconComponent: any; label: string; value: string | number; unit?: string; color: string; onPress?: () => void }) {
   const colors = useColors();
   return (
     <Pressable
@@ -88,7 +89,7 @@ function StatCard({ icon, label, value, unit, color, onPress }:
         marginRight: 8,
       })}
     >
-      <Text style={{ fontSize: 22, marginBottom: 4 }}>{icon}</Text>
+      <IconComponent size={22} color={color} style={{ marginBottom: 4 }} />
       <Text style={{ fontSize: 18, fontWeight: '800', color }}>{value}</Text>
       {unit && <Text style={{ fontSize: 10, color: colors.muted, marginTop: 1 }}>{unit}</Text>}
       <Text style={{ fontSize: 10, color: colors.muted, textAlign: 'center', marginTop: 4 }}>{label}</Text>
@@ -234,12 +235,15 @@ export default function DashboardScreen() {
   const phaseLabels = { 1: 'Foundation', 2: 'Build', 3: 'Maximize' };
 
   const stats = [
-    { icon: '⚖️', label: 'Weight', value: profile?.currentWeight || 45, unit: 'kg', color: colors.primary },
-    { icon: '🔥', label: 'Day', value: dayNumber, unit: `of 365`, color: colors.warning },
-    { icon: '💧', label: 'Water', value: log?.waterGlasses || 0, unit: 'glasses', color: '#60A5FA' },
-    { icon: '💪', label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Pending', color: log?.workoutCompleted ? colors.success : colors.muted },
-    { icon: '✨', label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Pending', color: '#F472B6' },
-    { icon: '🧠', label: 'NoPorn', value: '—', unit: 'days', color: colors.success },
+    { icon: Activity, label: 'Weight', value: profile?.currentWeight || 45, unit: 'kg', color: colors.primary },
+    { icon: Flame, label: 'Streak', value: dayNumber, unit: `days`, color: colors.warning },
+    { icon: Moon, label: 'Sleep', value: log?.sleepHours || '-', unit: 'h', color: '#818CF8' },
+    { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
+    { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
+    { icon: Sparkles, label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Wait', color: '#F472B6' },
+    { icon: Smartphone, label: 'Screen', value: log?.screenTimePhone || '-', unit: 'h', color: colors.muted },
+    { icon: Ban, label: 'No Porn', value: '—', unit: 'd', color: colors.success },
+    { icon: Ban, label: 'No Junk', value: '—', unit: 'd', color: colors.success },
   ];
 
   const phaseMs = DEFAULT_MILESTONES.filter(m => m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365));
@@ -297,7 +301,7 @@ export default function DashboardScreen() {
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12, paddingHorizontal: 6 }}>Today's Stats</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 6 }}>
             {stats.map((s, i) => (
-              <StatCard key={i} icon={s.icon} label={s.label} value={s.value} unit={s.unit} color={s.color} />
+              <StatCard key={i} IconComponent={s.icon} label={s.label} value={s.value} unit={s.unit} color={s.color} />
             ))}
           </ScrollView>
         </View>
