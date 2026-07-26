@@ -1,6 +1,8 @@
+import * as Haptics from "expo-haptics";
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, Pressable, TextInput, Alert, Dimensions } from 'react-native';
+import { ScrollView, View, Text, Pressable, TextInput, Alert, Dimensions , RefreshControl} from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
+import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DailyLogRepo } from '@/lib/db/database';
@@ -32,6 +34,7 @@ function HabitsScreen() {
   }, []);
 
   const toggle = async (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...done, [id]: !done[id] };
     setDone(n);
     await AsyncStorage.setItem('habits_' + todayStr, JSON.stringify(n));
@@ -76,7 +79,7 @@ function HabitsScreen() {
                   borderWidth: 2, borderColor: done[habit.id] ? categoryColors[cat] : colors.border,
                   marginRight: 12, alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {done[habit.id] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+                  {done[habit.id] && <Check size={14} color="#000" />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: done[habit.id] ? colors.muted : colors.foreground, fontSize: 13, textDecorationLine: done[habit.id] ? 'line-through' : 'none' }}>
@@ -187,10 +190,26 @@ function JournalScreen() {
   const colors = useColors();
   const [entry, setEntry] = useState('');
   const [saved, setSaved] = useState(false);
+  const [history, setHistory] = useState<{ date: string; content: string }[]>([]);
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     AsyncStorage.getItem('journal_' + today).then(s => { if (s) { setEntry(s); setSaved(true); } });
+    
+    // Load history
+    const loadHistory = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const journalKeys = keys.filter(k => k.startsWith('journal_') && k !== 'journal_' + today);
+        const stores = await AsyncStorage.multiGet(journalKeys);
+        const entries = stores.map(([key, val]) => ({
+          date: key.replace('journal_', ''),
+          content: val || ''
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setHistory(entries);
+      } catch (e) {}
+    };
+    loadHistory();
   }, []);
 
   const saveEntry = async () => {
@@ -234,6 +253,18 @@ function JournalScreen() {
       <Pressable onPress={saveEntry} style={{ backgroundColor: saved ? colors.success : colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center' }}>
         <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>{saved ? '✓ Saved' : 'Save Entry'}</Text>
       </Pressable>
+
+      {history.length > 0 && (
+        <View style={{ marginTop: 32 }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Past Entries</Text>
+          {history.map((h, i) => (
+            <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>{h.date}</Text>
+              <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>{h.content}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -251,6 +282,7 @@ function MilestonesScreen() {
   }, []);
 
   const toggle = async (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const ms = milestones.map(m => m.id === id ? { ...m, completed: !m.completed } : m);
     setMilestones(ms);
     await AsyncStorage.setItem('forge_milestones', JSON.stringify(ms));
@@ -293,7 +325,7 @@ function MilestonesScreen() {
                   borderWidth: 2, borderColor: m.completed ? phase.color : colors.border,
                   marginRight: 12, alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {m.completed && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+                  {m.completed && <Check size={14} color="#000" />}
                 </View>
                 <Text style={{ color: m.completed ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: m.completed ? 'line-through' : 'none' }}>
                   {m.title}
@@ -487,22 +519,7 @@ export default function DisciplineScreen() {
           <Text style={{ color: colors.muted, fontSize: 13 }}>Habits · Mindset · Knowledge</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingVertical: 10, maxHeight: 56 }}>
-          {TABS.map(tab => (
-            <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
-                borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, marginRight: 6,
-                borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-              }}>
-              <Text style={{ fontSize: 12 }}>{tab.icon}</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: activeTab === tab.key ? '#000' : colors.foreground }}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         <View style={{ flex: 1 }}>
           {activeTab === 'habits' && <HabitsScreen />}

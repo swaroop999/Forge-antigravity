@@ -4,7 +4,8 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'nativewind';
-import { Palette, Bell, Trash2, Info, User, ChevronRight, Bot, CheckCircle } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, CheckCircle } from 'lucide-react-native';
 import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
 
 export default function SettingsScreen() {
@@ -88,8 +89,24 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        <Text style={{ fontSize: 32, fontWeight: '900', color: colors.foreground, marginBottom: 24 }}>Settings</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16 }}>
+        <Pressable 
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            padding: 8, 
+            marginRight: 8,
+            backgroundColor: colors.surface,
+            borderRadius: 20,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <ChevronLeft size={24} color={colors.foreground} />
+        </Pressable>
+        <Text style={{ fontSize: 24, fontWeight: '900', color: colors.foreground }}>Settings</Text>
+      </View>
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100, paddingTop: 16 }}>
         
         {/* AI Coach */}
         <Card title="AI Coach" icon={Bot} color={colors.primary}>

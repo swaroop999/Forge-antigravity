@@ -11,6 +11,7 @@ const themeColors = {
   warning: { light: '#FFB800', dark: '#FFB800' }, // Gold for achievements
   error: { light: '#FF4444', dark: '#FF4444' }, // Red for warnings
   tertiary: { light: '#252525', dark: '#252525' }, // Elevated cards
+  urge: { light: '#F97316', dark: '#F97316' }, // Amber/Orange for urges
 };
 
 module.exports = { themeColors };

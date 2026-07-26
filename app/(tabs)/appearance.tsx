@@ -1,6 +1,8 @@
+import * as Haptics from "expo-haptics";
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, Pressable, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, Alert , RefreshControl} from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
+import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DailyLogRepo } from '@/lib/db/database';
@@ -28,12 +30,38 @@ function SkincareScreen() {
   const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
   const todayActive = PM_ACTIVES_ROTATION[dayName] || 'Cleanser + Moisturizer Only';
 
+  const [amStreak, setAmStreak] = useState(0);
+  const [pmStreak, setPmStreak] = useState(0);
+
   useEffect(() => {
     AsyncStorage.getItem('skincare_am_' + today).then(s => { if (s) setAmDone(JSON.parse(s)); });
     AsyncStorage.getItem('skincare_pm_' + today).then(s => { if (s) setPmDone(JSON.parse(s)); });
+
+    const fetchStreaks = async () => {
+      let amCount = 0;
+      let pmCount = 0;
+      for (let i = 0; i < 365; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const log = await DailyLogRepo.getForDate(dateStr);
+        if (log && log.skincareAM) amCount++; else if (i !== 0) break;
+      }
+      for (let i = 0; i < 365; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const log = await DailyLogRepo.getForDate(dateStr);
+        if (log && log.skincarePM) pmCount++; else if (i !== 0) break;
+      }
+      setAmStreak(amCount);
+      setPmStreak(pmCount);
+    };
+    fetchStreaks();
   }, []);
 
   const toggleAM = async (step: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...amDone, [step]: !amDone[step] };
     setAmDone(n);
     await AsyncStorage.setItem('skincare_am_' + today, JSON.stringify(n));
@@ -46,6 +74,7 @@ function SkincareScreen() {
   };
 
   const togglePM = async (step: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...pmDone, [step]: !pmDone[step] };
     setPmDone(n);
     await AsyncStorage.setItem('skincare_pm_' + today, JSON.stringify(n));
@@ -55,9 +84,6 @@ function SkincareScreen() {
     log.skincarePM = pmComplete;
     await DailyLogRepo.save(log);
   };
-
-  const amStreak = 45; // Would load from storage in full impl
-  const pmStreak = 38;
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
@@ -100,7 +126,7 @@ function SkincareScreen() {
               borderWidth: 2, borderColor: amDone[i] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {amDone[i] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+              {amDone[i] && <Check size={14} color="#000" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: amDone[i] ? colors.success : colors.foreground, fontSize: 13, textDecorationLine: amDone[i] ? 'line-through' : 'none' }}>
@@ -134,7 +160,7 @@ function SkincareScreen() {
               borderWidth: 2, borderColor: pmDone[i] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {pmDone[i] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+              {pmDone[i] && <Check size={14} color="#000" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: pmDone[i] ? colors.success : (step.product === 'WAIT' ? colors.warning : colors.foreground), fontSize: 13, textDecorationLine: pmDone[i] ? 'line-through' : 'none' }}>
@@ -276,6 +302,7 @@ function HairCareScreen() {
   }, []);
 
   const toggleMinox = async (slot: 'am' | 'pm') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...minoxDone, [slot]: !minoxDone[slot] };
     setMinoxDone(n);
     await AsyncStorage.setItem('minox_' + today, JSON.stringify(n));
@@ -394,6 +421,7 @@ function GroomingScreen() {
   }, []);
 
   const toggle = async (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...done, [key]: !done[key] };
     setDone(n);
     await AsyncStorage.setItem('grooming_' + today, JSON.stringify(n));
@@ -425,7 +453,7 @@ function GroomingScreen() {
                     borderWidth: 2, borderColor: done[key] ? colors.success : colors.border,
                     marginRight: 12, alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {done[key] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+                    {done[key] && <Check size={14} color="#000" />}
                   </View>
                   <Text style={{ color: done[key] ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: done[key] ? 'line-through' : 'none' }}>
                     {item}
@@ -506,6 +534,7 @@ function StyleScreen() {
   }, []);
 
   const toggle = async (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checklist, [key]: !checklist[key] };
     setChecklist(n);
     await AsyncStorage.setItem('wardrobe_checklist', JSON.stringify(n));
@@ -554,7 +583,7 @@ function StyleScreen() {
               borderWidth: 2, borderColor: checklist[item] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center',
             }}>
-              {checklist[item] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+              {checklist[item] && <Check size={14} color="#000" />}
             </View>
             <Text style={{ color: checklist[item] ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: checklist[item] ? 'line-through' : 'none' }}>
               {item}
@@ -751,22 +780,7 @@ export default function AppearanceScreen() {
           <Text style={{ color: colors.muted, fontSize: 13 }}>Skincare · Hair · Grooming · Style · Looksmax</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingVertical: 10, maxHeight: 56 }}>
-          {TABS.map(tab => (
-            <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
-                borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, marginRight: 6,
-                borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-              }}>
-              <Text style={{ fontSize: 12 }}>{tab.icon}</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: activeTab === tab.key ? '#000' : colors.foreground }}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         <View style={{ flex: 1 }}>
           {activeTab === 'skincare' && <SkincareScreen />}

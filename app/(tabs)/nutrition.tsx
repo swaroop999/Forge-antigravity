@@ -1,6 +1,8 @@
+import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
-import { ScrollView, View, Text, Pressable, TextInput, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, TextInput, Alert , RefreshControl} from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
+import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
@@ -35,6 +37,7 @@ function TodaysMeals() {
   }, []);
 
   const toggleMeal = async (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newDone = { ...mealsDone, [id]: !mealsDone[id] };
     setMealsDone(newDone);
     let log = await DailyLogRepo.getForDate(today);
@@ -79,11 +82,11 @@ function TodaysMeals() {
 
       {/* Junk Food Rules */}
       <View style={{
-        backgroundColor: isWeekday ? colors.success + '15' : colors.warning + '15',
+        backgroundColor: isWeekday || (!isWeekday && !isSaturday) ? colors.success + '15' : colors.warning + '15',
         borderRadius: 12, padding: 14, marginBottom: 16,
-        borderWidth: 1, borderColor: isWeekday ? colors.success + '40' : colors.warning + '40',
+        borderWidth: 1, borderColor: isWeekday || (!isWeekday && !isSaturday) ? colors.success + '40' : colors.warning + '40',
       }}>
-        <Text style={{ color: isWeekday ? colors.success : colors.warning, fontWeight: '700', marginBottom: 4 }}>
+        <Text style={{ color: isWeekday || (!isWeekday && !isSaturday) ? colors.success : colors.warning, fontWeight: '700', marginBottom: 4 }}>
           {isWeekday ? '✓ Weekday: Zero Junk' : isSaturday ? '⚡ Saturday: 1 Restaurant Cheat Allowed' : '🏠 Sunday: Home Food Only'}
         </Text>
         <Text style={{ color: colors.muted, fontSize: 12 }}>
@@ -118,7 +121,7 @@ function TodaysMeals() {
                   borderWidth: 2, borderColor: mealsDone[meal.id] ? colors.success : colors.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {mealsDone[meal.id] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+                  {mealsDone[meal.id] && <Check size={14} color="#000" />}
                 </View>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: mealsDone[meal.id] ? colors.success : colors.foreground }}>
                   Meal {meal.number}: {meal.name}
@@ -236,6 +239,7 @@ function SupplementsScreen() {
   }, []);
 
   const toggle = async (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checked, [id]: !checked[id] };
     setChecked(n);
     const today = new Date().toISOString().split('T')[0];
@@ -285,7 +289,7 @@ function SupplementsScreen() {
               borderWidth: 2, borderColor: checked[supp.id] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {checked[supp.id] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+              {checked[supp.id] && <Check size={14} color="#000" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: checked[supp.id] ? colors.success : colors.foreground, textDecorationLine: checked[supp.id] ? 'line-through' : 'none' }}>
@@ -415,6 +419,7 @@ function GroceriesScreen() {
   }, []);
 
   const toggle = async (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checked, [key]: !checked[key] };
     setChecked(n);
     await AsyncStorage.setItem('groceries_checked', JSON.stringify(n));
@@ -450,7 +455,7 @@ function GroceriesScreen() {
                   borderWidth: 2, borderColor: checked[key] ? colors.success : colors.border,
                   marginRight: 12, alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {checked[key] && <Text style={{ fontSize: 11, color: '#000', fontWeight: '800' }}>✓</Text>}
+                  {checked[key] && <Check size={14} color="#000" />}
                 </View>
                 <Text style={{ color: checked[key] ? colors.muted : colors.foreground, fontSize: 13, textDecorationLine: checked[key] ? 'line-through' : 'none', flex: 1 }}>
                   {item}
@@ -478,22 +483,7 @@ export default function NutritionScreen() {
           <Text style={{ color: colors.muted, fontSize: 13 }}>2,600–2,800 kcal · 90–110g protein</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingVertical: 10, maxHeight: 56 }}>
-          {TABS.map(tab => (
-            <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
-                borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8,
-                borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-              }}>
-              <Text style={{ fontSize: 13 }}>{tab.icon}</Text>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: activeTab === tab.key ? '#000' : colors.foreground }}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         <View style={{ flex: 1 }}>
           {activeTab === 'meals' && <TodaysMeals />}

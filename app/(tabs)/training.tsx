@@ -1,9 +1,11 @@
+import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ScrollView, View, Text, Pressable, TextInput, Alert, Modal,
   RefreshControl, FlatList,
 } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
+import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { AppRepo, WorkoutRepo, DailyLogRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
@@ -58,6 +60,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   };
 
   const completeSet = (exerciseId: string, restSecs: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSets(prev => {
       const ex = prev[exerciseId] || { done: 0, weights: [] };
       return { ...prev, [exerciseId]: { ...ex, done: ex.done + 1 } };
@@ -66,6 +69,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   };
 
   const saveWorkout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const today = new Date().toISOString().split('T')[0];
     const log: WorkoutLog = {
       id: today, date: today, phase,
@@ -415,7 +419,7 @@ function PostureScreen() {
             borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.border,
             marginRight: 12, alignItems: 'center', justifyContent: 'center',
           }}>
-            {done[ex.id] && <Text style={{ fontSize: 12, color: '#000', fontWeight: '800' }}>✓</Text>}
+            {done[ex.id] && <Check size={14} color="#000" />}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '700', color: done[ex.id] ? colors.muted : colors.foreground, textDecorationLine: done[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
@@ -469,7 +473,7 @@ function PriorityMovements() {
               borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.primary,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {done[ex.id] && <Text style={{ fontSize: 14, color: '#000', fontWeight: '800' }}>✓</Text>}
+              {done[ex.id] && <Check size={14} color="#000" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '800', fontSize: 15, color: done[ex.id] ? colors.success : colors.foreground }}>
@@ -617,22 +621,7 @@ export default function TrainingScreen() {
         </View>
 
         {/* Sub-tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingVertical: 10, maxHeight: 56 }}>
-          {TABS.map(tab => (
-            <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
-                borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8,
-                borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-              }}>
-              <Text style={{ fontSize: 13 }}>{tab.icon}</Text>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: activeTab === tab.key ? '#000' : colors.foreground }}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         {/* Content */}
         <View style={{ flex: 1 }}>

@@ -55,7 +55,6 @@ const TABS = [
   { name: 'nutrition', icon: Utensils, label: 'Nutrition' },
   { name: 'appearance', icon: Sparkles, label: 'Appearance' },
   { name: 'discipline', icon: Brain, label: 'Discipline' },
-  { name: 'ai-coach', icon: Bot, label: 'AI Coach' },
 ];
 
 export default function TabLayout() {
@@ -121,6 +120,7 @@ export default function TabLayout() {
         ))}
 
         {/* Hide supplemental screens not in bottom nav */}
+        <Tabs.Screen name="ai-coach" options={{ href: null }} />
         <Tabs.Screen name="supplements" options={{ href: null }} />
         <Tabs.Screen name="tan-removal" options={{ href: null }} />
       </Tabs>
@@ -129,23 +129,12 @@ export default function TabLayout() {
       <Pressable
         onPress={() => setUrgeModalVisible(true)}
         style={({ pressed }) => ({
-          position: 'absolute',
-          right: 20,
-          bottom: 76 + insets.bottom,
-          backgroundColor: '#EF4444',
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-          elevation: 5,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 3,
-          opacity: pressed ? 0.8 : 1,
-          borderWidth: 2,
-          borderColor: '#FCA5A5'
+          position: 'absolute', right: 20, bottom: insets.bottom + 70,
+          backgroundColor: colors.urge, width: 56, height: 56,
+          borderRadius: 28, alignItems: 'center', justifyContent: 'center',
+          shadowColor: colors.urge, shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+          opacity: pressed ? 0.8 : 1, zIndex: 100,
         })}
       >
         <Text style={{ fontSize: 24 }}>🚨</Text>

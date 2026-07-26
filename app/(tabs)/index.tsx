@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, Dimensions, RefreshControl } from 'react-native';
-import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Moon, Smartphone } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Moon, Smartphone, Settings , Check} from "lucide-react-native";
+import { router } from 'expo-router';
+import Svg, { Circle } from 'react-native-svg';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,32 +41,43 @@ function getGreeting() {
 
 function ProgressRing({ percentage, size = 160, strokeWidth = 14, color, label, sublabel }:
   { percentage: number; size?: number; strokeWidth?: number; color: string; label: string; sublabel: string }) {
+  const colors = useColors();
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const progress = circumference - (percentage / 100) * circumference;
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
-      {/* Background ring */}
-      <View style={{
-        position: 'absolute', width: size, height: size, borderRadius: size / 2,
-        borderWidth: strokeWidth, borderColor: 'rgba(255,255,255,0.06)',
-      }} />
-      {/* Progress ring (simulated with border arcs) */}
-      <View style={{
-        position: 'absolute', width: size - strokeWidth * 0.5, height: size - strokeWidth * 0.5,
-        borderRadius: (size - strokeWidth * 0.5) / 2,
-        borderWidth: strokeWidth,
-        borderTopColor: percentage > 0 ? color : 'transparent',
-        borderRightColor: percentage > 25 ? color : 'transparent',
-        borderBottomColor: percentage > 50 ? color : 'transparent',
-        borderLeftColor: percentage > 75 ? color : 'transparent',
-        transform: [{ rotate: '-90deg' }],
-      }} />
+      <Svg width={size} height={size} style={{ position: 'absolute' }}>
+        {/* Background ring */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={colors.border}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        {/* Progress ring */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={progress}
+          strokeLinecap="round"
+          originX={size / 2}
+          originY={size / 2}
+          rotation="-90"
+        />
+      </Svg>
       <View style={{ alignItems: 'center' }}>
         <Text style={{ fontSize: 32, fontWeight: '800', color }}>{Math.round(percentage)}%</Text>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginTop: 2 }}>{label}</Text>
-        <Text style={{ fontSize: 11, color: '#A0A0A0', marginTop: 2 }}>{sublabel}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.foreground, marginTop: 2 }}>{label}</Text>
+        <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>{sublabel}</Text>
       </View>
     </View>
   );
@@ -132,7 +146,7 @@ function ScheduleItem({ item, completed, onPress }:
         borderWidth: 2, borderColor: completed ? colors.success : colors.border,
         alignItems: 'center', justifyContent: 'center',
       }}>
-        {completed && <Text style={{ color: '#000', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+        {completed && <Check size={14} color="#000" />}
       </View>
     </Pressable>
   );
@@ -208,6 +222,7 @@ export default function DashboardScreen() {
   }, [load]);
 
   const toggleScheduleItem = useCallback(async (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const key = item.time + item.task;
     const newCompleted = { ...completedItems, [key]: !completedItems[key] };
     setCompletedItems(newCompleted);
@@ -252,7 +267,7 @@ export default function DashboardScreen() {
   return (
     <ScreenContainer>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 130 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
@@ -265,9 +280,18 @@ export default function DashboardScreen() {
                 {profile?.name || 'FORGE'} 🔥
               </Text>
             </View>
-            <View style={{ backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
-              <Text style={{ color: '#000', fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
-              <Text style={{ color: '#000', fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Pressable 
+                onPress={() => router.push('/settings')} 
+                hitSlop={8} 
+                style={({ pressed }) => ({ marginRight: 12, opacity: pressed ? 0.6 : 1 })}
+              >
+                <Settings size={22} color={colors.muted} />
+              </Pressable>
+              <View style={{ backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
+                <Text style={{ color: '#000', fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
+                <Text style={{ color: '#000', fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
+              </View>
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 8 }}>
@@ -304,6 +328,24 @@ export default function DashboardScreen() {
               <StatCard key={i} IconComponent={s.icon} label={s.label} value={s.value} unit={s.unit} color={s.color} />
             ))}
           </ScrollView>
+        </View>
+
+        {/* ── Ask FORGE AI Card ──────────────────────── */}
+        <View style={{ paddingHorizontal: 22, marginBottom: 20 }}>
+          <Pressable
+            onPress={() => router.navigate('/(tabs)/ai-coach')}
+            style={({ pressed }) => ({
+              flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '15',
+              borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.primary + '40',
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ fontSize: 32, marginRight: 12 }}>🤖</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: colors.primary }}>Ask FORGE AI</Text>
+              <Text style={{ color: colors.foreground, fontSize: 12, marginTop: 2 }}>Your 24/7 transformation coach</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* ── Milestone Progress ─────────────────── */}
@@ -367,23 +409,30 @@ export default function DashboardScreen() {
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>This Week</Text>
           <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80 }}>
-              {(weeklyData.length > 0 ? weeklyData : [40, 65, 85, 70, 90, 80, completionPct]).map((pct, i) => {
-                const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                const isToday = i === 6;
-                return (
-                  <View key={i} style={{ alignItems: 'center', flex: 1 }}>
-                    <View style={{
-                      height: Math.max(10, (pct / 100) * 60),
-                      width: 20, borderRadius: 4,
-                      backgroundColor: isToday ? colors.primary : pct > 70 ? 'rgba(0,217,163,0.5)' : pct > 40 ? 'rgba(255,184,0,0.5)' : colors.border,
-                    }} />
-                    <Text style={{ fontSize: 9, color: colors.muted, marginTop: 4 }}>{days[i]}</Text>
-                    <Text style={{ fontSize: 9, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '700' : '400' }}>
-                      {pct}%
-                    </Text>
-                  </View>
-                );
-              })}
+              {weeklyData.length > 0 ? (
+                weeklyData.map((pct, i) => {
+                  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                  const isToday = i === 6; // Mocking 'today' as the last element for now
+                  return (
+                    <View key={i} style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{
+                        height: Math.max(10, (pct / 100) * 60),
+                        width: isToday ? 24 : 20, borderRadius: 4,
+                        backgroundColor: isToday ? colors.primary : pct > 70 ? 'rgba(0,217,163,0.5)' : pct > 40 ? 'rgba(255,184,0,0.5)' : colors.border,
+                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? '#fff' : 'transparent'
+                      }} />
+                      <Text style={{ fontSize: 9, color: colors.muted, marginTop: 6 }}>{days[i]}</Text>
+                      <Text style={{ fontSize: 9, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '900' : '500', marginTop: 2 }}>
+                        {pct}%
+                      </Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>No data for this week yet.</Text>
+                </View>
+              )}
             </View>
             <Text style={{ color: colors.muted, fontSize: 11, textAlign: 'center', marginTop: 8 }}>Daily task completion rate</Text>
           </View>

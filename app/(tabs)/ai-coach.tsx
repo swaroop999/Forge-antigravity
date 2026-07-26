@@ -8,6 +8,10 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { geminiService } from '@/lib/services/gemini-service';
 import { AppRepo, ProfileRepo } from '@/lib/db/database';
+import { AIQuickPrompts } from '@/components/ai-quick-prompts';
+import { Send } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
+import { router } from 'expo-router';
 
 interface ChatMessage {
   id: string;
@@ -16,16 +20,7 @@ interface ChatMessage {
   timestamp: number;
 }
 
-const QUICK_PROMPTS = [
-  { text: 'Analyze my progress today', icon: '📊' },
-  { text: 'Motivate me to train', icon: '💪' },
-  { text: 'What should I eat now?', icon: '🍽️' },
-  { text: 'I want to relapse. Help.', icon: '🆘' },
-  { text: 'Skincare question', icon: '✨' },
-  { text: 'Help me with tonight\'s workout', icon: '🏋️' },
-  { text: 'Why am I not gaining weight?', icon: '📈' },
-  { text: 'I feel like quitting. Help.', icon: '🔥' },
-];
+
 
 export default function AICoachScreen() {
   const colors = useColors();
@@ -129,54 +124,21 @@ export default function AICoachScreen() {
   if (!isSetup) {
     return (
       <ScreenContainer>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={{ flex: 1, padding: 24, alignItems: 'center', paddingTop: 60 }}>
-            <Text style={{ fontSize: 64, marginBottom: 16 }}>🤖</Text>
-            <Text style={{ fontSize: 28, fontWeight: '800', color: colors.foreground, textAlign: 'center', marginBottom: 8 }}>
-              FORGE AI Coach
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 40, lineHeight: 22 }}>
-              Your personal 24/7 transformation coach. Knows your entire plan. Available whenever you need motivation, guidance, or accountability.
-            </Text>
-
-            {!showKeySetup ? (
-              <>
-                <View style={{ width: '100%', backgroundColor: colors.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 20 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>How to set up (30 seconds):</Text>
-                  {['1. Go to aistudio.google.com/apikey', '2. Create a free API key', '3. Paste it below'].map((step, i) => (
-                    <Text key={i} style={{ color: colors.muted, fontSize: 13, marginBottom: 6 }}>{step}</Text>
-                  ))}
-                </View>
-                <Pressable onPress={() => setShowKeySetup(true)} style={{ width: '100%', backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: colors.background, fontWeight: '700', fontSize: 16 }}>I Have My API Key →</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <View style={{ width: '100%', marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 8 }}>Gemini API Key:</Text>
-                  <TextInput
-                    placeholder="Paste your API key here..."
-                    placeholderTextColor={colors.muted}
-                    value={tempApiKey}
-                    onChangeText={setTempApiKey}
-                    secureTextEntry
-                    style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: colors.foreground, fontSize: 14 }}
-                  />
-                  <Text style={{ fontSize: 11, color: colors.muted, marginTop: 8 }}>
-                    🔒 Stored locally only. Never sent anywhere except directly to Google's API.
-                  </Text>
-                </View>
-                <Pressable onPress={saveApiKey} style={{ width: '100%', backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: colors.background, fontWeight: '700', fontSize: 16 }}>Activate AI Coach</Text>
-                </Pressable>
-                <Pressable onPress={() => setShowKeySetup(false)} style={{ width: '100%', backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ color: colors.foreground, fontWeight: '600' }}>Back</Text>
-                </Pressable>
-              </>
-            )}
-          </View>
-        </ScrollView>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 64, marginBottom: 16 }}>🤖</Text>
+          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.foreground, textAlign: 'center', marginBottom: 16 }}>
+            API Key Required
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 32 }}>
+            Please set your Gemini API Key in the Settings to use the AI Coach.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/settings')}
+            style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 24 }}
+          >
+            <Text style={{ color: colors.background, fontWeight: '700', fontSize: 16 }}>Go to Settings</Text>
+          </Pressable>
+        </View>
       </ScreenContainer>
     );
   }
@@ -226,9 +188,15 @@ export default function AICoachScreen() {
                 borderWidth: item.role === 'ai' ? 1 : 0,
                 borderColor: colors.border,
               }}>
-                <Text style={{ color: item.role === 'user' ? colors.background : colors.foreground, fontSize: 14, lineHeight: 20 }}>
-                  {item.content}
-                </Text>
+                {item.role === 'user' ? (
+                  <Text style={{ color: colors.background, fontSize: 14, lineHeight: 20 }}>
+                    {item.content}
+                  </Text>
+                ) : (
+                  <Markdown style={{ body: { color: colors.foreground, fontSize: 14, lineHeight: 20 } }}>
+                    {item.content}
+                  </Markdown>
+                )}
                 <Text style={{ fontSize: 10, color: item.role === 'user' ? 'rgba(0,0,0,0.4)' : colors.muted, marginTop: 6 }}>
                   {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
@@ -248,14 +216,10 @@ export default function AICoachScreen() {
 
         {/* Quick Prompts */}
         {messages.length === 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingVertical: 8, maxHeight: 60 }}>
-            {QUICK_PROMPTS.map((p, i) => (
-              <Pressable key={i} onPress={() => sendMessage(p.text)} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ marginRight: 6 }}>{p.icon}</Text>
-                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '500' }}>{p.text}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <AIQuickPrompts context="default" onSelectPrompt={(text) => {
+            setInputText(text);
+            sendMessage(text);
+          }} />
         )}
 
         {/* Input */}
@@ -289,7 +253,7 @@ export default function AICoachScreen() {
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 18 }}>↑</Text>
+            <Send size={18} color={inputText.trim() && !isLoading ? '#000' : colors.muted} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
