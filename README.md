@@ -1,6 +1,6 @@
 # 🚀 FORGE App
 
-![FORGE App Banner](assets/images/splash-icon.png)
+![FORGE App Banner](assets/images/medusa.jpg)
 
 > **FORGE** is an aggressive, uncompromising 365-day transformation tracker built to convert a 22-year-old underweight (BMI 16.0) individual into a disciplined, aesthetic, and high-performing man. This app isn't a gentle suggestion tool; it's a military-grade protocol enforcement system.
 
