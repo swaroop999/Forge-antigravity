@@ -1,14 +1,61 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, Switch, Alert, TextInput } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'nativewind';
-import { Palette, Bell, Trash2, Info, User, ChevronRight } from 'lucide-react-native';
+import { Palette, Bell, Trash2, Info, User, ChevronRight, Bot, CheckCircle } from 'lucide-react-native';
+import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const { colorScheme, toggleColorScheme } = useColorScheme();
+
+  // AI Coach settings
+  const [apiKey, setApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState(DEFAULT_GEMINI_MODEL);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const storedKey = await AsyncStorage.getItem('gemini_api_key');
+      if (storedKey) setApiKey(storedKey);
+      const storedModel = await AsyncStorage.getItem('gemini_model');
+      if (storedModel) setGeminiModel(storedModel);
+    })();
+  }, []);
+
+  const saveAiSettings = async () => {
+    await geminiService.setApiKey(apiKey.trim());
+    const trimmed = geminiModel.trim();
+    await AsyncStorage.setItem('gemini_model', trimmed || DEFAULT_GEMINI_MODEL);
+    setTestStatus(null);
+    setTestError(null);
+    Alert.alert('Saved', 'API key and model saved.');
+  };
+
+  const handleTestConnection = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('Missing API Key', 'Enter your Gemini API key first.');
+      return;
+    }
+    setIsTesting(true);
+    setTestStatus(null);
+    setTestError(null);
+    try {
+      // Save current values first so getModel() / getApiKey() reads them
+      await geminiService.setApiKey(apiKey.trim());
+      await AsyncStorage.setItem('gemini_model', geminiModel.trim() || DEFAULT_GEMINI_MODEL);
+      const msg = await geminiService.testConnection();
+      setTestStatus(msg);
+    } catch (e: any) {
+      setTestError(e?.message || 'Unknown error');
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleReset = () => {
     Alert.alert(
@@ -44,6 +91,81 @@ export default function SettingsScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
         <Text style={{ fontSize: 32, fontWeight: '900', color: colors.foreground, marginBottom: 24 }}>Settings</Text>
         
+        {/* AI Coach */}
+        <Card title="AI Coach" icon={Bot} color={colors.primary}>
+          {/* API Key */}
+          <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>Gemini API Key</Text>
+          <TextInput
+            value={apiKey}
+            onChangeText={setApiKey}
+            placeholder="Paste your API key here"
+            placeholderTextColor={colors.muted}
+            secureTextEntry
+            style={{
+              backgroundColor: colors.background, color: colors.foreground,
+              borderRadius: 10, borderWidth: 1, borderColor: colors.border,
+              paddingHorizontal: 12, paddingVertical: 10, fontSize: 13,
+              marginBottom: 12, fontFamily: 'monospace',
+            }}
+          />
+
+          {/* Model
+            Alternatives (type one of these to switch):
+              gemini-2.5-flash-lite  — higher free-tier quota, lower quality
+              gemini-2.5-pro         — strongest reasoning, lower quota
+          */}
+          <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>Gemini Model</Text>
+          <TextInput
+            value={geminiModel}
+            onChangeText={setGeminiModel}
+            placeholder={DEFAULT_GEMINI_MODEL}
+            placeholderTextColor={colors.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{
+              backgroundColor: colors.background, color: colors.foreground,
+              borderRadius: 10, borderWidth: 1, borderColor: colors.border,
+              paddingHorizontal: 12, paddingVertical: 10, fontSize: 13,
+              marginBottom: 12, fontFamily: 'monospace',
+            }}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+            <Pressable
+              onPress={saveAiSettings}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.primary, borderRadius: 10,
+                paddingVertical: 10, alignItems: 'center', opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Save</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleTestConnection}
+              disabled={isTesting}
+              style={({ pressed }) => ({
+                flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
+                borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
+                opacity: pressed || isTesting ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 13 }}>
+                {isTesting ? 'Testing…' : 'Test'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {testStatus != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <CheckCircle size={14} color={colors.success} />
+              <Text style={{ color: colors.success, fontSize: 12, flex: 1 }}>{testStatus}</Text>
+            </View>
+          )}
+          {testError != null && (
+            <Text style={{ color: colors.error, fontSize: 12, marginTop: 4 }}>{testError}</Text>
+          )}
+        </Card>
+
         {/* Profile */}
         <Card title="Profile" icon={User} color={colors.primary}>
           <Pressable style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>

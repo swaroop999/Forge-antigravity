@@ -11,9 +11,13 @@ export interface GeminiMessage {
   parts: Array<{ text: string }>;
 }
 
+// Default model. Alternatives you can store via Settings:
+//   'gemini-2.5-flash-lite' — higher free-tier quota, lower quality
+//   'gemini-2.5-pro'        — strongest reasoning, lower quota
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+
 export class GeminiService {
   private apiKey: string | null = null;
-  private model = 'gemini-1.5-flash';
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   constructor(apiKey?: string) {
@@ -34,6 +38,12 @@ export class GeminiService {
       this.apiKey = stored;
     }
     return stored;
+  }
+
+  /** Read stored model name, falling back to the default. */
+  async getModel(): Promise<string> {
+    const stored = await AsyncStorage.getItem('gemini_model');
+    return stored?.trim() || DEFAULT_GEMINI_MODEL;
   }
 
   /**
@@ -138,8 +148,9 @@ RESPONSE RULES:
     };
 
     try {
+      const model = await this.getModel();
       const response = await fetch(
-        `${this.baseUrl}/${this.model}:generateContent?key=${apiKey}`,
+        `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -169,36 +180,36 @@ RESPONSE RULES:
   }
 
   /**
-   * Test API connection
+   * Test API connection.
+   * Returns a success message string on success, or throws with the real
+   * API error message so the Settings screen can display it directly.
    */
-  async testConnection(): Promise<boolean> {
-    try {
-      const apiKey = await this.getApiKey();
-      if (!apiKey) return false;
+  async testConnection(): Promise<string> {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) throw new Error('No API key configured');
 
-      const response = await fetch(
-        `${this.baseUrl}/${this.model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: 'Say "Connection successful" in one word.' }],
-              },
-            ],
-          }),
-        }
-      );
+    const model = await this.getModel();
+    const response = await fetch(
+      `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: 'Say "ok".' }] }],
+        }),
+      }
+    );
 
-      return response.ok;
-    } catch (error) {
-      console.error('Connection test failed:', error);
-      return false;
+    if (!response.ok) {
+      let msg = `HTTP ${response.status}`;
+      try {
+        const errBody = await response.json();
+        msg = errBody?.error?.message || msg;
+      } catch { /* ignore parse errors */ }
+      throw new Error(msg);
     }
+
+    return `Connected — using ${model}`;
   }
 
   /**
