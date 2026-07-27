@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Alert, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Alert, TextInput, Modal } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'nativewind';
 import { router } from 'expo-router';
-import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, CheckCircle } from 'lucide-react-native';
+import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, CheckCircle, Database, Download, Upload, Calendar, AlertTriangle, X } from 'lucide-react-native';
 import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
+import { useForgeStore } from '@/lib/store/app-store';
+import { exportToJSON, pickAndParseBackupFile, getLastBackupDate, getBackupStats, BackupFile } from '@/lib/backup';
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -19,12 +21,23 @@ export default function SettingsScreen() {
   const [testError, setTestError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
 
+  // Backup & Restore
+  const { state: forgeState, dispatch } = useForgeStore();
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importData, setImportData] = useState<BackupFile | null>(null);
+  const [importMode, setImportMode] = useState<'replace' | 'merge'>('replace');
+  const [isExporting, setIsExporting] = useState(false);
+
   useEffect(() => {
     (async () => {
       const storedKey = await AsyncStorage.getItem('gemini_api_key');
       if (storedKey) setApiKey(storedKey);
       const storedModel = await AsyncStorage.getItem('gemini_model');
       if (storedModel) setGeminiModel(storedModel);
+      
+      const backupDate = await getLastBackupDate();
+      setLastBackup(backupDate);
     })();
   }, []);
 
@@ -56,6 +69,46 @@ export default function SettingsScreen() {
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportToJSON(forgeState);
+      const date = await getLastBackupDate();
+      setLastBackup(date);
+      Alert.alert('Success', 'Data exported successfully.');
+    } catch (e: any) {
+      Alert.alert('Export Failed', e.message || 'An error occurred during export.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      const file = await pickAndParseBackupFile();
+      if (file) {
+        setImportData(file);
+        setShowImportModal(true);
+      }
+    } catch (e: any) {
+      Alert.alert('Import Failed', e.message || 'Could not parse the backup file.');
+    }
+  };
+
+  const confirmImport = () => {
+    if (!importData) return;
+    
+    if (importMode === 'replace') {
+      dispatch({ type: 'REPLACE_STATE', payload: importData.data });
+    } else {
+      dispatch({ type: 'MERGE_STATE', payload: importData.data });
+    }
+    
+    setShowImportModal(false);
+    setImportData(null);
+    Alert.alert('Success', 'Data imported successfully.');
   };
 
   const handleReset = () => {
@@ -183,6 +236,72 @@ export default function SettingsScreen() {
           )}
         </Card>
 
+        {/* Data & Backup */}
+        <Card title="Data & Backup" icon={Database} color={colors.primary}>
+          {(() => {
+            const isOldBackup = lastBackup ? (Date.now() - new Date(lastBackup).getTime()) > 7 * 24 * 60 * 60 * 1000 : true;
+            
+            return (
+              <View style={{ marginBottom: 16 }}>
+                {isOldBackup ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.warning + '20', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+                    <AlertTriangle size={20} color={colors.warning} style={{ marginRight: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>No recent backup</Text>
+                      <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
+                        Last backup: {lastBackup ? new Date(lastBackup).toLocaleDateString() : 'Never'}
+                      </Text>
+                      <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>Back up your data to avoid losing progress.</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                    <Calendar size={16} color={colors.muted} style={{ marginRight: 8 }} />
+                    <Text style={{ color: colors.muted, fontSize: 13 }}>
+                      Last backup: {new Date(lastBackup!).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+                
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable
+                    onPress={handleExport}
+                    disabled={isExporting}
+                    style={({ pressed }) => ({
+                      flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
+                      borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
+                      flexDirection: 'row', justifyContent: 'center', gap: 8,
+                      opacity: pressed || isExporting ? 0.6 : 1,
+                    })}
+                  >
+                    <Download size={16} color={colors.foreground} />
+                    <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 13 }}>
+                      {isExporting ? 'Exporting...' : 'Export Data'}
+                    </Text>
+                  </Pressable>
+                  
+                  <Pressable
+                    onPress={handleImport}
+                    style={({ pressed }) => ({
+                      flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
+                      borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
+                      flexDirection: 'row', justifyContent: 'center', gap: 8,
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Upload size={16} color={colors.foreground} />
+                    <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 13 }}>Import Data</Text>
+                  </Pressable>
+                </View>
+                
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 12, textAlign: 'center' }}>
+                  ⚠️ Your data is stored locally on this device. Regular backups are recommended.
+                </Text>
+              </View>
+            );
+          })()}
+        </Card>
+
         {/* Profile */}
         <Card title="Profile" icon={User} color={colors.primary}>
           <Pressable style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
@@ -250,6 +369,86 @@ export default function SettingsScreen() {
         </View>
 
       </ScrollView>
+
+      {/* Import Modal */}
+      <Modal
+        visible={showImportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.foreground }}>Import Backup</Text>
+              <Pressable onPress={() => setShowImportModal(false)}>
+                <X size={24} color={colors.muted} />
+              </Pressable>
+            </View>
+
+            {importData && (() => {
+              const stats = getBackupStats(importData.data);
+              return (
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ color: colors.foreground, fontSize: 14, marginBottom: 4 }}>
+                    <Text style={{ fontWeight: '700' }}>Created:</Text> {new Date(importData.metadata.exportDate).toLocaleDateString()}
+                  </Text>
+                  <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 12 }}>
+                    Contains: {stats.tasks} tasks, {stats.meals} meals, {stats.habits} habits, {stats.skincare} skincare routines, {stats.dopamine} dopamine entries.
+                  </Text>
+
+                  <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+                    <Pressable 
+                      onPress={() => setImportMode('replace')}
+                      style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+                    >
+                      <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: importMode === 'replace' ? colors.primary : colors.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        {importMode === 'replace' && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
+                      </View>
+                      <View>
+                        <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: '600' }}>Replace all existing data</Text>
+                        <Text style={{ color: colors.muted, fontSize: 12 }}>Overwrites your current data.</Text>
+                      </View>
+                    </Pressable>
+
+                    <Pressable 
+                      onPress={() => setImportMode('merge')}
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: importMode === 'merge' ? colors.primary : colors.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        {importMode === 'merge' && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
+                      </View>
+                      <View>
+                        <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: '600' }}>Merge with existing data</Text>
+                        <Text style={{ color: colors.muted, fontSize: 12 }}>Combines both datasets.</Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                  
+                  <Text style={{ color: colors.warning, fontSize: 13, marginTop: 16, fontWeight: '600', textAlign: 'center' }}>
+                    ⚠️ This action cannot be undone.
+                  </Text>
+                </View>
+              );
+            })()}
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Pressable
+                onPress={() => setShowImportModal(false)}
+                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 15 }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmImport}
+                style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#000', fontWeight: '800', fontSize: 15 }}>Import</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }

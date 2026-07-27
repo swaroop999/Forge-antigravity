@@ -56,7 +56,9 @@ export type ForgeAction =
   | { type: 'SET_CURRENT_WORKOUT'; payload: WorkoutSession | null }
   | { type: 'UPDATE_CURRENT_WORKOUT'; payload: Partial<WorkoutSession> }
   | { type: 'SET_CURRENT_JOURNAL'; payload: JournalEntry | null }
-  | { type: 'INCREMENT_DAY' };
+  | { type: 'INCREMENT_DAY' }
+  | { type: 'REPLACE_STATE'; payload: ForgeState }
+  | { type: 'MERGE_STATE'; payload: ForgeState };
 
 const initialState: ForgeState = {
   appState: {
@@ -205,6 +207,37 @@ function forgeReducer(state: ForgeState, action: ForgeAction): ForgeState {
           dayNumber: newDayNumber,
           currentPhase: newPhase,
         },
+      };
+    }
+
+    case 'REPLACE_STATE':
+      return {
+        ...action.payload,
+        loading: state.loading,
+        error: state.error,
+      };
+
+    case 'MERGE_STATE': {
+      const mergeArrays = <T extends { id: string }>(arr1: T[], arr2: T[]) => {
+        const map = new Map<string, T>();
+        arr1.forEach((item) => map.set(item.id, item));
+        arr2.forEach((item) => map.set(item.id, item));
+        return Array.from(map.values());
+      };
+
+      return {
+        ...state,
+        userProfile: action.payload.userProfile || state.userProfile,
+        appState: {
+          ...state.appState,
+          ...action.payload.appState,
+          dayNumber: Math.max(state.appState.dayNumber, action.payload.appState.dayNumber),
+        },
+        dailyTasks: mergeArrays(state.dailyTasks, action.payload.dailyTasks),
+        mealEntries: mergeArrays(state.mealEntries, action.payload.mealEntries),
+        skincareRoutines: mergeArrays(state.skincareRoutines, action.payload.skincareRoutines),
+        habitEntries: mergeArrays(state.habitEntries, action.payload.habitEntries),
+        dopamineEntries: mergeArrays(state.dopamineEntries, action.payload.dopamineEntries),
       };
     }
 
