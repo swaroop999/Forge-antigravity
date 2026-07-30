@@ -43,7 +43,7 @@ const config: ExpoConfig = {
   slug: env.appSlug,
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/app-icon.jpg",
+  icon: "./assets/images/app-icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
@@ -57,7 +57,7 @@ const config: ExpoConfig = {
   android: {
     adaptiveIcon: {
       backgroundColor: "#000000",
-      foregroundImage: "./assets/images/app-icon.jpg",
+      foregroundImage: "./assets/images/app-icon.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
@@ -80,7 +80,7 @@ const config: ExpoConfig = {
   web: {
     bundler: "metro",
     output: "static",
-    favicon: "./assets/images/app-icon.jpg",
+    favicon: "./assets/images/app-icon.png",
   },
   plugins: [
     "expo-router",
@@ -100,7 +100,7 @@ const config: ExpoConfig = {
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/app-icon.jpg",
+        image: "./assets/images/app-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
         backgroundColor: "#000000",
@@ -118,6 +118,8 @@ const config: ExpoConfig = {
         },
       },
     ],
+    "expo-font",
+    "expo-web-browser"
   ],
   experiments: {
     typedRoutes: true,

@@ -130,9 +130,9 @@ export default function TabLayout() {
         onPress={() => setUrgeModalVisible(true)}
         style={({ pressed }) => ({
           position: 'absolute', right: 20, bottom: insets.bottom + 70,
-          backgroundColor: colors.urge, width: 56, height: 56,
+          backgroundColor: colors.error, width: 56, height: 56,
           borderRadius: 28, alignItems: 'center', justifyContent: 'center',
-          shadowColor: colors.urge, shadowOffset: { width: 0, height: 4 },
+          shadowColor: colors.error, shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
           opacity: pressed ? 0.8 : 1, zIndex: 100,
         })}

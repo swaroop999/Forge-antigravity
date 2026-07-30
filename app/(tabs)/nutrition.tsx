@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
+import { Check } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, TextInput, Alert , RefreshControl} from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';

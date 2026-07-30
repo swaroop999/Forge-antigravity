@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Check } from 'lucide-react-native';
 import {
   ScrollView, View, Text, Pressable, TextInput, Alert, Modal,
   RefreshControl, FlatList,
