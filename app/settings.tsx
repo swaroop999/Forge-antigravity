@@ -7,8 +7,9 @@ import { useColorScheme } from 'nativewind';
 import { router } from 'expo-router';
 import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, CheckCircle, Database, Download, Upload, Calendar, AlertTriangle, X } from 'lucide-react-native';
 import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
-import { useForgeStore } from '@/lib/store/app-store';
-import { exportToJSON, pickAndParseBackupFile, getLastBackupDate, getBackupStats, BackupFile } from '@/lib/backup';
+import { exportToJSON, pickAndParseBackupFile, getLastBackupDate, getBackupStats, BackupFile, importFromJSON } from '@/lib/backup';
+import { Card } from '@/components/ui/card';
+
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -22,7 +23,6 @@ export default function SettingsScreen() {
   const [isTesting, setIsTesting] = useState(false);
 
   // Backup & Restore
-  const { state: forgeState, dispatch } = useForgeStore();
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importData, setImportData] = useState<BackupFile | null>(null);
@@ -74,7 +74,7 @@ export default function SettingsScreen() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await exportToJSON(forgeState);
+      await exportToJSON();
       const date = await getLastBackupDate();
       setLastBackup(date);
       Alert.alert('Success', 'Data exported successfully.');
@@ -97,18 +97,16 @@ export default function SettingsScreen() {
     }
   };
 
-  const confirmImport = () => {
+  const confirmImport = async () => {
     if (!importData) return;
-    
-    if (importMode === 'replace') {
-      dispatch({ type: 'REPLACE_STATE', payload: importData.data });
-    } else {
-      dispatch({ type: 'MERGE_STATE', payload: importData.data });
+    try {
+      await importFromJSON(importData.data, importMode);
+      setShowImportModal(false);
+      setImportData(null);
+      Alert.alert('Success', 'Data imported successfully.');
+    } catch (e: any) {
+      Alert.alert('Import Failed', e.message || 'An error occurred during import.');
     }
-    
-    setShowImportModal(false);
-    setImportData(null);
-    Alert.alert('Success', 'Data imported successfully.');
   };
 
   const handleReset = () => {
@@ -121,24 +119,23 @@ export default function SettingsScreen() {
           text: 'Delete Everything', 
           style: 'destructive',
           onPress: async () => {
-            const keys = await AsyncStorage.getAllKeys();
-            await AsyncStorage.multiRemove(keys);
+            const allKeys = await AsyncStorage.getAllKeys();
+            const keysToKeep = [
+              'gemini_api_key', 
+              'gemini_model', 
+              'gemini_usage_stats', 
+              'gemini_last_usage_date', 
+              'forge_last_backup_date', 
+              'color_scheme'
+            ];
+            const keysToRemove = allKeys.filter(k => !keysToKeep.includes(k));
+            await AsyncStorage.multiRemove(keysToRemove);
             Alert.alert('Reset Complete', 'All progress has been erased. Time to rebuild.');
           }
         }
       ]
     );
   };
-
-  const Card = ({ children, title, icon: Icon, color }: any) => (
-    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
-        {Icon && <Icon size={20} color={color || colors.primary} />}
-        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
 
   return (
     <ScreenContainer>
@@ -179,11 +176,6 @@ export default function SettingsScreen() {
             }}
           />
 
-          {/* Model
-            Alternatives (type one of these to switch):
-              gemini-2.5-flash-lite  — higher free-tier quota, lower quality
-              gemini-2.5-pro         — strongest reasoning, lower quota
-          */}
           <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>Gemini Model</Text>
           <TextInput
             value={geminiModel}
@@ -394,7 +386,7 @@ export default function SettingsScreen() {
                     <Text style={{ fontWeight: '700' }}>Created:</Text> {new Date(importData.metadata.exportDate).toLocaleDateString()}
                   </Text>
                   <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 12 }}>
-                    Contains: {stats.tasks} tasks, {stats.meals} meals, {stats.habits} habits, {stats.skincare} skincare routines, {stats.dopamine} dopamine entries.
+                    Contains: {stats.tasks} daily logs, {stats.meals} workouts, {stats.habits} habits, {stats.skincare} journal entries.
                   </Text>
 
                   <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>

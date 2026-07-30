@@ -8,9 +8,8 @@ import {
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { AppRepo, WorkoutRepo, DailyLogRepo, type WorkoutLog } from '@/lib/db/database';
+import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Tab = 'workout' | 'program' | 'library' | 'progress' | 'posture' | 'priority';
 
@@ -509,7 +508,7 @@ function TrainingProgress() {
 
   useEffect(() => {
     WorkoutRepo.getLast(30).then(setWorkouts);
-    AsyncStorage.getItem('forge_measurements').then(s => { if (s) setMeasurements(JSON.parse(s)); });
+    TrainingRepo.getMeasurements().then(setMeasurements);
   }, []);
 
   const weeklyCount = workouts.filter(w => {
@@ -554,7 +553,7 @@ function TrainingProgress() {
                 onChangeText={(v) => {
                   const newM = { ...measurements, [field]: v };
                   setMeasurements(newM);
-                  AsyncStorage.setItem('forge_measurements', JSON.stringify(newM));
+                  TrainingRepo.setMeasurements(newM);
                 }}
                 keyboardType="decimal-pad"
                 placeholder="—"

@@ -84,18 +84,14 @@ export default function AICoachScreen() {
       const startDate = await AppRepo.getStartDate();
       const { phase, dayNumber } = startDate ? AppRepo.calcPhaseAndDay(startDate) : { phase: 1 as const, dayNumber: 1 };
       const profile = await ProfileRepo.get();
-      const mockState = {
-        appState: { dayNumber, currentPhase: phase },
+      const contextData = {
         userProfile: profile,
-        mealEntries: [],
-        dailyTasks: [],
-        skincareRoutines: [],
-        habitEntries: [],
-        journalEntries: [],
-        dopamineEntries: []
-      } as any;
+        dayNumber: dayNumber,
+        currentPhase: phase,
+        recentMeals: [],
+      };
       const contextStr = `[FORGE CONTEXT - Day ${dayNumber}, Phase ${phase}]`;
-      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, mockState);
+      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, contextData);
       const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'ai', content: response, timestamp: Date.now() };
       const updated = [...newMsgs, aiMsg];
       setMessages(updated);

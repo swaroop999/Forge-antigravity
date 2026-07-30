@@ -4,7 +4,14 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ForgeState } from '@/lib/store/app-store';
+import { UserProfile } from '@/lib/db/database';
+
+export interface AiContextData {
+  userProfile: UserProfile | null;
+  dayNumber: number;
+  currentPhase: number;
+  recentMeals: { calories: number }[];
+}
 
 export interface GeminiMessage {
   role: 'user' | 'model';
@@ -49,15 +56,15 @@ export class GeminiService {
   /**
    * Build system prompt with dynamic user data
    */
-  buildSystemPrompt(appState: ForgeState): string {
-    const profile = appState.userProfile;
-    const currentDay = appState.appState.dayNumber;
-    const currentPhase = appState.appState.currentPhase;
+  buildSystemPrompt(contextData: AiContextData): string {
+    const profile = contextData.userProfile;
+    const currentDay = contextData.dayNumber;
+    const currentPhase = contextData.currentPhase;
 
     // Calculate averages from recent data
-    const recentMeals = appState.mealEntries.slice(-56); // Last 8 days
+    const recentMeals = contextData.recentMeals.slice(-56); // Last 8 days
     const avgCalories = recentMeals.length > 0
-      ? Math.round(recentMeals.reduce((sum, m) => sum + m.calories, 0) / Math.ceil(recentMeals.length / 8))
+      ? Math.round(recentMeals.reduce((sum: number, m: { calories: number }) => sum + m.calories, 0) / Math.ceil(recentMeals.length / 8))
       : 2700;
 
     const systemPrompt = `You are FORGE AI Coach — the personal transformation coach for a specific user.
@@ -120,13 +127,13 @@ RESPONSE RULES:
   /**
    * Send a message to Gemini API
    */
-  async sendMessage(userMessage: string, appState: ForgeState): Promise<string> {
+  async sendMessage(userMessage: string, contextData: AiContextData): Promise<string> {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
     }
 
-    const systemPrompt = this.buildSystemPrompt(appState);
+    const systemPrompt = this.buildSystemPrompt(contextData);
 
     const requestBody = {
       contents: [

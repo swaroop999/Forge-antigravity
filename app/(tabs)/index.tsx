@@ -8,7 +8,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  AppRepo, DailyLogRepo, ProfileRepo, HabitRepo, WorkoutRepo,
+  AppRepo, DailyLogRepo, ProfileRepo, HabitRepo, WorkoutRepo, MilestoneRepo,
   type DailyLog, type UserProfile,
 } from '@/lib/db/database';
 import {
@@ -204,12 +204,12 @@ export default function DashboardScreen() {
     setWeeklyData(pcts.reverse());
 
     // Milestones
-    const storedMs = await AsyncStorage.getItem('forge_milestones');
-    if (storedMs) setMilestones(JSON.parse(storedMs));
+    const msList = await MilestoneRepo.getAll();
+    if (msList.length > 0) setMilestones(msList);
     else {
       const ms = DEFAULT_MILESTONES.map(m => ({ ...m, completed: false }));
       setMilestones(ms);
-      await AsyncStorage.setItem('forge_milestones', JSON.stringify(ms));
+      await MilestoneRepo.save(ms);
     }
   }, []);
 

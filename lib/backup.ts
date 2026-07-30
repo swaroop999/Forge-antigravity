@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { ForgeState } from './store/app-store';
 
 const BACKUP_KEY = 'forge_last_backup_date';
 
@@ -15,18 +14,26 @@ export interface BackupMetadata {
 
 export interface BackupFile {
   metadata: BackupMetadata;
-  data: ForgeState;
+  data: [string, string][]; // Key-value pairs from AsyncStorage
 }
 
-export async function exportToJSON(state: ForgeState): Promise<boolean> {
+export async function exportToJSON(): Promise<boolean> {
   try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    // Exclude Gemini API key and model from export to protect privacy and device-specific config
+    const keysToExport = allKeys.filter(k => !k.startsWith('gemini_') && k !== BACKUP_KEY);
+    const storeData = await AsyncStorage.multiGet(keysToExport);
+    
+    // Filter out any null values to satisfy the [string, string][] type
+    const validData = storeData.filter((pair): pair is [string, string] => pair[1] !== null);
+
     const backupData: BackupFile = {
       metadata: {
         exportDate: new Date().toISOString(),
         appVersion: '1.0.0',
-        dataVersion: 1,
+        dataVersion: 2, // Bumped to 2 for the new AsyncStorage based backup
       },
-      data: state,
+      data: validData,
     };
     
     const jsonString = JSON.stringify(backupData, null, 2);
@@ -65,7 +72,6 @@ export async function pickAndParseBackupFile(): Promise<BackupFile | null> {
     let jsonString = '';
 
     if (Platform.OS === 'web') {
-      // Create hidden file input for web
       const file = await new Promise<File | null>((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -74,8 +80,6 @@ export async function pickAndParseBackupFile(): Promise<BackupFile | null> {
           const target = e.target as HTMLInputElement;
           resolve(target.files?.[0] || null);
         };
-        // Note: oncancel doesn't work reliably across all browsers,
-        // but since it's a fallback it's mostly fine.
         input.click();
       });
 
@@ -107,25 +111,59 @@ function validateBackupData(jsonString: string): BackupFile {
     if (!parsed.metadata || !parsed.data) {
       throw new Error('This file is missing required data.');
     }
-    if (!parsed.data.appState) {
+    // Check if it's the old corrupted state format and fail gracefully or migrate if we cared
+    if (parsed.data.appState !== undefined) {
+      throw new Error('This is an old incompatible backup file that contains no real data.');
+    }
+    if (!Array.isArray(parsed.data)) {
       throw new Error('This backup file appears to be corrupted.');
     }
     return parsed as BackupFile;
   } catch (e: any) {
     if (e.name === 'SyntaxError') {
-      throw new Error('This file is not a valid backup file.');
+      throw new Error('This file is not a valid JSON backup file.');
     }
     throw e;
   }
 }
 
-export function getBackupStats(data: ForgeState) {
+export async function importFromJSON(data: [string, string][], mode: 'replace' | 'merge'): Promise<void> {
+  if (mode === 'replace') {
+    // Clear all app keys first, keeping gemini settings
+    const allKeys = await AsyncStorage.getAllKeys();
+    const keysToKeep = ['gemini_api_key', 'gemini_model', 'gemini_usage_stats', 'gemini_last_usage_date', BACKUP_KEY, 'color_scheme'];
+    const keysToRemove = allKeys.filter(k => !keysToKeep.includes(k));
+    await AsyncStorage.multiRemove(keysToRemove);
+  }
+  
+  // Then load everything from the backup
+  await AsyncStorage.multiSet(data);
+}
+
+export function getBackupStats(data: [string, string][]) {
+  let dailyLogs = 0;
+  let workouts = 0;
+  let habits = 0;
+  let journal = 0;
+  
+  data.forEach(([key, value]) => {
+    if (key.startsWith('forge_daily_')) dailyLogs++;
+    else if (key === 'forge_workout_logs') {
+      try { workouts = JSON.parse(value).length; } catch { workouts = 1; }
+    }
+    else if (key === 'forge_habit_history') {
+      try { habits = JSON.parse(value).length; } catch { habits = 1; }
+    }
+    else if (key === 'forge_journal_entries') {
+      try { journal = JSON.parse(value).length; } catch { journal = 1; }
+    }
+  });
+
   return {
-    tasks: data.dailyTasks?.length || 0,
-    meals: data.mealEntries?.length || 0,
-    habits: data.habitEntries?.length || 0,
-    skincare: data.skincareRoutines?.length || 0,
-    dopamine: data.dopamineEntries?.length || 0,
+    tasks: dailyLogs,
+    meals: workouts, // Using 'meals' to map to the UI's workouts text due to previous terminology, or we can just change settings.tsx to say workouts
+    habits: habits,
+    skincare: journal, // mapping journal entries to skincare for UI compatibility
   };
 }
 

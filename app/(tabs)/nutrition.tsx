@@ -5,9 +5,8 @@ import { ScrollView, View, Text, Pressable, TextInput, Alert , RefreshControl} f
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { DailyLogRepo } from '@/lib/db/database';
+import { DailyLogRepo, NutritionRepo, GroceriesRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Tab = 'meals' | 'mealplan' | 'supplements' | 'water' | 'groceries';
 const TABS = [
@@ -34,7 +33,7 @@ function TodaysMeals() {
         try { setMealsDone(JSON.parse(log.mealsJson)); } catch {}
       }
     });
-    AsyncStorage.getItem('junk_count_' + today).then(v => { if (v) setJunkCount(parseInt(v)); });
+    NutritionRepo.getJunkCount(today).then(setJunkCount);
   }, []);
 
   const toggleMeal = async (id: string) => {
@@ -97,7 +96,7 @@ function TodaysMeals() {
           <Pressable onPress={() => {
             const n = junkCount + 1;
             setJunkCount(n);
-            AsyncStorage.setItem('junk_count_' + today, n.toString());
+            NutritionRepo.setJunkCount(today, n);
           }} style={{ backgroundColor: colors.warning, borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 8 }}>
             <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Mark Cheat Meal Used</Text>
           </Pressable>
@@ -236,7 +235,7 @@ function SupplementsScreen() {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    AsyncStorage.getItem('supps_' + today).then(s => { if (s) setChecked(JSON.parse(s)); });
+    NutritionRepo.getSupplements(today).then(setChecked);
   }, []);
 
   const toggle = async (id: string) => {
@@ -244,7 +243,7 @@ function SupplementsScreen() {
     const n = { ...checked, [id]: !checked[id] };
     setChecked(n);
     const today = new Date().toISOString().split('T')[0];
-    await AsyncStorage.setItem('supps_' + today, JSON.stringify(n));
+    await NutritionRepo.setSupplements(today, n);
   };
 
   const filtered = SUPPLEMENTS.filter(s => s.phase <= phase);
@@ -416,19 +415,19 @@ function GroceriesScreen() {
   };
 
   useEffect(() => {
-    AsyncStorage.getItem('groceries_checked').then(s => { if (s) setChecked(JSON.parse(s)); });
+    GroceriesRepo.getGroceries().then(setChecked);
   }, []);
 
   const toggle = async (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checked, [key]: !checked[key] };
     setChecked(n);
-    await AsyncStorage.setItem('groceries_checked', JSON.stringify(n));
+    await GroceriesRepo.setGroceries(n);
   };
 
   const clearAll = async () => {
     setChecked({});
-    await AsyncStorage.setItem('groceries_checked', '{}');
+    await GroceriesRepo.setGroceries({});
   };
 
   return (

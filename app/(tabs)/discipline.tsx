@@ -5,8 +5,7 @@ import { ScrollView, View, Text, Pressable, TextInput, Alert, Dimensions , Refre
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DailyLogRepo } from '@/lib/db/database';
+import { DailyLogRepo, DisciplineRepo, MilestoneRepo } from '@/lib/db/database';
 import { HABITS, KNOWLEDGE_ARTICLES, DEFAULT_MILESTONES, type Habit } from '@/lib/db/seeds';
 
 const { width } = Dimensions.get('window');
@@ -31,14 +30,14 @@ function HabitsScreen() {
   const isWeekend = [0, 6].includes(new Date().getDay());
 
   useEffect(() => {
-    AsyncStorage.getItem('habits_' + todayStr).then(s => { if (s) setDone(JSON.parse(s)); });
+    DisciplineRepo.getHabits(todayStr).then(setDone);
   }, []);
 
   const toggle = async (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...done, [id]: !done[id] };
     setDone(n);
-    await AsyncStorage.setItem('habits_' + todayStr, JSON.stringify(n));
+    await DisciplineRepo.setHabits(todayStr, n);
   };
 
   const categories = ['sleep', 'dopamine', 'nutrition', 'training', 'appearance'] as const;
@@ -105,16 +104,16 @@ function DopamineResetScreen() {
   const [socialStreak, setSocialStreak] = useState(0);
 
   useEffect(() => {
-    AsyncStorage.getItem('streak_porn').then(s => { if (s) setPornStreak(parseInt(s)); });
-    AsyncStorage.getItem('streak_social').then(s => { if (s) setSocialStreak(parseInt(s)); });
+    DisciplineRepo.getStreakPorn().then(setPornStreak);
+    DisciplineRepo.getStreakSocial().then(setSocialStreak);
   }, []);
 
   const resetStreak = (type: 'porn' | 'social') => {
     Alert.alert('Reset Streak', `Are you sure you want to reset your ${type} streak?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Reset (I Relapsed)', style: 'destructive', onPress: async () => {
-        if (type === 'porn') { setPornStreak(0); await AsyncStorage.setItem('streak_porn', '0'); }
-        else { setSocialStreak(0); await AsyncStorage.setItem('streak_social', '0'); }
+        if (type === 'porn') { setPornStreak(0); await DisciplineRepo.setStreakPorn(0); }
+        else { setSocialStreak(0); await DisciplineRepo.setStreakSocial(0); }
       }}
     ]);
   };
@@ -123,11 +122,11 @@ function DopamineResetScreen() {
     if (type === 'porn') {
       const n = pornStreak + 1;
       setPornStreak(n);
-      await AsyncStorage.setItem('streak_porn', n.toString());
+      await DisciplineRepo.setStreakPorn(n);
     } else {
       const n = socialStreak + 1;
       setSocialStreak(n);
-      await AsyncStorage.setItem('streak_social', n.toString());
+      await DisciplineRepo.setStreakSocial(n);
     }
   };
 
@@ -195,19 +194,16 @@ function JournalScreen() {
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    AsyncStorage.getItem('journal_' + today).then(s => { if (s) { setEntry(s); setSaved(true); } });
+    DisciplineRepo.getJournalReflection(today).then(s => { if (s) { setEntry(s); setSaved(true); } });
     
     // Load history
     const loadHistory = async () => {
       try {
-        const keys = await AsyncStorage.getAllKeys();
-        const journalKeys = keys.filter(k => k.startsWith('journal_') && k !== 'journal_' + today);
-        const stores = await AsyncStorage.multiGet(journalKeys);
-        const entries = stores.map(([key, val]) => ({
-          date: key.replace('journal_', ''),
-          content: val || ''
-        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setHistory(entries);
+        const entries = await DisciplineRepo.getAllJournalReflections();
+        const filtered = entries
+          .filter(e => e.date !== today)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setHistory(filtered);
       } catch (e) {}
     };
     loadHistory();
@@ -215,7 +211,7 @@ function JournalScreen() {
 
   const saveEntry = async () => {
     if (!entry.trim()) return;
-    await AsyncStorage.setItem('journal_' + today, entry);
+    await DisciplineRepo.setJournalReflection(today, entry);
     setSaved(true);
     Alert.alert('Saved', 'Journal entry saved for today.');
   };
@@ -277,8 +273,8 @@ function MilestonesScreen() {
   const [milestones, setMilestones] = useState(DEFAULT_MILESTONES.map(m => ({ ...m, completed: false })));
 
   useEffect(() => {
-    AsyncStorage.getItem('forge_milestones').then(s => {
-      if (s) setMilestones(JSON.parse(s));
+    MilestoneRepo.getAll().then(ms => {
+      if (ms && ms.length > 0) setMilestones(ms);
     });
   }, []);
 
@@ -286,7 +282,7 @@ function MilestonesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const ms = milestones.map(m => m.id === id ? { ...m, completed: !m.completed } : m);
     setMilestones(ms);
-    await AsyncStorage.setItem('forge_milestones', JSON.stringify(ms));
+    await MilestoneRepo.save(ms);
   };
 
   const phases = [

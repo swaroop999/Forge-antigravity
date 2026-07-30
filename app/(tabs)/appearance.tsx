@@ -5,8 +5,7 @@ import { ScrollView, View, Text, Pressable, Alert , RefreshControl} from "react-
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DailyLogRepo } from '@/lib/db/database';
+import { DailyLogRepo, AppearanceRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION } from '@/lib/db/seeds';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'grooming' | 'bodycare' | 'style' | 'looksmax' | 'facelog';
@@ -35,24 +34,29 @@ function SkincareScreen() {
   const [pmStreak, setPmStreak] = useState(0);
 
   useEffect(() => {
-    AsyncStorage.getItem('skincare_am_' + today).then(s => { if (s) setAmDone(JSON.parse(s)); });
-    AsyncStorage.getItem('skincare_pm_' + today).then(s => { if (s) setPmDone(JSON.parse(s)); });
+    AppearanceRepo.getSkincareAM(today).then(setAmDone);
+    AppearanceRepo.getSkincarePM(today).then(setPmDone);
 
     const fetchStreaks = async () => {
+      const logs = await DailyLogRepo.getAll();
+      const logsMap = new Map(logs.map(log => [log.date, log]));
+      
       let amCount = 0;
       let pmCount = 0;
+      
       for (let i = 0; i < 365; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
-        const log = await DailyLogRepo.getForDate(dateStr);
+        const log = logsMap.get(dateStr);
         if (log && log.skincareAM) amCount++; else if (i !== 0) break;
       }
+      
       for (let i = 0; i < 365; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
-        const log = await DailyLogRepo.getForDate(dateStr);
+        const log = logsMap.get(dateStr);
         if (log && log.skincarePM) pmCount++; else if (i !== 0) break;
       }
       setAmStreak(amCount);
@@ -65,7 +69,7 @@ function SkincareScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...amDone, [step]: !amDone[step] };
     setAmDone(n);
-    await AsyncStorage.setItem('skincare_am_' + today, JSON.stringify(n));
+    await AppearanceRepo.setSkincareAM(today, n);
     // Update daily log
     const amComplete = SKINCARE_AM.every((_, i) => n[i]);
     let log = await DailyLogRepo.getForDate(today);
@@ -78,7 +82,7 @@ function SkincareScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...pmDone, [step]: !pmDone[step] };
     setPmDone(n);
-    await AsyncStorage.setItem('skincare_pm_' + today, JSON.stringify(n));
+    await AppearanceRepo.setSkincarePM(today, n);
     const pmComplete = SKINCARE_PM.every((_, i) => n[i]);
     let log = await DailyLogRepo.getForDate(today);
     if (!log) log = await DailyLogRepo.getDefault(today, []);
@@ -202,7 +206,7 @@ function TanRemovalScreen() {
   const [showAssess, setShowAssess] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem('tan_assessment').then(s => { if (s) setAssessment(JSON.parse(s)); });
+    AppearanceRepo.getTanAssessment().then(setAssessment);
   }, []);
 
   const bodyParts = ['Face', 'Neck', 'Arms', 'Hands', 'Legs', 'Feet'];
@@ -299,14 +303,14 @@ function HairCareScreen() {
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    AsyncStorage.getItem('minox_' + today).then(s => { if (s) setMinoxDone(JSON.parse(s)); });
+    AppearanceRepo.getMinox(today).then(setMinoxDone);
   }, []);
 
   const toggleMinox = async (slot: 'am' | 'pm') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...minoxDone, [slot]: !minoxDone[slot] };
     setMinoxDone(n);
-    await AsyncStorage.setItem('minox_' + today, JSON.stringify(n));
+    await AppearanceRepo.setMinox(today, n);
   };
 
   const hairWashSchedule = ['Mon', 'Wed', 'Sat'];
@@ -418,14 +422,14 @@ function GroomingScreen() {
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    AsyncStorage.getItem('grooming_' + today).then(s => { if (s) setDone(JSON.parse(s)); });
+    AppearanceRepo.getGrooming(today).then(setDone);
   }, []);
 
   const toggle = async (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...done, [key]: !done[key] };
     setDone(n);
-    await AsyncStorage.setItem('grooming_' + today, JSON.stringify(n));
+    await AppearanceRepo.setGrooming(today, n);
   };
 
   const daily = ['Brush teeth (2 min, AM + PM)', 'Floss (PM)', 'Apply lip balm', 'Wash face (PM cleanser)', 'Hair styled with paste/clay (if going out)', 'Deodorant applied', 'Clean nails check'];
@@ -531,14 +535,14 @@ function StyleScreen() {
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    AsyncStorage.getItem('wardrobe_checklist').then(s => { if (s) setChecklist(JSON.parse(s)); });
+    AppearanceRepo.getWardrobeChecklist().then(setChecklist);
   }, []);
 
   const toggle = async (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checklist, [key]: !checklist[key] };
     setChecklist(n);
-    await AsyncStorage.setItem('wardrobe_checklist', JSON.stringify(n));
+    await AppearanceRepo.setWardrobeChecklist(n);
   };
 
   const essentials = [
@@ -703,7 +707,7 @@ function FaceLogScreen() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    AsyncStorage.getItem('face_ratings').then(s => { if (s) setRatings(JSON.parse(s)); });
+    AppearanceRepo.getFaceRatings().then(setRatings);
   }, []);
 
   const metrics = [
@@ -718,7 +722,7 @@ function FaceLogScreen() {
   const setRating = async (id: string, val: number) => {
     const n = { ...ratings, [id]: val };
     setRatings(n);
-    await AsyncStorage.setItem('face_ratings', JSON.stringify(n));
+    await AppearanceRepo.setFaceRatings(n);
   };
 
   return (

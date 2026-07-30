@@ -151,7 +151,7 @@ export interface Purchase {
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
-const KEYS = {
+export const KEYS = {
   USER_PROFILE: 'forge_user_profile',
   DAILY_LOG_PREFIX: 'forge_daily_',
   WORKOUT_LOGS: 'forge_workout_logs',
@@ -256,6 +256,16 @@ export const DailyLogRepo = {
     }
     return logs;
   },
+  async getAll(): Promise<DailyLog[]> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const dailyKeys = keys.filter(k => k.startsWith(KEYS.DAILY_LOG_PREFIX));
+      const stores = await AsyncStorage.multiGet(dailyKeys);
+      return stores.map(([k, v]) => v ? JSON.parse(v) : null).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
 };
 
 // ─── Workout Logs ─────────────────────────────────────────────────────────────
@@ -481,5 +491,138 @@ export const AppRepo = {
     const dayNumber = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
     const phase: 1 | 2 | 3 = dayNumber <= 30 ? 1 : dayNumber <= 90 ? 2 : 3;
     return { phase, dayNumber };
+  },
+};
+
+// ─── Centralized Wrappers for Tab Components ────────────────────────────────────
+
+export const AppearanceRepo = {
+  async getSkincareAM(date: string): Promise<Record<number, boolean>> {
+    return (await getItem<Record<number, boolean>>(`skincare_am_${date}`)) ?? {};
+  },
+  async setSkincareAM(date: string, value: Record<number, boolean>): Promise<void> {
+    await setItem(`skincare_am_${date}`, value);
+  },
+  async getSkincarePM(date: string): Promise<Record<number, boolean>> {
+    return (await getItem<Record<number, boolean>>(`skincare_pm_${date}`)) ?? {};
+  },
+  async setSkincarePM(date: string, value: Record<number, boolean>): Promise<void> {
+    await setItem(`skincare_pm_${date}`, value);
+  },
+  async getTanAssessment(): Promise<Record<string, number>> {
+    return (await getItem<Record<string, number>>('tan_assessment')) ?? {};
+  },
+  async setTanAssessment(value: Record<string, number>): Promise<void> {
+    await setItem('tan_assessment', value);
+  },
+  async getMinox(date: string): Promise<{ am: boolean; pm: boolean }> {
+    return (await getItem<{ am: boolean; pm: boolean }>(`minox_${date}`)) ?? { am: false, pm: false };
+  },
+  async setMinox(date: string, value: { am: boolean; pm: boolean }): Promise<void> {
+    await setItem(`minox_${date}`, value);
+  },
+  async getGrooming(date: string): Promise<Record<string, boolean>> {
+    return (await getItem<Record<string, boolean>>(`grooming_${date}`)) ?? {};
+  },
+  async setGrooming(date: string, value: Record<string, boolean>): Promise<void> {
+    await setItem(`grooming_${date}`, value);
+  },
+  async getWardrobeChecklist(): Promise<Record<string, boolean>> {
+    return (await getItem<Record<string, boolean>>('wardrobe_checklist')) ?? {};
+  },
+  async setWardrobeChecklist(value: Record<string, boolean>): Promise<void> {
+    await setItem('wardrobe_checklist', value);
+  },
+  async getFaceRatings(): Promise<Record<string, number>> {
+    return (await getItem<Record<string, number>>('face_ratings')) ?? {};
+  },
+  async setFaceRatings(value: Record<string, number>): Promise<void> {
+    await setItem('face_ratings', value);
+  },
+};
+
+export const DisciplineRepo = {
+  async getHabits(date: string): Promise<Record<string, boolean>> {
+    return (await getItem<Record<string, boolean>>(`habits_${date}`)) ?? {};
+  },
+  async setHabits(date: string, value: Record<string, boolean>): Promise<void> {
+    await setItem(`habits_${date}`, value);
+  },
+  async getStreakPorn(): Promise<number> {
+    return (await getItem<number>('streak_porn')) ?? 0;
+  },
+  async setStreakPorn(value: number): Promise<void> {
+    await setItem('streak_porn', value);
+  },
+  async getStreakSocial(): Promise<number> {
+    return (await getItem<number>('streak_social')) ?? 0;
+  },
+  async setStreakSocial(value: number): Promise<void> {
+    await setItem('streak_social', value);
+  },
+  async getJournalReflection(date: string): Promise<string> {
+    const val = await AsyncStorage.getItem(`journal_${date}`);
+    if (!val) return '';
+    try {
+      return JSON.parse(val);
+    } catch {
+      return val;
+    }
+  },
+  async setJournalReflection(date: string, value: string): Promise<void> {
+    await AsyncStorage.setItem(`journal_${date}`, value); // store as raw string like before to avoid breaking changes
+  },
+  async getAllJournalReflections(): Promise<{ date: string; content: string }[]> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const journalKeys = keys.filter(k => k.startsWith('journal_'));
+      const stores = await AsyncStorage.multiGet(journalKeys);
+      return stores.map(([key, val]) => {
+        let content = '';
+        if (val) {
+          try { content = JSON.parse(val); } catch { content = val; }
+        }
+        return {
+          date: key.replace('journal_', ''),
+          content
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+};
+
+export const NutritionRepo = {
+  async getJunkCount(date: string): Promise<number> {
+    return (await getItem<number>(`junk_count_${date}`)) ?? 0;
+  },
+  async setJunkCount(date: string, value: number): Promise<void> {
+    await setItem(`junk_count_${date}`, value);
+  },
+  async getSupplements(date: string): Promise<Record<string, boolean>> {
+    return (await getItem<Record<string, boolean>>(`supplements_${date}`)) ?? {};
+  },
+  async setSupplements(date: string, value: Record<string, boolean>): Promise<void> {
+    await setItem(`supplements_${date}`, value);
+  },
+};
+
+
+export const GroceriesRepo = {
+  async getGroceries(): Promise<Record<string, boolean>> {
+    return (await getItem<Record<string, boolean>>('groceries_checked')) ?? {};
+  },
+  async setGroceries(value: Record<string, boolean>): Promise<void> {
+    await setItem('groceries_checked', value);
+  },
+};
+
+export const TrainingRepo = {
+  async getMeasurements(): Promise<Record<string, number>> {
+    return (await getItem<Record<string, number>>('forge_measurements')) ?? {};
+  },
+  async setMeasurements(value: Record<string, number>): Promise<void> {
+    await setItem('forge_measurements', value);
   },
 };
