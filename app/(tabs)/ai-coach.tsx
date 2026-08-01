@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ScrollView, View, Text, Pressable, TextInput, FlatList,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '@/components/screen-container';
@@ -34,6 +34,14 @@ export default function AICoachScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => { loadApiKey(); }, []);
+
+  // Scroll to end when keyboard opens so input + latest message are visible
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    return () => sub.remove();
+  }, []);
 
   const loadApiKey = async () => {
     try {
@@ -136,7 +144,7 @@ export default function AICoachScreen() {
             onPress={() => router.push('/settings')}
             style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 24 }}
           >
-            <Text style={{ color: colors.background, fontWeight: '700', fontSize: 16 }}>Go to Settings</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>Go to Settings</Text>
           </Pressable>
         </View>
       </ScreenContainer>
@@ -167,7 +175,7 @@ export default function AICoachScreen() {
           data={messages}
           keyExtractor={item => item.id}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -195,7 +203,7 @@ export default function AICoachScreen() {
                 borderColor: colors.border,
               }}>
                 {item.role === 'user' ? (
-                  <Text style={{ color: colors.background, fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 20 }}>
                     {item.content}
                   </Text>
                 ) : (
@@ -203,7 +211,7 @@ export default function AICoachScreen() {
                     {item.content}
                   </Markdown>
                 )}
-                <Text style={{ fontSize: 10, color: item.role === 'user' ? 'rgba(0,0,0,0.4)' : colors.muted, marginTop: 6 }}>
+                <Text style={{ fontSize: 10, color: item.role === 'user' ? 'rgba(255,255,255,0.75)' : colors.muted, marginTop: 6 }}>
                   {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
@@ -259,7 +267,7 @@ export default function AICoachScreen() {
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Send size={18} color={inputText.trim() && !isLoading ? '#000' : colors.muted} />
+            <Send size={18} color={inputText.trim() && !isLoading ? '#FFFFFF' : colors.muted} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

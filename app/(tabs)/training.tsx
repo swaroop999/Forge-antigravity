@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, type WorkoutLog } from '@/lib/db/database';
+import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, NavRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
 
 type Tab = 'workout' | 'program' | 'library' | 'progress' | 'posture' | 'priority';
@@ -33,6 +33,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [workoutStarted, setWorkoutStarted] = useState(false);
   const [workoutComplete, setWorkoutComplete] = useState(false);
+  const [lastCompletedExercise, setLastCompletedExercise] = useState<string | null>(null);
   const today = new Date().toISOString().split('T')[0];
   const STORAGE_KEY = `workout_progress_${today}`;
 
@@ -90,22 +91,39 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
       persistSets(newSets);
       return newSets;
     });
+    setLastCompletedExercise(exerciseId);
     startRestTimer(restSecs);
     setWorkoutStarted(true);
   };
 
-  const undoLastSet = (exerciseId: string) => {
+  const undoLastSet = () => {
+    const targetId = lastCompletedExercise;
+    if (!targetId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSets(prev => {
-      const ex = prev[exerciseId] || { done: 0, weights: [] };
-      if (ex.done <= 0) return prev;
+      const ex = prev[targetId];
+      if (!ex || ex.done <= 0) return prev;
+      const newSets = { ...prev, [targetId]: { ...ex, done: ex.done - 1 } };
+      persistSets(newSets);
+      return newSets;
+    });
+    if (timerInterval) clearInterval(timerInterval);
+    setRestTimer(null);
+    setLastCompletedExercise(null);
+  };
+
+  const undoSetForExercise = (exerciseId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSets(prev => {
+      const ex = prev[exerciseId];
+      if (!ex || ex.done <= 0) return prev;
       const newSets = { ...prev, [exerciseId]: { ...ex, done: ex.done - 1 } };
       persistSets(newSets);
       return newSets;
     });
-    // Cancel rest timer if undoing
     if (timerInterval) clearInterval(timerInterval);
     setRestTimer(null);
+    if (lastCompletedExercise === exerciseId) setLastCompletedExercise(null);
   };
 
   const saveWorkout = async () => {
@@ -171,12 +189,33 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
       {/* Rest Timer */}
       {restTimer !== null && (
         <View style={{ backgroundColor: colors.primary, borderRadius: 12, padding: 14, marginBottom: 16, alignItems: 'center' }}>
-          <Text style={{ color: '#000', fontWeight: '800', fontSize: 24 }}>{restTimer}s</Text>
-          <Text style={{ color: '#000', fontSize: 12, fontWeight: '600' }}>Rest — next set in {restTimer}s</Text>
-          <Pressable onPress={() => { if (timerInterval) clearInterval(timerInterval); setRestTimer(null); }} style={{ marginTop: 8 }}>
-            <Text style={{ color: '#000', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>Skip rest</Text>
-          </Pressable>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 24 }}>{restTimer}s</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>Rest — next set in {restTimer}s</Text>
+          <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
+            <Pressable onPress={() => { if (timerInterval) clearInterval(timerInterval); setRestTimer(null); }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>Skip rest</Text>
+            </Pressable>
+            {lastCompletedExercise && (
+              <Pressable onPress={undoLastSet}>
+                <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>↩ Undo last set</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
+      )}
+
+      {/* Global Undo when no rest timer but a recent set was completed */}
+      {restTimer === null && lastCompletedExercise && !workoutComplete && (
+        <Pressable
+          onPress={undoLastSet}
+          style={({ pressed }) => ({
+            alignSelf: 'center', marginBottom: 12,
+            backgroundColor: colors.error + '20', borderRadius: 8,
+            paddingHorizontal: 14, paddingVertical: 8, opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ color: colors.error, fontWeight: '700', fontSize: 12 }}>↩ Undo last completed set</Text>
+        </Pressable>
       )}
 
       {/* Exercise Cards */}
@@ -187,9 +226,9 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
 
         return (
           <View key={idx} style={{
-            backgroundColor: allDone ? 'rgba(0,217,163,0.08)' : colors.surface,
+            backgroundColor: allDone ? colors.success + '18' : colors.surface,
             borderRadius: 16, padding: 16, marginBottom: 12,
-            borderWidth: 1, borderColor: allDone ? 'rgba(0,217,163,0.4)' : colors.border,
+            borderWidth: 1, borderColor: allDone ? colors.success + '66' : colors.border,
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
               <View style={{ flex: 1 }}>
@@ -202,10 +241,10 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
                 {ex.notes && <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{ex.notes}</Text>}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {/* Undo button — shown when at least 1 set completed */}
-                {exSets.done > 0 && !allDone && (
+                {/* Undo button — shown whenever this exercise has at least 1 completed set */}
+                {exSets.done > 0 && (
                   <Pressable
-                    onPress={() => undoLastSet(ex.exerciseId)}
+                    onPress={() => undoSetForExercise(ex.exerciseId)}
                     style={({ pressed }) => ({
                       backgroundColor: colors.error + '20',
                       borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
@@ -246,7 +285,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
                     opacity: pressed ? 0.8 : 1,
                   })}
                 >
-                  <Text style={{ color: si < exSets.done ? '#000' : si === exSets.done ? '#000' : colors.muted, fontWeight: '700', fontSize: 12 }}>
+                  <Text style={{ color: si < exSets.done ? '#FFFFFF' : si === exSets.done ? '#FFFFFF' : colors.muted, fontWeight: '700', fontSize: 12 }}>
                     {si < exSets.done ? '✓' : `S${si + 1}`}
                   </Text>
                 </Pressable>
@@ -265,7 +304,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
             alignItems: 'center', marginTop: 8, opacity: pressed ? 0.8 : 1,
           })}
         >
-          <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>✓ Complete Workout</Text>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>✓ Complete Workout</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -376,43 +415,40 @@ function ProgramOverview({ phase }: { phase: number }) {
 function ExerciseVisual({ exercise }: { exercise: Exercise }) {
   const colors = useColors();
   const [frame, setFrame] = useState(0);
-  const animValue = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Build animation frames from category
-  const getFrames = (): string[] => {
-    const cat = exercise.category;
-    if (cat === 'push') {
-      return ['🧍‍♂️ Stand ready', '💪 Lower down', '⬇️ Full depth', '🚀 Push up!', '✅ Full extension'];
-    } else if (cat === 'pull') {
-      return ['🤚 Grip bar', '⬆️ Initiate pull', '💪 Elbows down', '🎯 Chin over bar', '⬇️ Lower slowly'];
-    } else if (cat === 'legs') {
-      return ['🧍‍♂️ Stand tall', '🦵 Bend knees', '⬇️ Lower hips', '💪 Drive up!', '✅ Stand straight'];
-    } else if (cat === 'core') {
-      return ['🧍‍♂️ Start position', '💪 Brace core', '🔥 Engage abs', '⏱ Hold tension', '✅ Release slowly'];
-    } else if (cat === 'posture') {
-      return ['🧍‍♂️ Stand/sit tall', '🎯 Find neutral', '💪 Hold position', '😤 Feel the stretch', '✅ Return slowly'];
-    } else if (cat === 'priority') {
-      return ['🤚 Start position', '⬆️ Initiate lift', '💪 Control peak', '⬇️ Slow return', '🔁 Repeat!'];
-    } else {
-      return ['🧍‍♂️ Start', '💪 Move', '🎯 Mid-point', '😤 Control', '✅ Complete'];
-    }
-  };
+  const PHASE_LABELS = ['Start', 'Mid', 'End'];
 
-  const frames = getFrames();
+  // Per-exercise emoji sequence (start/mid/end); fall back to category default
+  const frames: [string, string, string] = exercise.formEmojiSequence && exercise.formEmojiSequence.length === 3
+    ? exercise.formEmojiSequence
+    : (() => {
+        const cat = exercise.category;
+        if (cat === 'push') return ['🧍', '💪', '✨'];
+        if (cat === 'pull') return ['🙆', '🧗', '✨'];
+        if (cat === 'legs') return ['🧍', '🏋️', '✨'];
+        if (cat === 'core') return ['🛌', '💪', '✨'];
+        if (cat === 'posture') return ['🧍', '🧘', '✨'];
+        return ['🧍', '💪', '✨'];
+      })();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setFrame(prev => (prev + 1) % frames.length);
-    }, 800);
+      setFrame(prev => (prev + 1) % 3);
+    }, 900);
     return () => clearInterval(interval);
-  }, [frames.length]);
+  }, []);
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(animValue, { toValue: 0, duration: 0, useNativeDriver: true }),
-      Animated.timing(animValue, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [frame]);
+    // Pulse on each frame change
+    scaleAnim.setValue(0.85);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 4,
+      tension: 80,
+      useNativeDriver: true,
+    }).start();
+  }, [frame, scaleAnim]);
 
   return (
     <View style={{
@@ -421,45 +457,70 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
       borderWidth: 1, borderColor: colors.primary + '30',
       alignItems: 'center',
     }}>
-      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>FORM ANIMATION</Text>
+      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>FORM VISUAL</Text>
 
       {/* Frame indicator dots */}
       <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
-        {frames.map((_, i) => (
+        {[0, 1, 2].map((i) => (
           <View key={i} style={{
-            width: i === frame ? 20 : 8, height: 8, borderRadius: 4,
+            width: i === frame ? 22 : 8, height: 8, borderRadius: 4,
             backgroundColor: i === frame ? colors.primary : colors.border,
           }} />
         ))}
       </View>
 
-      {/* Animated frame display */}
-      <Animated.View style={{ opacity: animValue }}>
-        <Text style={{ fontSize: 40, marginBottom: 8, textAlign: 'center' }}>
-          {frames[frame].split(' ')[0]}
-        </Text>
-        <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
-          Step {frame + 1} of {frames.length}
-        </Text>
-        <Text style={{ color: colors.primary, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
-          {frames[frame].split(' ').slice(1).join(' ')}
-        </Text>
-      </Animated.View>
-
-      {/* Phase labels */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' }}>
-        {frames.map((f, i) => (
-          <View key={i} style={{
-            backgroundColor: i === frame ? colors.primary + '30' : 'transparent',
-            borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
-            borderWidth: 1, borderColor: i === frame ? colors.primary : colors.border,
-          }}>
-            <Text style={{ color: i === frame ? colors.primary : colors.muted, fontSize: 10, fontWeight: i === frame ? '700' : '400' }}>
-              {f.split(' ').slice(1).join(' ') || `Phase ${i + 1}`}
+      {/* 3-step emoji flow */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        {frames.map((emoji, i) => (
+          <View key={i} style={{ alignItems: 'center' }}>
+            <Animated.View style={i === frame ? { transform: [{ scale: scaleAnim }] } : undefined}>
+              <View style={{
+                width: 60, height: 60, borderRadius: 14,
+                backgroundColor: i === frame ? colors.primary + '25' : colors.surface,
+                borderWidth: i === frame ? 2 : 1,
+                borderColor: i === frame ? colors.primary : colors.border,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: i === frame ? 34 : 24, opacity: i === frame ? 1 : 0.5 }}>
+                  {emoji}
+                </Text>
+              </View>
+            </Animated.View>
+            <Text style={{
+              color: i === frame ? colors.primary : colors.muted,
+              fontSize: 10, fontWeight: i === frame ? '700' : '500',
+              marginTop: 4,
+            }}>
+              {PHASE_LABELS[i]}
             </Text>
           </View>
         ))}
       </View>
+
+      {/* Phase labels row */}
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+        {PHASE_LABELS.map((label, i) => (
+          <View key={i} style={{
+            backgroundColor: i === frame ? colors.primary + '30' : 'transparent',
+            borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4,
+            borderWidth: 1, borderColor: i === frame ? colors.primary : colors.border,
+          }}>
+            <Text style={{
+              color: i === frame ? colors.primary : colors.muted,
+              fontSize: 11, fontWeight: i === frame ? '700' : '400',
+            }}>
+              {label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      {/* First form cue as caption */}
+      {exercise.formCues?.[0] && (
+        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 10, textAlign: 'center', fontStyle: 'italic' }}>
+          💡 {exercise.formCues[0]}
+        </Text>
+      )}
     </View>
   );
 }
@@ -549,7 +610,7 @@ function ExerciseLibrary() {
           {[null, ...categories].map(cat => (
             <Pressable key={cat ?? 'all'} onPress={() => setFilterCategory(cat)}
               style={{ backgroundColor: filterCategory === cat ? colors.primary : colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: filterCategory === cat ? colors.primary : colors.border }}>
-              <Text style={{ color: filterCategory === cat ? '#000' : colors.foreground, fontWeight: '600', fontSize: 12, textTransform: 'capitalize' }}>
+              <Text style={{ color: filterCategory === cat ? '#FFFFFF' : colors.foreground, fontWeight: '600', fontSize: 12, textTransform: 'capitalize' }}>
                 {cat ?? 'All'} {cat === null ? `(${EXERCISES.length})` : `(${EXERCISES.filter(e => e.category === cat).length})`}
               </Text>
             </Pressable>
@@ -603,7 +664,7 @@ function PostureScreen() {
       {postureExercises.map((ex, i) => (
         <Pressable key={ex.id} onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
           style={({ pressed }) => ({
-            backgroundColor: done[ex.id] ? 'rgba(0,217,163,0.08)' : colors.surface,
+            backgroundColor: done[ex.id] ? colors.success + '18' : colors.surface,
             borderRadius: 12, padding: 14, marginBottom: 8,
             borderWidth: 1, borderColor: done[ex.id] ? colors.success + '60' : colors.border,
             flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.8 : 1,
@@ -614,7 +675,7 @@ function PostureScreen() {
             borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.border,
             marginRight: 12, alignItems: 'center', justifyContent: 'center',
           }}>
-            {done[ex.id] && <Check size={14} color="#000" />}
+            {done[ex.id] && <Check size={14} color="#FFFFFF" />}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '700', color: done[ex.id] ? colors.muted : colors.foreground, textDecorationLine: done[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
@@ -656,7 +717,7 @@ function PriorityMovements() {
       {priority.map((ex) => (
         <Pressable key={ex.id} onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
           style={({ pressed }) => ({
-            backgroundColor: done[ex.id] ? 'rgba(0,217,163,0.08)' : colors.surface,
+            backgroundColor: done[ex.id] ? colors.success + '18' : colors.surface,
             borderRadius: 14, padding: 16, marginBottom: 10,
             borderWidth: 1, borderColor: done[ex.id] ? colors.success + '60' : colors.primary + '30',
             opacity: pressed ? 0.8 : 1,
@@ -668,7 +729,7 @@ function PriorityMovements() {
               borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.primary,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {done[ex.id] && <Check size={14} color="#000" />}
+              {done[ex.id] && <Check size={14} color="#FFFFFF" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '800', fontSize: 15, color: done[ex.id] ? colors.success : colors.foreground }}>
@@ -736,7 +797,7 @@ function TrainingProgress() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Body Measurements (cm)</Text>
           <Pressable onPress={() => setShowMeasure(!showMeasure)} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Update</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Update</Text>
           </Pressable>
         </View>
         {measureFields.map(field => (
@@ -803,6 +864,12 @@ export default function TrainingScreen() {
       setPhase(p);
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       setDayOfWeek(days[new Date().getDay()]);
+    });
+    // Handle pending sub-tab from dashboard "View" button
+    NavRepo.consumePendingSubTab('/(tabs)/training').then(sub => {
+      if (sub && ['workout','program','library','progress','posture','priority'].includes(sub)) {
+        setActiveTab(sub as Tab);
+      }
     });
   }, []);
 

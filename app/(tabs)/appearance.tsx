@@ -1,11 +1,11 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react-native';
-import { ScrollView, View, Text, Pressable, Alert , RefreshControl} from "react-native";
+import { ScrollView, View, Text, Pressable, Alert } from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { DailyLogRepo, AppearanceRepo } from '@/lib/db/database';
+import { DailyLogRepo, AppearanceRepo, NavRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION } from '@/lib/db/seeds';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
@@ -110,7 +110,7 @@ function SkincareScreen() {
       {/* AM Routine */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFB800' }}>☀️ AM Routine</Text>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.warning }}>☀️ AM Routine</Text>
           <View style={{ backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: colors.success, fontSize: 11, fontWeight: '700' }}>🔥 {amStreak} day streak</Text>
           </View>
@@ -128,7 +128,7 @@ function SkincareScreen() {
               borderWidth: 2, borderColor: amDone[i] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {amDone[i] && <Check size={14} color="#000" />}
+              {amDone[i] && <Check size={14} color="#FFFFFF" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: amDone[i] ? colors.success : colors.foreground, fontSize: 13, textDecorationLine: amDone[i] ? 'line-through' : 'none' }}>
@@ -144,7 +144,7 @@ function SkincareScreen() {
       {/* PM Routine */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: '#A78BFA' }}>🌙 PM Routine</Text>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.primary }}>🌙 PM Routine</Text>
           <View style={{ backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: colors.success, fontSize: 11, fontWeight: '700' }}>🔥 {pmStreak} day streak</Text>
           </View>
@@ -162,7 +162,7 @@ function SkincareScreen() {
               borderWidth: 2, borderColor: pmDone[i] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {pmDone[i] && <Check size={14} color="#000" />}
+              {pmDone[i] && <Check size={14} color="#FFFFFF" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: pmDone[i] ? colors.success : (step.product === 'WAIT' ? colors.warning : colors.foreground), fontSize: 13, textDecorationLine: pmDone[i] ? 'line-through' : 'none' }}>
@@ -215,7 +215,7 @@ function TanRemovalScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Tan Level Assessment</Text>
           <Pressable onPress={() => setShowAssess(!showAssess)} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Update</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Update</Text>
           </Pressable>
         </View>
         {bodyParts.map(part => {
@@ -368,13 +368,13 @@ function HairCareScreen() {
               <Text style={{ width: 36, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '800' : '600', fontSize: 12 }}>{day}</Text>
               <View style={{ flex: 1, flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
                 {isWash && (
-                  <View style={{ backgroundColor: '#60A5FA30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: '#60A5FA', fontSize: 10, fontWeight: '700' }}>Hair Wash (Nizoral or mild shampoo)</Text>
+                  <View style={{ backgroundColor: colors.primary + '30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>Hair Wash (Nizoral or mild shampoo)</Text>
                   </View>
                 )}
                 {isOil && (
-                  <View style={{ backgroundColor: '#F59E0B30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '700' }}>Oil Massage (coconut + rosemary)</Text>
+                  <View style={{ backgroundColor: colors.warning + '30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: colors.warning, fontSize: 10, fontWeight: '700' }}>Oil Massage (coconut + rosemary)</Text>
                   </View>
                 )}
                 {!isWash && !isOil && (
@@ -410,78 +410,6 @@ function HairCareScreen() {
     </ScrollView>
   );
 }
-
-// ─── Grooming ─────────────────────────────────────────────────────────────────
-
-function GroomingScreen() {
-  const colors = useColors();
-  const [done, setDone] = useState<Record<string, boolean>>({});
-  const today = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    AppearanceRepo.getGrooming(today).then(setDone);
-  }, []);
-
-  const toggle = async (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const n = { ...done, [key]: !done[key] };
-    setDone(n);
-    await AppearanceRepo.setGrooming(today, n);
-  };
-
-  const daily = ['Brush teeth (2 min, AM + PM)', 'Floss (PM)', 'Apply lip balm', 'Wash face (PM cleanser)', 'Hair styled with paste/clay (if going out)', 'Deodorant applied', 'Clean nails check'];
-  const weekly = ['Haircut (every 2-3 weeks — textured crop fade)', 'Beard: Clean shave or trim (edge up)', 'Eyebrow cleanup (tweezer — unibrow, upper arch)', 'Ear/nose hair check', 'Exfoliate lips', 'Clean up around hairline'];
-  const monthly = ['Full body grooming session', 'Body hair management', 'Get haircut photos for comparison'];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {['Daily', 'Weekly', 'Monthly'].map((freq, fi) => {
-        const items = freq === 'Daily' ? daily : freq === 'Weekly' ? weekly : monthly;
-        return (
-          <View key={freq} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>{freq} Grooming</Text>
-            {items.map((item) => {
-              const key = freq + item;
-              return (
-                <Pressable key={item} onPress={() => toggle(key)}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-                    borderBottomWidth: 1, borderBottomColor: colors.border,
-                    opacity: pressed ? 0.8 : 1,
-                  })}>
-                  <View style={{
-                    width: 22, height: 22, borderRadius: freq === 'Daily' ? 11 : 4,
-                    backgroundColor: done[key] ? colors.success : 'transparent',
-                    borderWidth: 2, borderColor: done[key] ? colors.success : colors.border,
-                    marginRight: 12, alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {done[key] && <Check size={14} color="#000" />}
-                  </View>
-                  <Text style={{ color: done[key] ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: done[key] ? 'line-through' : 'none' }}>
-                    {item}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        );
-      })}
-
-      {/* Hairstyle Guide */}
-      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>Recommended: Textured Crop with Fade</Text>
-        <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          • Short on sides/back (fade or taper){'\n'}
-          • Textured/choppy on top (not flat){'\n'}
-          • Product: Matte clay or paste (Beardo, Set Wet){'\n'}
-          • Style: Tousled, slightly forward — adds perceived height{'\n\n'}
-          Tell barber: "Textured crop with skin fade or low fade. Keep top at 2-3 inches."
-        </Text>
-      </View>
-    </ScrollView>
-  );
-}
-
 // ─── Body Care ─────────────────────────────────────────────────────────────────
 
 function BodyCareScreen() {
@@ -524,79 +452,6 @@ function BodyCareScreen() {
     </ScrollView>
   );
 }
-
-// ─── Style & Wardrobe ─────────────────────────────────────────────────────────
-
-function StyleScreen() {
-  const colors = useColors();
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    AppearanceRepo.getWardrobeChecklist().then(setChecklist);
-  }, []);
-
-  const toggle = async (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const n = { ...checklist, [key]: !checklist[key] };
-    setChecklist(n);
-    await AppearanceRepo.setWardrobeChecklist(n);
-  };
-
-  const essentials = [
-    '2-3 plain white T-shirts (fitted)', '2-3 black T-shirts (fitted)', '1-2 olive/grey T-shirts',
-    '2 slim/straight jeans (dark blue, black)', '1 pair chinos (khaki or olive)', '1 pair joggers (black)',
-    'White sneakers (clean sole)', 'Black sneakers or Chelsea boots', 'Brown leather or chelsea boots',
-    'White button-up shirt', '1 clean hoodie (black or grey)', '1 minimal jacket (bomber or windbreaker)',
-    '1 plain belt (black leather)', 'White crew-cut socks', 'Fragrance (1 good one — Dior Sauvage dupe or actual)',
-  ];
-
-  const rules = [
-    'Fitted > baggy — always',
-    'Monochromatic outfits = instant height + style',
-    'Less is more — avoid logos, graphics, loud patterns',
-    'One statement piece per outfit max',
-    'Chelsea boots add 1 inch height invisibly',
-    'Short jacket = longer legs = taller appearance',
-    'High-waisted pants raise waistline = taller',
-    'Colors: Black, White, Navy, Olive, Beige',
-  ];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Style Rules */}
-      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 10 }}>Style Rules for Your Frame</Text>
-        {rules.map((rule, i) => (
-          <Text key={i} style={{ color: colors.foreground, fontSize: 12, marginBottom: 5 }}>• {rule}</Text>
-        ))}
-      </View>
-
-      {/* Wardrobe Checklist */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Wardrobe Essentials</Text>
-        {essentials.map(item => (
-          <Pressable key={item} onPress={() => toggle(item)} style={({ pressed }) => ({
-            flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-            borderBottomWidth: 1, borderBottomColor: colors.border, opacity: pressed ? 0.8 : 1,
-          })}>
-            <View style={{
-              width: 22, height: 22, borderRadius: 4,
-              backgroundColor: checklist[item] ? colors.success : 'transparent',
-              borderWidth: 2, borderColor: checklist[item] ? colors.success : colors.border,
-              marginRight: 12, alignItems: 'center', justifyContent: 'center',
-            }}>
-              {checklist[item] && <Check size={14} color="#000" />}
-            </View>
-            <Text style={{ color: checklist[item] ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: checklist[item] ? 'line-through' : 'none' }}>
-              {item}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
 // ─── Looksmax ─────────────────────────────────────────────────────────────────
 
 function LooksmaxScreen() {
@@ -696,83 +551,19 @@ function LooksmaxScreen() {
     </ScrollView>
   );
 }
-
-// ─── Face Log ─────────────────────────────────────────────────────────────────
-
-function FaceLogScreen() {
-  const colors = useColors();
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    AppearanceRepo.getFaceRatings().then(setRatings);
-  }, []);
-
-  const metrics = [
-    { id: 'skin_clarity', name: 'Skin Clarity', desc: '1=severe acne, 10=completely clear' },
-    { id: 'jaw_def', name: 'Jaw Definition', desc: '1=none, 10=sharp defined jaw' },
-    { id: 'cheek_full', name: 'Cheek Fullness', desc: '1=hollow/sunken, 10=full' },
-    { id: 'eye_area', name: 'Under-Eye Area', desc: '1=severe dark circles, 10=fresh' },
-    { id: 'overall_tone', name: 'Skin Tone Evenness', desc: '1=patchy/tanned, 10=even' },
-    { id: 'hair_quality', name: 'Hair Health', desc: '1=dandruff/fall, 10=thick/healthy' },
-  ];
-
-  const setRating = async (id: string, val: number) => {
-    const n = { ...ratings, [id]: val };
-    setRatings(n);
-    await AppearanceRepo.setFaceRatings(n);
-  };
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 16 }}>Rate each metric monthly. Track progression over time. Take photos on the 1st of each month.</Text>
-
-      {metrics.map(metric => {
-        const val = ratings[metric.id] || 0;
-        return (
-          <View key={metric.id} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>{metric.name}</Text>
-            <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 10 }}>{metric.desc}</Text>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                <Pressable key={n} onPress={() => setRating(metric.id, n)}
-                  style={{
-                    flex: 1, height: 30, borderRadius: 6,
-                    backgroundColor: n <= val ? (val >= 7 ? colors.success : val >= 4 ? colors.warning : colors.error) : colors.border,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                  <Text style={{ color: n <= val ? '#000' : colors.muted, fontSize: 9, fontWeight: '700' }}>{n}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 8, textAlign: 'right' }}>
-              Current: {val}/10
-            </Text>
-          </View>
-        );
-      })}
-
-      {/* Photo Protocol */}
-      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>Monthly Photo Protocol (1st of Each Month)</Text>
-        <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          📸 Take photos on 1st of every month:{'\n'}
-          • Front face (neutral, no smile){'\n'}
-          • Left profile (90°){'\n'}
-          • Right profile (90°){'\n'}
-          • Body front (shirt off — weight progress){'\n'}
-          • Body side{'\n\n'}
-          Same lighting, same time, same location every month.
-        </Text>
-      </View>
-    </ScrollView>
-  );
-}
-
 // ─── Main Appearance Screen ────────────────────────────────────────────────────
 
 export default function AppearanceScreen() {
   const colors = useColors();
   const [activeTab, setActiveTab] = useState<Tab>('skincare');
+
+  useEffect(() => {
+    NavRepo.consumePendingSubTab('/(tabs)/appearance').then(sub => {
+      if (sub && ['skincare','tanremoval','hair','bodycare','looksmax'].includes(sub)) {
+        setActiveTab(sub as Tab);
+      }
+    });
+  }, []);
 
   return (
     <ScreenContainer>

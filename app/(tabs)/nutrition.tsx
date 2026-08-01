@@ -1,11 +1,11 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react-native';
-import { ScrollView, View, Text, Pressable, TextInput, Alert , RefreshControl} from "react-native";
+import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { DailyLogRepo, NutritionRepo, GroceriesRepo } from '@/lib/db/database';
+import { DailyLogRepo, NutritionRepo, NavRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
 
 type Tab = 'meals' | 'mealplan' | 'supplements' | 'water';
@@ -97,7 +97,7 @@ function TodaysMeals() {
             setJunkCount(n);
             NutritionRepo.setJunkCount(today, n);
           }} style={{ backgroundColor: colors.warning, borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 8 }}>
-            <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Mark Cheat Meal Used</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Mark Cheat Meal Used</Text>
           </Pressable>
         )}
       </View>
@@ -106,7 +106,7 @@ function TodaysMeals() {
       {mealsToShow.map(meal => (
         <Pressable key={meal.id} onPress={() => toggleMeal(meal.id)}
           style={({ pressed }) => ({
-            backgroundColor: mealsDone[meal.id] ? 'rgba(0,217,163,0.06)' : colors.surface,
+            backgroundColor: mealsDone[meal.id] ? colors.success + '12' : colors.surface,
             borderRadius: 14, padding: 16, marginBottom: 10,
             borderWidth: 1, borderColor: mealsDone[meal.id] ? colors.success + '60' : colors.border,
             opacity: pressed ? 0.85 : 1,
@@ -120,7 +120,7 @@ function TodaysMeals() {
                   borderWidth: 2, borderColor: mealsDone[meal.id] ? colors.success : colors.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {mealsDone[meal.id] && <Check size={14} color="#000" />}
+                  {mealsDone[meal.id] && <Check size={14} color="#FFFFFF" />}
                 </View>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: mealsDone[meal.id] ? colors.success : colors.foreground }}>
                   Meal {meal.number}: {meal.name}
@@ -257,7 +257,7 @@ function SupplementsScreen() {
             borderRadius: 10, paddingVertical: 10, alignItems: 'center',
             borderWidth: 1, borderColor: phase === p ? colors.primary : colors.border,
           }}>
-            <Text style={{ color: phase === p ? '#000' : colors.foreground, fontWeight: '700', fontSize: 12 }}>Phase {p}</Text>
+            <Text style={{ color: phase === p ? '#FFFFFF' : colors.foreground, fontWeight: '700', fontSize: 12 }}>Phase {p}</Text>
           </Pressable>
         ))}
       </View>
@@ -276,7 +276,7 @@ function SupplementsScreen() {
       {filtered.map(supp => (
         <Pressable key={supp.id} onPress={() => toggle(supp.id)}
           style={({ pressed }) => ({
-            backgroundColor: checked[supp.id] ? 'rgba(0,217,163,0.06)' : colors.surface,
+            backgroundColor: checked[supp.id] ? colors.success + '12' : colors.surface,
             borderRadius: 14, padding: 14, marginBottom: 10,
             borderWidth: 1, borderColor: checked[supp.id] ? colors.success + '50' : colors.border,
             opacity: pressed ? 0.8 : 1,
@@ -288,7 +288,7 @@ function SupplementsScreen() {
               borderWidth: 2, borderColor: checked[supp.id] ? colors.success : colors.border,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {checked[supp.id] && <Check size={14} color="#000" />}
+              {checked[supp.id] && <Check size={14} color="#FFFFFF" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: checked[supp.id] ? colors.success : colors.foreground, textDecorationLine: checked[supp.id] ? 'line-through' : 'none' }}>
@@ -358,7 +358,7 @@ function WaterTracker() {
           <Text style={{ fontSize: 24, color: colors.foreground }}>−</Text>
         </Pressable>
         <Pressable onPress={() => addGlass(1)} style={{ flex: 2, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 18, alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#000' }}>+ Add 250ml Glass</Text>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF' }}>+ Add 250ml Glass</Text>
         </Pressable>
       </View>
 
@@ -388,91 +388,19 @@ function WaterTracker() {
   );
 }
 
-// ─── Groceries ────────────────────────────────────────────────────────────────
-
-function GroceriesScreen() {
-  const colors = useColors();
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-
-  const groceries = {
-    'Weekly Staples': [
-      '12+ eggs', 'Chicken breast 1 kg', 'Whole milk 2L', 'Paneer 500g',
-      'Brown rice 1 kg', '2 varieties dals', 'Seasonal vegetables (2-3 kg)',
-      'Bananas (bunch)', 'Apples/Guava (2-3)', 'Peanut butter 500g jar',
-      'Almonds 200g', 'Walnuts 100g', 'Cashews 100g', 'Jaggery 200g',
-      'Moong dal (for sprouts)', 'Whole wheat bread (for emergencies)',
-    ],
-    'Monthly Supplements': [
-      'Whey protein (if running low)', 'Creatine (if running low)',
-      'Omega-3 capsules', 'Magnesium Glycinate', 'B12 tablets',
-      'Zinc capsules', 'Vitamin D3 60K sachets',
-    ],
-    'Skincare Restock': [
-      'Cetaphil cleanser (check if needed)', 'Moisturizer', 'Adapalene (prescription)',
-      'SPF 50+ (Aqualogica)', 'Body lotion with SPF',
-    ],
-  };
-
-  useEffect(() => {
-    GroceriesRepo.getGroceries().then(setChecked);
-  }, []);
-
-  const toggle = async (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const n = { ...checked, [key]: !checked[key] };
-    setChecked(n);
-    await GroceriesRepo.setGroceries(n);
-  };
-
-  const clearAll = async () => {
-    setChecked({});
-    await GroceriesRepo.setGroceries({});
-  };
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Shopping Checklist</Text>
-        <Pressable onPress={clearAll} style={{ backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ color: colors.muted, fontSize: 12 }}>Clear All</Text>
-        </Pressable>
-      </View>
-
-      {Object.entries(groceries).map(([category, items]) => (
-        <View key={category} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: 12 }}>{category}</Text>
-          {items.map((item) => {
-            const key = category + item;
-            return (
-              <Pressable key={item} onPress={() => toggle(key)} style={({ pressed }) => ({
-                flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
-                opacity: pressed ? 0.8 : 1, borderBottomWidth: 1, borderBottomColor: colors.border,
-              })}>
-                <View style={{
-                  width: 20, height: 20, borderRadius: 4,
-                  backgroundColor: checked[key] ? colors.success : 'transparent',
-                  borderWidth: 2, borderColor: checked[key] ? colors.success : colors.border,
-                  marginRight: 12, alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {checked[key] && <Check size={14} color="#000" />}
-                </View>
-                <Text style={{ color: checked[key] ? colors.muted : colors.foreground, fontSize: 13, textDecorationLine: checked[key] ? 'line-through' : 'none', flex: 1 }}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
 // ─── Main Nutrition Screen ────────────────────────────────────────────────────
 
 export default function NutritionScreen() {
   const colors = useColors();
   const [activeTab, setActiveTab] = useState<Tab>('meals');
+
+  useEffect(() => {
+    NavRepo.consumePendingSubTab('/(tabs)/nutrition').then((pending) => {
+      if (pending && ['meals','mealplan','supplements','water'].includes(pending)) {
+        setActiveTab(pending as Tab);
+      }
+    });
+  }, []);
 
   return (
     <ScreenContainer>

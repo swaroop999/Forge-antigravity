@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, Dimensions, RefreshControl } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Smartphone, Settings, Check, ChevronRight } from "lucide-react-native";
+import { Activity, Flame, Droplets, Dumbbell, Settings, Check, ChevronRight } from "lucide-react-native";
+import { NavRepo } from '@/lib/db/database';
 import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { ScreenContainer } from '@/components/screen-container';
@@ -126,9 +127,9 @@ function ScheduleItem({ item, completed, onPress, onViewDetails }:
     <Pressable onPress={onPress} style={({ pressed }) => ({
       flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
       paddingHorizontal: 14, marginBottom: 6,
-      backgroundColor: completed ? 'rgba(0,217,163,0.06)' : colors.surface,
+      backgroundColor: completed ? colors.success + '12' : colors.surface,
       borderRadius: 12, borderWidth: 1,
-      borderColor: completed ? 'rgba(0,217,163,0.3)' : colors.border,
+      borderColor: completed ? colors.success + '4D' : colors.border,
       opacity: pressed ? 0.8 : 1,
     })}>
       <View style={{
@@ -161,7 +162,7 @@ function ScheduleItem({ item, completed, onPress, onViewDetails }:
           borderWidth: 2, borderColor: completed ? colors.success : colors.border,
           alignItems: 'center', justifyContent: 'center',
         }}>
-          {completed && <Check size={14} color="#000" />}
+          {completed && <Check size={14} color="#FFFFFF" />}
         </View>
       </View>
     </Pressable>
@@ -267,14 +268,57 @@ export default function DashboardScreen() {
 
   const stats = [
     { icon: Activity, label: 'Weight', value: profile?.currentWeight || 45, unit: 'kg', color: colors.primary },
-    { icon: Flame, label: 'Streak', value: dayNumber, unit: `days`, color: colors.warning },
+    { icon: Flame, label: 'Streak', value: dayNumber, unit: 'days', color: colors.warning },
     { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
     { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
-    { icon: Sparkles, label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Wait', color: '#F472B6' },
-    { icon: Smartphone, label: 'Screen', value: log?.screenTimeHours || '-', unit: 'h', color: colors.muted },
-    { icon: Ban, label: 'No Porn', value: '—', unit: 'd', color: colors.success },
-    { icon: Ban, label: 'No Junk', value: '—', unit: 'd', color: colors.success },
   ];
+
+  /** Map a schedule task to { tabPath, subTab } so "View" lands on the right section. */
+  const resolveRouteForTask = (item: { task: string; category: string }): { tabPath: string; subTab: string } | null => {
+    const t = item.task.toLowerCase();
+    const cat = item.category;
+    // Training category tasks
+    if (cat === 'training') {
+      if (t.includes('posture')) return { tabPath: '/(tabs)/training', subTab: 'posture' };
+      if (t.includes('priority')) return { tabPath: '/(tabs)/training', subTab: 'priority' };
+      if (t.includes('walk')) return { tabPath: '/(tabs)/training', subTab: 'workout' };
+      if (t.includes('training session')) return { tabPath: '/(tabs)/training', subTab: 'workout' };
+      return { tabPath: '/(tabs)/training', subTab: 'workout' };
+    }
+    // Skincare / appearance
+    if (cat === 'skincare' || t.includes('skincare') || t.includes('minoxidil') || t.includes('body scrub') || t.includes('face mask') || t.includes('ubtan') || t.includes('hair oil')) {
+      if (t.includes('minoxidil') || t.includes('hair oil')) return { tabPath: '/(tabs)/appearance', subTab: 'hair' };
+      return { tabPath: '/(tabs)/appearance', subTab: 'skincare' };
+    }
+    if (cat === 'appearance' || t.includes('helmet') || t.includes('spf')) {
+      return { tabPath: '/(tabs)/appearance', subTab: 'tanremoval' };
+    }
+    // Nutrition
+    if (cat === 'nutrition') {
+      if (t.includes('supplement') || t.includes('zinc') || t.includes('b12') || t.includes('omega') || t.includes('magnesium') || t.includes('d3') || t.includes('whey') || t.includes('creatine'))
+        return { tabPath: '/(tabs)/nutrition', subTab: 'supplements' };
+      if (t.includes('water')) return { tabPath: '/(tabs)/nutrition', subTab: 'water' };
+      if (t.includes('meal prep')) return { tabPath: '/(tabs)/nutrition', subTab: 'mealplan' };
+      return { tabPath: '/(tabs)/nutrition', subTab: 'meals' };
+    }
+    // Discipline
+    if (cat === 'discipline') {
+      if (t.includes('journal')) return { tabPath: '/(tabs)/discipline', subTab: 'journal' };
+      if (t.includes('reading') || t.includes('review') || t.includes('plan') || t.includes('personal time') || t.includes('hobby'))
+        return { tabPath: '/(tabs)/discipline', subTab: 'knowledge' };
+      return { tabPath: '/(tabs)/discipline', subTab: 'dopamine' };
+    }
+    if (cat === 'sleep') return null; // no detail page needed
+    if (cat === 'work') return null;
+    return null;
+  };
+
+  const navigateToDetails = async (item: { task: string; category: string }) => {
+    const route = resolveRouteForTask(item);
+    if (!route) return;
+    await NavRepo.setPendingSubTab(route.tabPath, route.subTab);
+    router.push(route.tabPath as any);
+  };
 
   const phaseMs = DEFAULT_MILESTONES.filter(m => m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365));
   const doneMs = milestones.filter(m => (m as any).completed && m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365)).length;
@@ -304,8 +348,8 @@ export default function DashboardScreen() {
                 <Settings size={22} color={colors.muted} />
               </Pressable>
               <View style={{ backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
-                <Text style={{ color: '#000', fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
-                <Text style={{ color: '#000', fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
               </View>
             </View>
           </View>
@@ -404,32 +448,18 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Today's Schedule</Text>
             <Text style={{ fontSize: 12, color: colors.muted }}>{dayName}</Text>
           </View>
-          {scheduleItems.slice(0, 8).map((item, i) => {
-            const categoryRoutes: Record<string, string> = {
-              nutrition: '/(tabs)/nutrition',
-              training: '/(tabs)/training',
-              skincare: '/(tabs)/appearance',
-              appearance: '/(tabs)/appearance',
-              discipline: '/(tabs)/discipline',
-              sleep: '/(tabs)/discipline',
-              work: '/(tabs)/discipline',
-            };
-            const route = categoryRoutes[item.category];
+          {scheduleItems.map((item, i) => {
+            const detailsRoute = resolveRouteForTask(item);
             return (
               <ScheduleItem
                 key={i}
                 item={item}
                 completed={completedItems[item.time + item.task] || false}
                 onPress={() => toggleScheduleItem(item)}
-                onViewDetails={route ? () => router.navigate(route as any) : undefined}
+                onViewDetails={detailsRoute ? () => navigateToDetails(item) : undefined}
               />
             );
           })}
-          {scheduleItems.length > 8 && (
-            <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center', paddingVertical: 8 }}>
-              +{scheduleItems.length - 8} more items
-            </Text>
-          )}
         </View>
 
         {/* ── Weekly Summary ─────────────────────── */}
@@ -446,8 +476,8 @@ export default function DashboardScreen() {
                       <View style={{
                         height: Math.max(10, (pct / 100) * 60),
                         width: isToday ? 24 : 20, borderRadius: 4,
-                        backgroundColor: isToday ? colors.primary : pct > 70 ? 'rgba(0,217,163,0.5)' : pct > 40 ? 'rgba(255,184,0,0.5)' : colors.border,
-                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? '#fff' : 'transparent'
+                        backgroundColor: isToday ? colors.primary : pct > 70 ? colors.success + '80' : pct > 40 ? colors.warning + '80' : colors.border,
+                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? colors.background : 'transparent'
                       }} />
                       <Text style={{ fontSize: 9, color: colors.muted, marginTop: 6 }}>{days[i]}</Text>
                       <Text style={{ fontSize: 9, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '900' : '500', marginTop: 2 }}>

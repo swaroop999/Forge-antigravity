@@ -29,7 +29,7 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
           }}
         >
           <Text style={{ fontSize: 13 }}>{tab.icon}</Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: activeTab === tab.key ? '#000' : colors.foreground }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: activeTab === tab.key ? '#FFFFFF' : colors.foreground }}>
             {tab.label}
           </Text>
         </Pressable>

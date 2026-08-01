@@ -135,47 +135,40 @@ RESPONSE RULES:
 
     const systemPrompt = this.buildSystemPrompt(contextData);
 
-    // Build multi-turn contents array
+    // Build multi-turn contents array — strictly alternating user/model turns
     const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
-    // If we have chat history, include it as multi-turn context
-    if (chatHistory && chatHistory.length > 0) {
-      // First message always includes the system prompt as context
-      contents.push({
-        role: 'user',
-        parts: [{ text: systemPrompt + '\n\nFirst user message: ' + (chatHistory[0]?.parts[0]?.text || userMessage) }],
-      });
-      // Add history pairs
-      for (let i = 0; i < chatHistory.length; i++) {
-        if (i === 0) {
-          // First user message already added above
-          continue;
-        }
-        contents.push({
-          role: chatHistory[i].role,
-          parts: chatHistory[i].parts,
-        });
-      }
-      // Add the current user message
-      contents.push({
-        role: 'user',
-        parts: [{ text: userMessage }],
-      });
+    // Use Gemini's built-in systemInstruction field so we don't contaminate
+    // conversation history.
+    const historyToUse = chatHistory && chatHistory.length > 0
+      ? chatHistory.slice(-20) // cap to last 20 messages
+      : [];
+
+    for (const msg of historyToUse) {
+      // Gemini requires first message to be from user; skip leading model turns
+      if (contents.length === 0 && msg.role !== 'user') continue;
+      // Strict alternation: skip adjacent duplicate roles
+      const last = contents[contents.length - 1];
+      if (last && last.role === msg.role) continue;
+      contents.push({ role: msg.role, parts: msg.parts });
+    }
+
+    // Append current user message
+    const last = contents[contents.length - 1];
+    if (!last || last.role !== 'user') {
+      contents.push({ role: 'user', parts: [{ text: userMessage }] });
     } else {
-      // No history — single turn with system prompt embedded
-      contents.push({
-        role: 'user',
-        parts: [{ text: `${systemPrompt}\n\nUSER'S QUESTION: ${userMessage}` }],
-      });
+      last.parts[0].text += '\n\n' + userMessage;
     }
 
     const requestBody = {
+      systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.8,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
       },
     };
 

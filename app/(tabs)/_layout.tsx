@@ -180,7 +180,7 @@ export default function TabLayout() {
                 <Pressable onPress={completeAction} style={({ pressed }) => ({
                   backgroundColor: colors.primary, width: '100%', paddingVertical: 16, borderRadius: 12, alignItems: 'center', opacity: pressed ? 0.8 : 1
                 })}>
-                  <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>✓ Done! Urge beaten.</Text>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>✓ Done! Urge beaten.</Text>
                 </Pressable>
               </View>
             )}

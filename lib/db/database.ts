@@ -626,3 +626,23 @@ export const TrainingRepo = {
     await setItem('forge_measurements', value);
   },
 };
+
+// ─── Cross-tab navigation helper (for "View" buttons on dashboard schedule) ─────
+
+export const NavRepo = {
+  async setPendingSubTab(tabPath: string, subTab: string): Promise<void> {
+    try { await AsyncStorage.setItem('forge_pending_subtab', JSON.stringify({ tabPath, subTab })); } catch {}
+  },
+  async consumePendingSubTab(currentTabPath: string): Promise<string | null> {
+    try {
+      const raw = await AsyncStorage.getItem('forge_pending_subtab');
+      if (!raw) return null;
+      const { tabPath, subTab } = JSON.parse(raw);
+      if (tabPath === currentTabPath) {
+        await AsyncStorage.removeItem('forge_pending_subtab');
+        return subTab;
+      }
+    } catch {}
+    return null;
+  },
+};

@@ -200,7 +200,7 @@ export default function SettingsScreen() {
                 paddingVertical: 10, alignItems: 'center', opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Save</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Save</Text>
             </Pressable>
             <Pressable
               onPress={handleTestConnection}
@@ -313,7 +313,7 @@ export default function SettingsScreen() {
               value={colorScheme === 'dark'} 
               onValueChange={toggleColorScheme}
               trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colorScheme === 'dark' ? '#000' : '#f4f3f4'}
+              thumbColor={colorScheme === 'dark' ? colors.surface : '#FFFFFF'}
             />
           </View>
         </Card>
@@ -353,7 +353,7 @@ export default function SettingsScreen() {
           </View>
           
           <Pressable onPress={handleReset} style={{ backgroundColor: colors.error, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Reset All Progress</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Reset All Progress</Text>
           </Pressable>
           <Text style={{ color: colors.error, fontSize: 12, textAlign: 'center', marginTop: 12 }}>
             This action cannot be undone. All logs, streaks, and configurations will be permanently deleted.
@@ -435,7 +435,7 @@ export default function SettingsScreen() {
                 onPress={confirmImport}
                 style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
               >
-                <Text style={{ color: '#000', fontWeight: '800', fontSize: 15 }}>Import</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>Import</Text>
               </Pressable>
             </View>
           </View>
