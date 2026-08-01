@@ -10,15 +10,11 @@ import { HABITS, KNOWLEDGE_ARTICLES, DEFAULT_MILESTONES, type Habit } from '@/li
 
 const { width } = Dimensions.get('window');
 
-type Tab = 'habits' | 'dopamine' | 'journal' | 'milestones' | 'bodylang' | 'knowledge' | 'commitment';
+type Tab = 'dopamine' | 'journal' | 'knowledge';
 const TABS = [
-  { key: 'habits' as Tab, label: 'Habits', icon: '✅' },
   { key: 'dopamine' as Tab, label: 'Dopamine', icon: '🧠' },
   { key: 'journal' as Tab, label: 'Journal', icon: '📔' },
-  { key: 'milestones' as Tab, label: 'Milestones', icon: '🏆' },
-  { key: 'bodylang' as Tab, label: 'Body Lang', icon: '🧍' },
   { key: 'knowledge' as Tab, label: 'Knowledge', icon: '📚' },
-  { key: 'commitment' as Tab, label: 'Commitment', icon: '📜' },
 ];
 
 // ─── Habits Tracker ────────────────────────────────────────────────────────────
@@ -251,18 +247,60 @@ function JournalScreen() {
         <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>{saved ? '✓ Saved' : 'Save Entry'}</Text>
       </Pressable>
 
+
       {history.length > 0 && (
         <View style={{ marginTop: 32 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Past Entries</Text>
-          {history.map((h, i) => (
-            <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>{h.date}</Text>
-              <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>{h.content}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Past Entries</Text>
+            <View style={{ backgroundColor: colors.primary + '22', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>{history.length} entries</Text>
             </View>
+          </View>
+          {history.map((h, i) => (
+            <JournalHistoryCard key={i} entry={h} />
           ))}
         </View>
       )}
+
+      {history.length === 0 && saved && (
+        <View style={{ marginTop: 24, alignItems: 'center', padding: 16 }}>
+          <Text style={{ fontSize: 24, marginBottom: 8 }}>📔</Text>
+          <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center' }}>This is your first journal entry. Past entries will appear here over time.</Text>
+        </View>
+      )}
     </ScrollView>
+  );
+}
+
+function JournalHistoryCard({ entry }: { entry: { date: string; content: string } }) {
+  const colors = useColors();
+  const [expanded, setExpanded] = useState(false);
+  const PREVIEW_LENGTH = 120;
+  const needsTruncation = entry.content.length > PREVIEW_LENGTH;
+
+  const formattedDate = (() => {
+    try {
+      return new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+    } catch { return entry.date; }
+  })();
+
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>{formattedDate}</Text>
+        <Text style={{ color: colors.muted, fontSize: 10 }}>{entry.content.length} chars</Text>
+      </View>
+      <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>
+        {expanded || !needsTruncation ? entry.content : entry.content.slice(0, PREVIEW_LENGTH) + '…'}
+      </Text>
+      {needsTruncation && (
+        <Pressable onPress={() => setExpanded(!expanded)} style={{ marginTop: 8 }}>
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+            {expanded ? '▲ Show less' : '▼ Read full entry'}
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -506,26 +544,22 @@ function CommitmentScreen() {
 
 export default function DisciplineScreen() {
   const colors = useColors();
-  const [activeTab, setActiveTab] = useState<Tab>('habits');
+  const [activeTab, setActiveTab] = useState<Tab>('dopamine');
 
   return (
     <ScreenContainer>
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
           <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Discipline 🧠</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }}>Habits · Mindset · Knowledge</Text>
+          <Text style={{ color: colors.muted, fontSize: 13 }}>Dopamine · Journal · Knowledge</Text>
         </View>
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         <View style={{ flex: 1 }}>
-          {activeTab === 'habits' && <HabitsScreen />}
           {activeTab === 'dopamine' && <DopamineResetScreen />}
           {activeTab === 'journal' && <JournalScreen />}
-          {activeTab === 'milestones' && <MilestonesScreen />}
-          {activeTab === 'bodylang' && <BodyLanguageScreen />}
           {activeTab === 'knowledge' && <KnowledgeScreen />}
-          {activeTab === 'commitment' && <CommitmentScreen />}
         </View>
       </View>
     </ScreenContainer>

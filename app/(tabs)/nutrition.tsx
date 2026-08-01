@@ -8,13 +8,12 @@ import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, GroceriesRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
 
-type Tab = 'meals' | 'mealplan' | 'supplements' | 'water' | 'groceries';
+type Tab = 'meals' | 'mealplan' | 'supplements' | 'water';
 const TABS = [
   { key: 'meals' as Tab, label: 'Meals', icon: '🍽️' },
   { key: 'mealplan' as Tab, label: 'Plan', icon: '📅' },
   { key: 'supplements' as Tab, label: 'Supplements', icon: '💊' },
   { key: 'water' as Tab, label: 'Water', icon: '💧' },
-  { key: 'groceries' as Tab, label: 'Groceries', icon: '🛒' },
 ];
 
 // ─── Today's Meals ─────────────────────────────────────────────────────────────
@@ -490,7 +489,6 @@ export default function NutritionScreen() {
           {activeTab === 'mealplan' && <MealPlanScreen />}
           {activeTab === 'supplements' && <SupplementsScreen />}
           {activeTab === 'water' && <WaterTracker />}
-          {activeTab === 'groceries' && <GroceriesScreen />}
         </View>
       </View>
     </ScreenContainer>

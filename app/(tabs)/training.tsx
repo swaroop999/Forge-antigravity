@@ -3,8 +3,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check } from 'lucide-react-native';
 import {
   ScrollView, View, Text, Pressable, TextInput, Alert, Modal,
-  RefreshControl, FlatList,
+  RefreshControl, FlatList, Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
@@ -32,20 +33,42 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [workoutStarted, setWorkoutStarted] = useState(false);
   const [workoutComplete, setWorkoutComplete] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
+  const STORAGE_KEY = `workout_progress_${today}`;
 
+  // Load persisted progress on mount
   useEffect(() => {
     const w = WORKOUT_PROGRAMS.find(p => p.phase === phase && p.dayOfWeek === dayOfWeek);
     setWorkout(w || null);
     if (w) {
-      const s: Record<string, { done: number; weights: string[] }> = {};
-      w.exercises.forEach(e => { s[e.exerciseId] = { done: 0, weights: Array(e.sets).fill('') }; });
-      setSets(s);
+      const defaultSets: Record<string, { done: number; weights: string[] }> = {};
+      w.exercises.forEach(e => { defaultSets[e.exerciseId] = { done: 0, weights: Array(e.sets).fill('') }; });
+      // Load persisted state
+      AsyncStorage.getItem(STORAGE_KEY).then(stored => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            // Merge defaults with persisted (so new exercises don't break)
+            const merged = { ...defaultSets, ...parsed };
+            setSets(merged);
+            // Check if any sets were completed
+            const hasProgress = Object.values(merged).some((s: any) => s.done > 0);
+            if (hasProgress) setWorkoutStarted(true);
+          } catch { setSets(defaultSets); }
+        } else {
+          setSets(defaultSets);
+        }
+      });
     }
   }, [phase, dayOfWeek]);
 
   useEffect(() => {
     return () => { if (timerInterval) clearInterval(timerInterval); };
   }, [timerInterval]);
+
+  const persistSets = async (newSets: Record<string, { done: number; weights: string[] }>) => {
+    try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSets)); } catch {}
+  };
 
   const startRestTimer = (seconds: number) => {
     if (timerInterval) clearInterval(timerInterval);
@@ -63,14 +86,30 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSets(prev => {
       const ex = prev[exerciseId] || { done: 0, weights: [] };
-      return { ...prev, [exerciseId]: { ...ex, done: ex.done + 1 } };
+      const newSets = { ...prev, [exerciseId]: { ...ex, done: ex.done + 1 } };
+      persistSets(newSets);
+      return newSets;
     });
     startRestTimer(restSecs);
+    setWorkoutStarted(true);
+  };
+
+  const undoLastSet = (exerciseId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSets(prev => {
+      const ex = prev[exerciseId] || { done: 0, weights: [] };
+      if (ex.done <= 0) return prev;
+      const newSets = { ...prev, [exerciseId]: { ...ex, done: ex.done - 1 } };
+      persistSets(newSets);
+      return newSets;
+    });
+    // Cancel rest timer if undoing
+    if (timerInterval) clearInterval(timerInterval);
+    setRestTimer(null);
   };
 
   const saveWorkout = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const today = new Date().toISOString().split('T')[0];
     const log: WorkoutLog = {
       id: today, date: today, phase,
       dayType: workout?.type || '', warmupDone: true,
@@ -80,6 +119,8 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
     await WorkoutRepo.save(log);
     let dl = await DailyLogRepo.getForDate(today);
     if (dl) { dl.workoutCompleted = true; await DailyLogRepo.save(dl); }
+    // Clear persisted progress on completion
+    try { await AsyncStorage.removeItem(STORAGE_KEY); } catch {}
     setWorkoutComplete(true);
     Alert.alert('💪 Workout Complete!', 'Well done! Your workout has been logged. Recovery starts now.');
   };
@@ -111,6 +152,11 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
           <View style={{ backgroundColor: colors.warning + '22', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
             <Text style={{ color: colors.warning, fontWeight: '700', fontSize: 12 }}>~35 min</Text>
           </View>
+          {workoutStarted && !workoutComplete && (
+            <View style={{ backgroundColor: colors.success + '22', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
+              <Text style={{ color: colors.success, fontWeight: '700', fontSize: 12 }}>✓ Progress saved</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -155,10 +201,25 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
                 </Text>
                 {ex.notes && <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{ex.notes}</Text>}
               </View>
-              <View style={{ backgroundColor: allDone ? colors.success + '30' : colors.border, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Text style={{ color: allDone ? colors.success : colors.muted, fontWeight: '700', fontSize: 11 }}>
-                  {exSets.done}/{ex.sets}
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {/* Undo button — shown when at least 1 set completed */}
+                {exSets.done > 0 && !allDone && (
+                  <Pressable
+                    onPress={() => undoLastSet(ex.exerciseId)}
+                    style={({ pressed }) => ({
+                      backgroundColor: colors.error + '20',
+                      borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Text style={{ color: colors.error, fontWeight: '700', fontSize: 11 }}>↩ Undo</Text>
+                  </Pressable>
+                )}
+                <View style={{ backgroundColor: allDone ? colors.success + '30' : colors.border, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: allDone ? colors.success : colors.muted, fontWeight: '700', fontSize: 11 }}>
+                    {exSets.done}/{ex.sets}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -217,6 +278,7 @@ function ProgramOverview({ phase }: { phase: number }) {
   const colors = useColors();
   const phaseWorkouts = WORKOUT_PROGRAMS.filter(w => w.phase === phase);
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
@@ -229,35 +291,72 @@ function ProgramOverview({ phase }: { phase: number }) {
         const w = phaseWorkouts.find(p => p.dayOfWeek === day);
         if (!w) return null;
         const isRestDay = w.type.includes('REST') || w.type.includes('Rest');
+        const isExpanded = expandedDay === day;
         return (
-          <View key={day} style={{
-            backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 10,
-            borderWidth: 1, borderColor: isRestDay ? colors.border : colors.primary + '40',
-            borderLeftWidth: 4, borderLeftColor: isRestDay ? colors.border : colors.primary,
-          }}>
-            <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 4 }}>
-              {day.charAt(0).toUpperCase() + day.slice(1)}
-            </Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: isRestDay ? colors.muted : colors.foreground }}>{w.type}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{w.description}</Text>
+          <Pressable
+            key={day}
+            onPress={() => !isRestDay && setExpandedDay(isExpanded ? null : day)}
+            style={({ pressed }) => ({
+              backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 10,
+              borderWidth: 1, borderColor: isRestDay ? colors.border : colors.primary + '40',
+              borderLeftWidth: 4, borderLeftColor: isRestDay ? colors.border : colors.primary,
+              opacity: pressed ? 0.9 : 1,
+            })}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 4 }}>
+                  {day.charAt(0).toUpperCase() + day.slice(1)}
+                </Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: isRestDay ? colors.muted : colors.foreground }}>{w.type}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{w.description}</Text>
+              </View>
+              {!isRestDay && (
+                <Text style={{ color: colors.muted, fontSize: 18, marginLeft: 8 }}>{isExpanded ? '▲' : '▼'}</Text>
+              )}
+            </View>
+
+            {/* Show all exercises when expanded */}
             {!isRestDay && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 }}>
-                {w.exercises.slice(0, 4).map((e, i) => {
-                  const ex = EXERCISES.find(ex => ex.id === e.exerciseId);
-                  return (
-                    <View key={i} style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <Text style={{ color: colors.foreground, fontSize: 10 }}>{ex?.name || e.exerciseId}</Text>
-                    </View>
-                  );
-                })}
-                {w.exercises.length > 4 && (
-                  <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <Text style={{ color: colors.muted, fontSize: 10 }}>+{w.exercises.length - 4} more</Text>
+              <View style={{ marginTop: 10, gap: 4 }}>
+                {/* Always show first 4 as chips */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {(isExpanded ? w.exercises : w.exercises).map((e, i) => {
+                    const ex = EXERCISES.find(ex => ex.id === e.exerciseId);
+                    return (
+                      <View key={i} style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ color: colors.foreground, fontSize: 10 }}>
+                          {ex?.name || e.exerciseId}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                {/* Show full details when expanded */}
+                {isExpanded && (
+                  <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+                    {w.exercises.map((e, i) => {
+                      const ex = EXERCISES.find(ex => ex.id === e.exerciseId);
+                      return (
+                        <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: i < w.exercises.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>{ex?.name || e.exerciseId}</Text>
+                            {e.notes && <Text style={{ color: colors.primary, fontSize: 10, marginTop: 2 }}>{e.notes}</Text>}
+                          </View>
+                          <Text style={{ color: colors.muted, fontSize: 11, marginLeft: 8 }}>
+                            {e.sets}×{e.reps} · {e.restSeconds}s
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
+                )}
+                {!isExpanded && (
+                  <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontWeight: '600' }}>Tap to see all {w.exercises.length} exercises with details ›</Text>
                 )}
               </View>
             )}
-          </View>
+          </Pressable>
         );
       })}
 
@@ -269,6 +368,99 @@ function ProgramOverview({ phase }: { phase: number }) {
         </Text>
       </View>
     </ScrollView>
+  );
+}
+
+// ─── Animated Exercise Visual ─────────────────────────────────────────────────
+
+function ExerciseVisual({ exercise }: { exercise: Exercise }) {
+  const colors = useColors();
+  const [frame, setFrame] = useState(0);
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  // Build animation frames from category
+  const getFrames = (): string[] => {
+    const cat = exercise.category;
+    if (cat === 'push') {
+      return ['🧍‍♂️ Stand ready', '💪 Lower down', '⬇️ Full depth', '🚀 Push up!', '✅ Full extension'];
+    } else if (cat === 'pull') {
+      return ['🤚 Grip bar', '⬆️ Initiate pull', '💪 Elbows down', '🎯 Chin over bar', '⬇️ Lower slowly'];
+    } else if (cat === 'legs') {
+      return ['🧍‍♂️ Stand tall', '🦵 Bend knees', '⬇️ Lower hips', '💪 Drive up!', '✅ Stand straight'];
+    } else if (cat === 'core') {
+      return ['🧍‍♂️ Start position', '💪 Brace core', '🔥 Engage abs', '⏱ Hold tension', '✅ Release slowly'];
+    } else if (cat === 'posture') {
+      return ['🧍‍♂️ Stand/sit tall', '🎯 Find neutral', '💪 Hold position', '😤 Feel the stretch', '✅ Return slowly'];
+    } else if (cat === 'priority') {
+      return ['🤚 Start position', '⬆️ Initiate lift', '💪 Control peak', '⬇️ Slow return', '🔁 Repeat!'];
+    } else {
+      return ['🧍‍♂️ Start', '💪 Move', '🎯 Mid-point', '😤 Control', '✅ Complete'];
+    }
+  };
+
+  const frames = getFrames();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrame(prev => (prev + 1) % frames.length);
+    }, 800);
+    return () => clearInterval(interval);
+  }, [frames.length]);
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(animValue, { toValue: 0, duration: 0, useNativeDriver: true }),
+      Animated.timing(animValue, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [frame]);
+
+  return (
+    <View style={{
+      backgroundColor: colors.primary + '10',
+      borderRadius: 14, padding: 16, marginBottom: 16,
+      borderWidth: 1, borderColor: colors.primary + '30',
+      alignItems: 'center',
+    }}>
+      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>FORM ANIMATION</Text>
+
+      {/* Frame indicator dots */}
+      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+        {frames.map((_, i) => (
+          <View key={i} style={{
+            width: i === frame ? 20 : 8, height: 8, borderRadius: 4,
+            backgroundColor: i === frame ? colors.primary : colors.border,
+          }} />
+        ))}
+      </View>
+
+      {/* Animated frame display */}
+      <Animated.View style={{ opacity: animValue }}>
+        <Text style={{ fontSize: 40, marginBottom: 8, textAlign: 'center' }}>
+          {frames[frame].split(' ')[0]}
+        </Text>
+        <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
+          Step {frame + 1} of {frames.length}
+        </Text>
+        <Text style={{ color: colors.primary, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
+          {frames[frame].split(' ').slice(1).join(' ')}
+        </Text>
+      </Animated.View>
+
+      {/* Phase labels */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' }}>
+        {frames.map((f, i) => (
+          <View key={i} style={{
+            backgroundColor: i === frame ? colors.primary + '30' : 'transparent',
+            borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
+            borderWidth: 1, borderColor: i === frame ? colors.primary : colors.border,
+          }}>
+            <Text style={{ color: i === frame ? colors.primary : colors.muted, fontSize: 10, fontWeight: i === frame ? '700' : '400' }}>
+              {f.split(' ').slice(1).join(' ') || `Phase ${i + 1}`}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -303,6 +495,9 @@ function ExerciseLibrary() {
             <Text style={{ color: colors.muted, fontSize: 11 }}>{selected.difficulty}</Text>
           </View>
         </View>
+
+        {/* Animated Visual Guidance */}
+        <ExerciseVisual exercise={selected} />
 
         <View style={{ marginBottom: 16 }}>
           <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>MUSCLES</Text>

@@ -8,16 +8,13 @@ import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, AppearanceRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION } from '@/lib/db/seeds';
 
-type Tab = 'skincare' | 'tanremoval' | 'hair' | 'grooming' | 'bodycare' | 'style' | 'looksmax' | 'facelog';
+type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
 const TABS = [
   { key: 'skincare' as Tab, label: 'Skincare', icon: '🧴' },
   { key: 'tanremoval' as Tab, label: 'Tan', icon: '☀️' },
   { key: 'hair' as Tab, label: 'Hair', icon: '💈' },
-  { key: 'grooming' as Tab, label: 'Grooming', icon: '✂️' },
   { key: 'bodycare' as Tab, label: 'Body', icon: '🧼' },
-  { key: 'style' as Tab, label: 'Style', icon: '👔' },
   { key: 'looksmax' as Tab, label: 'Looksmax', icon: '⭐' },
-  { key: 'facelog' as Tab, label: 'Face Log', icon: '📸' },
 ];
 
 // ─── Skincare ─────────────────────────────────────────────────────────────────
@@ -782,7 +779,7 @@ export default function AppearanceScreen() {
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
           <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Appearance ✨</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }}>Skincare · Hair · Grooming · Style · Looksmax</Text>
+          <Text style={{ color: colors.muted, fontSize: 13 }}>Skincare · Tan · Hair · Body · Looksmax</Text>
         </View>
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
@@ -791,11 +788,8 @@ export default function AppearanceScreen() {
           {activeTab === 'skincare' && <SkincareScreen />}
           {activeTab === 'tanremoval' && <TanRemovalScreen />}
           {activeTab === 'hair' && <HairCareScreen />}
-          {activeTab === 'grooming' && <GroomingScreen />}
           {activeTab === 'bodycare' && <BodyCareScreen />}
-          {activeTab === 'style' && <StyleScreen />}
           {activeTab === 'looksmax' && <LooksmaxScreen />}
-          {activeTab === 'facelog' && <FaceLogScreen />}
         </View>
       </View>
     </ScreenContainer>

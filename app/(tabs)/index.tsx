@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, Dimensions, RefreshControl } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Moon, Smartphone, Settings , Check} from "lucide-react-native";
+import { Activity, Flame, Droplets, Dumbbell, Sparkles, Ban, Smartphone, Settings, Check, ChevronRight } from "lucide-react-native";
 import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { ScreenContainer } from '@/components/screen-container';
@@ -113,8 +113,8 @@ function StatCard({ IconComponent, label, value, unit, color, onPress }:
 
 // ─── Schedule Item ─────────────────────────────────────────────────────────────
 
-function ScheduleItem({ item, completed, onPress }:
-  { item: { time: string; task: string; category: string }; completed: boolean; onPress: () => void }) {
+function ScheduleItem({ item, completed, onPress, onViewDetails }:
+  { item: { time: string; task: string; category: string; details?: string }; completed: boolean; onPress: () => void; onViewDetails?: () => void }) {
   const colors = useColors();
   const categoryColors: Record<string, string> = {
     nutrition: '#00D9A3', training: '#60A5FA', skincare: '#F472B6',
@@ -140,13 +140,29 @@ function ScheduleItem({ item, completed, onPress }:
           {item.task}
         </Text>
       </View>
-      <View style={{
-        width: 22, height: 22, borderRadius: 11,
-        backgroundColor: completed ? colors.success : 'transparent',
-        borderWidth: 2, borderColor: completed ? colors.success : colors.border,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        {completed && <Check size={14} color="#000" />}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {onViewDetails && (
+          <Pressable
+            onPress={(e) => { e.stopPropagation?.(); onViewDetails(); }}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              flexDirection: 'row', alignItems: 'center', gap: 3,
+              backgroundColor: c + '22', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ color: c, fontSize: 10, fontWeight: '700' }}>View</Text>
+            <ChevronRight size={10} color={c} />
+          </Pressable>
+        )}
+        <View style={{
+          width: 22, height: 22, borderRadius: 11,
+          backgroundColor: completed ? colors.success : 'transparent',
+          borderWidth: 2, borderColor: completed ? colors.success : colors.border,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          {completed && <Check size={14} color="#000" />}
+        </View>
       </View>
     </Pressable>
   );
@@ -252,7 +268,6 @@ export default function DashboardScreen() {
   const stats = [
     { icon: Activity, label: 'Weight', value: profile?.currentWeight || 45, unit: 'kg', color: colors.primary },
     { icon: Flame, label: 'Streak', value: dayNumber, unit: `days`, color: colors.warning },
-    { icon: Moon, label: 'Sleep', value: log?.sleepHours || '-', unit: 'h', color: '#818CF8' },
     { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
     { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
     { icon: Sparkles, label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Wait', color: '#F472B6' },
@@ -389,14 +404,27 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Today's Schedule</Text>
             <Text style={{ fontSize: 12, color: colors.muted }}>{dayName}</Text>
           </View>
-          {scheduleItems.slice(0, 8).map((item, i) => (
-            <ScheduleItem
-              key={i}
-              item={item}
-              completed={completedItems[item.time + item.task] || false}
-              onPress={() => toggleScheduleItem(item)}
-            />
-          ))}
+          {scheduleItems.slice(0, 8).map((item, i) => {
+            const categoryRoutes: Record<string, string> = {
+              nutrition: '/(tabs)/nutrition',
+              training: '/(tabs)/training',
+              skincare: '/(tabs)/appearance',
+              appearance: '/(tabs)/appearance',
+              discipline: '/(tabs)/discipline',
+              sleep: '/(tabs)/discipline',
+              work: '/(tabs)/discipline',
+            };
+            const route = categoryRoutes[item.category];
+            return (
+              <ScheduleItem
+                key={i}
+                item={item}
+                completed={completedItems[item.time + item.task] || false}
+                onPress={() => toggleScheduleItem(item)}
+                onViewDetails={route ? () => router.navigate(route as any) : undefined}
+              />
+            );
+          })}
           {scheduleItems.length > 8 && (
             <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center', paddingVertical: 8 }}>
               +{scheduleItems.length - 8} more items

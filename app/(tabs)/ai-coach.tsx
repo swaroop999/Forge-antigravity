@@ -90,8 +90,12 @@ export default function AICoachScreen() {
         currentPhase: phase,
         recentMeals: [],
       };
-      const contextStr = `[FORGE CONTEXT - Day ${dayNumber}, Phase ${phase}]`;
-      const response = await geminiService.sendMessage(`${contextStr} ${msgText}`, contextData);
+      // Build chat history for multi-turn context (last 10 messages)
+      const historyForContext = messages.slice(-10).map(m => ({
+        role: m.role === 'user' ? 'user' as const : 'model' as const,
+        parts: [{ text: m.content }],
+      }));
+      const response = await geminiService.sendMessage(msgText, contextData, historyForContext);
       const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'ai', content: response, timestamp: Date.now() };
       const updated = [...newMsgs, aiMsg];
       setMessages(updated);
@@ -141,7 +145,11 @@ export default function AICoachScreen() {
 
   return (
     <ScreenContainer>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
         {/* Header */}
         <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
@@ -160,6 +168,8 @@ export default function AICoachScreen() {
           keyExtractor={item => item.id}
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={() => (
             <View style={{ flex: 1, alignItems: 'center', paddingTop: 40 }}>

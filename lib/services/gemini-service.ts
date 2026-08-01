@@ -127,7 +127,7 @@ RESPONSE RULES:
   /**
    * Send a message to Gemini API
    */
-  async sendMessage(userMessage: string, contextData: AiContextData): Promise<string> {
+  async sendMessage(userMessage: string, contextData: AiContextData, chatHistory?: GeminiMessage[]): Promise<string> {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -135,17 +135,42 @@ RESPONSE RULES:
 
     const systemPrompt = this.buildSystemPrompt(contextData);
 
+    // Build multi-turn contents array
+    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+
+    // If we have chat history, include it as multi-turn context
+    if (chatHistory && chatHistory.length > 0) {
+      // First message always includes the system prompt as context
+      contents.push({
+        role: 'user',
+        parts: [{ text: systemPrompt + '\n\nFirst user message: ' + (chatHistory[0]?.parts[0]?.text || userMessage) }],
+      });
+      // Add history pairs
+      for (let i = 0; i < chatHistory.length; i++) {
+        if (i === 0) {
+          // First user message already added above
+          continue;
+        }
+        contents.push({
+          role: chatHistory[i].role,
+          parts: chatHistory[i].parts,
+        });
+      }
+      // Add the current user message
+      contents.push({
+        role: 'user',
+        parts: [{ text: userMessage }],
+      });
+    } else {
+      // No history — single turn with system prompt embedded
+      contents.push({
+        role: 'user',
+        parts: [{ text: `${systemPrompt}\n\nUSER'S QUESTION: ${userMessage}` }],
+      });
+    }
+
     const requestBody = {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: `${systemPrompt}\n\nUSER'S QUESTION: ${userMessage}`,
-            },
-          ],
-        },
-      ],
+      contents,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
