@@ -417,14 +417,26 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
   const colors = useColors();
   const [gifLoaded, setGifLoaded] = useState(false);
   const [gifFailed, setGifFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Reset state when switching exercises
+  useEffect(() => {
+    setGifLoaded(false);
+    setGifFailed(false);
+    setRetryCount(0);
+  }, [exercise.id, exercise.gifUrl]);
 
   const PHASE_LABELS = ['Start', 'Mid', 'End'];
-  // Per-exercise emoji sequence used as fallback / supplement
   const frames: [string, string, string] = exercise.formEmojiSequence && exercise.formEmojiSequence.length === 3
     ? exercise.formEmojiSequence
     : ['🧍', '💪', '✨'];
 
   const hasGif = !!exercise.gifUrl && !gifFailed;
+
+  // Cache-busting suffix to defeat sticky image caches on retry
+  const imageUri = exercise.gifUrl
+    ? (retryCount > 0 ? `${exercise.gifUrl}${exercise.gifUrl.includes('?') ? '&' : '?'}r=${retryCount}` : exercise.gifUrl)
+    : null;
 
   return (
     <View style={{
@@ -437,12 +449,11 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
         FORM DEMONSTRATION
       </Text>
 
-      {/* Real looping GIF when available */}
       {hasGif ? (
         <View style={{
-          width: '100%', aspectRatio: 1.2, maxHeight: 260,
+          width: '100%', aspectRatio: 1.0, maxHeight: 300,
           borderRadius: 12, overflow: 'hidden',
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           borderWidth: 1, borderColor: colors.primary + '40',
           marginBottom: 10, alignItems: 'center', justifyContent: 'center',
         }}>
@@ -450,27 +461,41 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
             <Text style={{ color: colors.muted, fontSize: 12 }}>Loading demo…</Text>
           )}
           <Image
-            source={{ uri: exercise.gifUrl! }}
+            key={`${exercise.id}-${retryCount}`}
+            source={{ uri: imageUri!, cache: 'reload' }}
             style={{ width: '100%', height: '100%' }}
             resizeMode="contain"
             onLoad={() => setGifLoaded(true)}
-            onError={() => setGifFailed(true)}
+            onError={() => {
+              if (retryCount < 1) {
+                // Try once more with a cache-bust
+                setTimeout(() => setRetryCount(c => c + 1), 400);
+              } else {
+                setGifFailed(true);
+              }
+            }}
           />
         </View>
       ) : (
-        // Fallback: emoji strip so screen is never blank
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          {frames.map((emoji, i) => (
-            <View key={i} style={{
-              width: 64, height: 64, borderRadius: 14,
-              backgroundColor: i === 1 ? colors.primary + '25' : colors.surface,
-              borderWidth: i === 1 ? 2 : 1,
-              borderColor: i === 1 ? colors.primary : colors.border,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Text style={{ fontSize: 32 }}>{emoji}</Text>
-            </View>
-          ))}
+        <View style={{
+          width: '100%', borderRadius: 12, paddingVertical: 14,
+          backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+          marginBottom: 10, alignItems: 'center',
+        }}>
+          <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8 }}>Form phases</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {frames.map((emoji, i) => (
+              <View key={i} style={{
+                width: 56, height: 56, borderRadius: 12,
+                backgroundColor: i === 1 ? colors.primary + '25' : colors.background,
+                borderWidth: i === 1 ? 2 : 1,
+                borderColor: i === 1 ? colors.primary : colors.border,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 28 }}>{emoji}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       )}
 
