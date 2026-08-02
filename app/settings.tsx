@@ -3,8 +3,8 @@ import { View, Text, ScrollView, Pressable, Switch, Alert, TextInput, Modal } fr
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'nativewind';
 import { router } from 'expo-router';
+import { useThemeContext } from '@/lib/theme-provider';
 import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, CheckCircle, Database, Download, Upload, Calendar, AlertTriangle, X } from 'lucide-react-native';
 import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
 import { exportToJSON, pickAndParseBackupFile, getLastBackupDate, getBackupStats, BackupFile, importFromJSON } from '@/lib/backup';
@@ -13,7 +13,8 @@ import { Card } from '@/components/ui/card';
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useThemeContext();
+  const toggleColorScheme = () => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
 
   // AI Coach settings
   const [apiKey, setApiKey] = useState('');

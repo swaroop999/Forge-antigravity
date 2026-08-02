@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
@@ -236,15 +237,16 @@ function JournalHistoryView({ refreshKey }: { refreshKey: number }) {
   const loadHistory = async () => {
     try {
       const entries = await DisciplineRepo.getAllJournalReflections();
-      const today = new Date().toISOString().split('T')[0];
       const filtered = entries
-        .filter(e => e.date !== today)
+        .filter(e => !!e.content && e.content.trim().length > 0)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setHistory(filtered);
     } catch {}
   };
 
   useEffect(() => { loadHistory(); }, [refreshKey]);
+  // Also reload every time the history view mounts / user focuses the tab
+  useFocusEffect(useCallback(() => { loadHistory(); }, []));
 
   const visible = history.filter(h =>
     !search.trim() || h.content.toLowerCase().includes(search.toLowerCase())
@@ -402,13 +404,13 @@ export default function DisciplineScreen() {
   const colors = useColors();
   const [activeTab, setActiveTab] = useState<Tab>('dopamine');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/discipline').then((pending) => {
       if (pending && (pending === 'dopamine' || pending === 'journal' || pending === 'knowledge')) {
         setActiveTab(pending);
       }
     });
-  }, []);
+  }, []));
 
   return (
     <ScreenContainer>

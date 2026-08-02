@@ -277,38 +277,53 @@ export default function DashboardScreen() {
   const resolveRouteForTask = (item: { task: string; category: string }): { tabPath: string; subTab: string } | null => {
     const t = item.task.toLowerCase();
     const cat = item.category;
-    // Training category tasks
+
+    // Discipline shortcuts (check BEFORE category buckets so mixed tasks route correctly)
+    if (t.includes('journal')) return { tabPath: '/(tabs)/discipline', subTab: 'journal' };
+    if (t.includes('reading') || t.includes('review') || t.includes('plan week') || t.includes('personal time') || t.includes('hobby') || t.includes('gf time') || t.includes('read/plan'))
+      return { tabPath: '/(tabs)/discipline', subTab: 'knowledge' };
+
+    // Training
     if (cat === 'training') {
       if (t.includes('posture')) return { tabPath: '/(tabs)/training', subTab: 'posture' };
       if (t.includes('priority')) return { tabPath: '/(tabs)/training', subTab: 'priority' };
-      if (t.includes('walk')) return { tabPath: '/(tabs)/training', subTab: 'workout' };
-      if (t.includes('training session')) return { tabPath: '/(tabs)/training', subTab: 'workout' };
+      if (t.includes('walk') || t.includes('long walk')) return { tabPath: '/(tabs)/training', subTab: 'posture' };
       return { tabPath: '/(tabs)/training', subTab: 'workout' };
     }
+
     // Skincare / appearance
-    if (cat === 'skincare' || t.includes('skincare') || t.includes('minoxidil') || t.includes('body scrub') || t.includes('face mask') || t.includes('ubtan') || t.includes('hair oil')) {
-      if (t.includes('minoxidil') || t.includes('hair oil')) return { tabPath: '/(tabs)/appearance', subTab: 'hair' };
+    if (cat === 'skincare' || cat === 'appearance' || t.includes('skincare') || t.includes('minoxidil') || t.includes('body scrub') || t.includes('face mask') || t.includes('ubtan') || t.includes('hair oil') || t.includes('mewing') || t.includes('sun exposure')) {
+      // Task-specific sub-tabs
+      if (t.includes('hair oil') && !t.includes('mask') && !t.includes('scrub'))
+        return { tabPath: '/(tabs)/appearance', subTab: 'hair' };
+      if (t.includes('spf') || t.includes('helmet') || t.includes('sun') || t.includes('tan'))
+        return { tabPath: '/(tabs)/appearance', subTab: 'tanremoval' };
+      if (t.includes('body scrub') || t.includes('body pack') || t.includes('body'))
+        return { tabPath: '/(tabs)/appearance', subTab: 'bodycare' };
+      if (t.includes('mewing') || t.includes('looksmax'))
+        return { tabPath: '/(tabs)/appearance', subTab: 'looksmax' };
+      // Combined "Skincare AM + Minoxidil PM" / "Skincare AM" etc. → skincare section
+      // (minoxidil is co-listed with skincare, not its own screen)
       return { tabPath: '/(tabs)/appearance', subTab: 'skincare' };
     }
-    if (cat === 'appearance' || t.includes('helmet') || t.includes('spf')) {
-      return { tabPath: '/(tabs)/appearance', subTab: 'tanremoval' };
-    }
+
     // Nutrition
     if (cat === 'nutrition') {
-      if (t.includes('supplement') || t.includes('zinc') || t.includes('b12') || t.includes('omega') || t.includes('magnesium') || t.includes('d3') || t.includes('whey') || t.includes('creatine'))
+      if (t.includes('supplement') || t.includes('zinc') || t.includes('b12') || t.includes('omega') || t.includes('magnesium') || t.includes('d3') || t.includes('whey') || t.includes('creatine') || t.includes('turmeric'))
         return { tabPath: '/(tabs)/nutrition', subTab: 'supplements' };
       if (t.includes('water')) return { tabPath: '/(tabs)/nutrition', subTab: 'water' };
       if (t.includes('meal prep')) return { tabPath: '/(tabs)/nutrition', subTab: 'mealplan' };
+      if (t.includes('snack') || t.includes('breakfast') || t.includes('lunch') || t.includes('dinner') || t.includes('shake') || t.includes('restaurant') || t.includes('cheat') || t.includes('meal'))
+        return { tabPath: '/(tabs)/nutrition', subTab: 'meals' };
       return { tabPath: '/(tabs)/nutrition', subTab: 'meals' };
     }
-    // Discipline
+
+    // Discipline fallback
     if (cat === 'discipline') {
-      if (t.includes('journal')) return { tabPath: '/(tabs)/discipline', subTab: 'journal' };
-      if (t.includes('reading') || t.includes('review') || t.includes('plan') || t.includes('personal time') || t.includes('hobby'))
-        return { tabPath: '/(tabs)/discipline', subTab: 'knowledge' };
       return { tabPath: '/(tabs)/discipline', subTab: 'dopamine' };
     }
-    if (cat === 'sleep') return null; // no detail page needed
+
+    if (cat === 'sleep') return null;
     if (cat === 'work') return null;
     return null;
   };

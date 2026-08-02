@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
@@ -394,13 +395,13 @@ export default function NutritionScreen() {
   const colors = useColors();
   const [activeTab, setActiveTab] = useState<Tab>('meals');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/nutrition').then((pending) => {
       if (pending && ['meals','mealplan','supplements','water'].includes(pending)) {
         setActiveTab(pending as Tab);
       }
     });
-  }, []);
+  }, []));
 
   return (
     <ScreenContainer>

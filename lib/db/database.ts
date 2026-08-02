@@ -570,7 +570,7 @@ export const DisciplineRepo = {
     }
   },
   async setJournalReflection(date: string, value: string): Promise<void> {
-    await AsyncStorage.setItem(`journal_${date}`, value); // store as raw string like before to avoid breaking changes
+    await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(value));
   },
   async getAllJournalReflections(): Promise<{ date: string; content: string }[]> {
     try {

@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check } from 'lucide-react-native';
 import {
   ScrollView, View, Text, Pressable, TextInput, Alert, Modal,
-  RefreshControl, FlatList, Animated,
+  RefreshControl, FlatList, Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
@@ -414,41 +415,16 @@ function ProgramOverview({ phase }: { phase: number }) {
 
 function ExerciseVisual({ exercise }: { exercise: Exercise }) {
   const colors = useColors();
-  const [frame, setFrame] = useState(0);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [gifLoaded, setGifLoaded] = useState(false);
+  const [gifFailed, setGifFailed] = useState(false);
 
   const PHASE_LABELS = ['Start', 'Mid', 'End'];
-
-  // Per-exercise emoji sequence (start/mid/end); fall back to category default
+  // Per-exercise emoji sequence used as fallback / supplement
   const frames: [string, string, string] = exercise.formEmojiSequence && exercise.formEmojiSequence.length === 3
     ? exercise.formEmojiSequence
-    : (() => {
-        const cat = exercise.category;
-        if (cat === 'push') return ['🧍', '💪', '✨'];
-        if (cat === 'pull') return ['🙆', '🧗', '✨'];
-        if (cat === 'legs') return ['🧍', '🏋️', '✨'];
-        if (cat === 'core') return ['🛌', '💪', '✨'];
-        if (cat === 'posture') return ['🧍', '🧘', '✨'];
-        return ['🧍', '💪', '✨'];
-      })();
+    : ['🧍', '💪', '✨'];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFrame(prev => (prev + 1) % 3);
-    }, 900);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Pulse on each frame change
-    scaleAnim.setValue(0.85);
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 4,
-      tension: 80,
-      useNativeDriver: true,
-    }).start();
-  }, [frame, scaleAnim]);
+  const hasGif = !!exercise.gifUrl && !gifFailed;
 
   return (
     <View style={{
@@ -457,57 +433,58 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
       borderWidth: 1, borderColor: colors.primary + '30',
       alignItems: 'center',
     }}>
-      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>FORM VISUAL</Text>
+      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>
+        FORM DEMONSTRATION
+      </Text>
 
-      {/* Frame indicator dots */}
-      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
-        {[0, 1, 2].map((i) => (
-          <View key={i} style={{
-            width: i === frame ? 22 : 8, height: 8, borderRadius: 4,
-            backgroundColor: i === frame ? colors.primary : colors.border,
-          }} />
-        ))}
-      </View>
-
-      {/* 3-step emoji flow */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        {frames.map((emoji, i) => (
-          <View key={i} style={{ alignItems: 'center' }}>
-            <Animated.View style={i === frame ? { transform: [{ scale: scaleAnim }] } : undefined}>
-              <View style={{
-                width: 60, height: 60, borderRadius: 14,
-                backgroundColor: i === frame ? colors.primary + '25' : colors.surface,
-                borderWidth: i === frame ? 2 : 1,
-                borderColor: i === frame ? colors.primary : colors.border,
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ fontSize: i === frame ? 34 : 24, opacity: i === frame ? 1 : 0.5 }}>
-                  {emoji}
-                </Text>
-              </View>
-            </Animated.View>
-            <Text style={{
-              color: i === frame ? colors.primary : colors.muted,
-              fontSize: 10, fontWeight: i === frame ? '700' : '500',
-              marginTop: 4,
+      {/* Real looping GIF when available */}
+      {hasGif ? (
+        <View style={{
+          width: '100%', aspectRatio: 1.2, maxHeight: 260,
+          borderRadius: 12, overflow: 'hidden',
+          backgroundColor: colors.surface,
+          borderWidth: 1, borderColor: colors.primary + '40',
+          marginBottom: 10, alignItems: 'center', justifyContent: 'center',
+        }}>
+          {!gifLoaded && (
+            <Text style={{ color: colors.muted, fontSize: 12 }}>Loading demo…</Text>
+          )}
+          <Image
+            source={{ uri: exercise.gifUrl! }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="contain"
+            onLoad={() => setGifLoaded(true)}
+            onError={() => setGifFailed(true)}
+          />
+        </View>
+      ) : (
+        // Fallback: emoji strip so screen is never blank
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          {frames.map((emoji, i) => (
+            <View key={i} style={{
+              width: 64, height: 64, borderRadius: 14,
+              backgroundColor: i === 1 ? colors.primary + '25' : colors.surface,
+              borderWidth: i === 1 ? 2 : 1,
+              borderColor: i === 1 ? colors.primary : colors.border,
+              alignItems: 'center', justifyContent: 'center',
             }}>
-              {PHASE_LABELS[i]}
-            </Text>
-          </View>
-        ))}
-      </View>
+              <Text style={{ fontSize: 32 }}>{emoji}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
-      {/* Phase labels row */}
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+      {/* Start / Mid / End labels */}
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 6 }}>
         {PHASE_LABELS.map((label, i) => (
           <View key={i} style={{
-            backgroundColor: i === frame ? colors.primary + '30' : 'transparent',
+            backgroundColor: i === 1 ? colors.primary + '30' : 'transparent',
             borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4,
-            borderWidth: 1, borderColor: i === frame ? colors.primary : colors.border,
+            borderWidth: 1, borderColor: i === 1 ? colors.primary : colors.border,
           }}>
             <Text style={{
-              color: i === frame ? colors.primary : colors.muted,
-              fontSize: 11, fontWeight: i === frame ? '700' : '400',
+              color: i === 1 ? colors.primary : colors.muted,
+              fontSize: 11, fontWeight: i === 1 ? '700' : '500',
             }}>
               {label}
             </Text>
@@ -515,9 +492,9 @@ function ExerciseVisual({ exercise }: { exercise: Exercise }) {
         ))}
       </View>
 
-      {/* First form cue as caption */}
+      {/* Primary form cue as caption */}
       {exercise.formCues?.[0] && (
-        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 10, textAlign: 'center', fontStyle: 'italic' }}>
+        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6, textAlign: 'center', fontStyle: 'italic' }}>
           💡 {exercise.formCues[0]}
         </Text>
       )}
@@ -865,13 +842,16 @@ export default function TrainingScreen() {
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       setDayOfWeek(days[new Date().getDay()]);
     });
-    // Handle pending sub-tab from dashboard "View" button
+  }, []);
+
+  // Check for pending sub-tab navigation every time tab is focused
+  useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/training').then(sub => {
       if (sub && ['workout','program','library','progress','posture','priority'].includes(sub)) {
         setActiveTab(sub as Tab);
       }
     });
-  }, []);
+  }, []));
 
   return (
     <ScreenContainer>

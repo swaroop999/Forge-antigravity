@@ -1,7 +1,8 @@
 import * as Haptics from "expo-haptics";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, Alert } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
@@ -557,13 +558,13 @@ export default function AppearanceScreen() {
   const colors = useColors();
   const [activeTab, setActiveTab] = useState<Tab>('skincare');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/appearance').then(sub => {
       if (sub && ['skincare','tanremoval','hair','bodycare','looksmax'].includes(sub)) {
         setActiveTab(sub as Tab);
       }
     });
-  }, []);
+  }, []));
 
   return (
     <ScreenContainer>

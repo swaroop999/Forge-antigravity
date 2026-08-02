@@ -1,8 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Appearance, View, useColorScheme as useSystemColorScheme } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colorScheme as nativewindColorScheme, vars } from "nativewind";
 
 import { SchemeColors, type ColorScheme } from "@/constants/theme";
+
+const THEME_KEY = "forge_color_scheme";
 
 type ThemeContextValue = {
   colorScheme: ColorScheme;
@@ -14,6 +17,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useSystemColorScheme() ?? "light";
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(systemScheme);
+  const [loaded, setLoaded] = useState(false);
 
   const applyScheme = useCallback((scheme: ColorScheme) => {
     nativewindColorScheme.set(scheme);
@@ -29,14 +33,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setColorScheme = useCallback((scheme: ColorScheme) => {
+  // Load saved preference on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(THEME_KEY);
+        const scheme: ColorScheme = saved === "light" || saved === "dark" ? saved : systemScheme;
+        setColorSchemeState(scheme);
+        applyScheme(scheme);
+      } catch {
+        applyScheme(systemScheme);
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, [applyScheme, systemScheme]);
+
+  const setColorScheme = useCallback(async (scheme: ColorScheme) => {
     setColorSchemeState(scheme);
     applyScheme(scheme);
+    try { await AsyncStorage.setItem(THEME_KEY, scheme); } catch {}
   }, [applyScheme]);
 
   useEffect(() => {
-    applyScheme(colorScheme);
-  }, [applyScheme, colorScheme]);
+    if (loaded) applyScheme(colorScheme);
+  }, [applyScheme, colorScheme, loaded]);
 
   const themeVariables = useMemo(
     () =>
