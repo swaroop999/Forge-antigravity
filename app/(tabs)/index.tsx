@@ -161,7 +161,7 @@ function ScheduleItem({ item, completed, onPress, onViewDetails }:
           borderWidth: 2, borderColor: completed ? colors.success : colors.border,
           alignItems: 'center', justifyContent: 'center',
         }}>
-          {completed && <Check size={14} color="#000" />}
+          {completed && <Check size={14} color={colors.background} />}
         </View>
       </View>
     </Pressable>
@@ -270,10 +270,6 @@ export default function DashboardScreen() {
     { icon: Flame, label: 'Streak', value: dayNumber, unit: `days`, color: colors.warning },
     { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
     { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
-    { icon: Sparkles, label: 'Skincare', value: (log?.skincareAM && log?.skincarePM) ? 'Done' : log?.skincareAM ? 'AM ✓' : 'Wait', color: '#F472B6' },
-    { icon: Smartphone, label: 'Screen', value: log?.screenTimeHours || '-', unit: 'h', color: colors.muted },
-    { icon: Ban, label: 'No Porn', value: '—', unit: 'd', color: colors.success },
-    { icon: Ban, label: 'No Junk', value: '—', unit: 'd', color: colors.success },
   ];
 
   const phaseMs = DEFAULT_MILESTONES.filter(m => m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365));
@@ -304,8 +300,8 @@ export default function DashboardScreen() {
                 <Settings size={22} color={colors.muted} />
               </Pressable>
               <View style={{ backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
-                <Text style={{ color: '#000', fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
-                <Text style={{ color: '#000', fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
+                <Text style={{ color: colors.background, fontWeight: '800', fontSize: 12 }}>Phase {phase}</Text>
+                <Text style={{ color: colors.background, fontSize: 10, fontWeight: '600', opacity: 0.7 }}>{phaseLabels[phase]}</Text>
               </View>
             </View>
           </View>
@@ -447,7 +443,7 @@ export default function DashboardScreen() {
                         height: Math.max(10, (pct / 100) * 60),
                         width: isToday ? 24 : 20, borderRadius: 4,
                         backgroundColor: isToday ? colors.primary : pct > 70 ? 'rgba(0,217,163,0.5)' : pct > 40 ? 'rgba(255,184,0,0.5)' : colors.border,
-                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? '#fff' : 'transparent'
+                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? colors.foreground : 'transparent'
                       }} />
                       <Text style={{ fontSize: 9, color: colors.muted, marginTop: 6 }}>{days[i]}</Text>
                       <Text style={{ fontSize: 9, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '900' : '500', marginTop: 2 }}>

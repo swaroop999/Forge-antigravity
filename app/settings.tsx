@@ -200,7 +200,7 @@ export default function SettingsScreen() {
                 paddingVertical: 10, alignItems: 'center', opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Save</Text>
+              <Text style={{ color: colors.background, fontWeight: '700', fontSize: 13 }}>Save</Text>
             </Pressable>
             <Pressable
               onPress={handleTestConnection}
@@ -313,7 +313,7 @@ export default function SettingsScreen() {
               value={colorScheme === 'dark'} 
               onValueChange={toggleColorScheme}
               trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colorScheme === 'dark' ? '#000' : '#f4f3f4'}
+              thumbColor={colorScheme === 'dark' ? colors.background : '#f4f3f4'}
             />
           </View>
         </Card>
@@ -435,7 +435,7 @@ export default function SettingsScreen() {
                 onPress={confirmImport}
                 style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
               >
-                <Text style={{ color: '#000', fontWeight: '800', fontSize: 15 }}>Import</Text>
+                <Text style={{ color: colors.background, fontWeight: '800', fontSize: 15 }}>Import</Text>
               </Pressable>
             </View>
           </View>

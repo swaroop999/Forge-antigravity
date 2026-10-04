@@ -171,10 +171,10 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
       {/* Rest Timer */}
       {restTimer !== null && (
         <View style={{ backgroundColor: colors.primary, borderRadius: 12, padding: 14, marginBottom: 16, alignItems: 'center' }}>
-          <Text style={{ color: '#000', fontWeight: '800', fontSize: 24 }}>{restTimer}s</Text>
-          <Text style={{ color: '#000', fontSize: 12, fontWeight: '600' }}>Rest — next set in {restTimer}s</Text>
+          <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 24 }}>{restTimer}s</Text>
+          <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>Rest — next set in {restTimer}s</Text>
           <Pressable onPress={() => { if (timerInterval) clearInterval(timerInterval); setRestTimer(null); }} style={{ marginTop: 8 }}>
-            <Text style={{ color: '#000', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>Skip rest</Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>Skip rest</Text>
           </Pressable>
         </View>
       )}
@@ -246,7 +246,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
                     opacity: pressed ? 0.8 : 1,
                   })}
                 >
-                  <Text style={{ color: si < exSets.done ? '#000' : si === exSets.done ? '#000' : colors.muted, fontWeight: '700', fontSize: 12 }}>
+                  <Text style={{ color: si < exSets.done ? colors.background : si === exSets.done ? colors.foreground : colors.muted, fontWeight: '700', fontSize: 12 }}>
                     {si < exSets.done ? '✓' : `S${si + 1}`}
                   </Text>
                 </Pressable>
@@ -265,7 +265,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
             alignItems: 'center', marginTop: 8, opacity: pressed ? 0.8 : 1,
           })}
         >
-          <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>✓ Complete Workout</Text>
+          <Text style={{ color: colors.background, fontWeight: '800', fontSize: 16 }}>✓ Complete Workout</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -278,7 +278,6 @@ function ProgramOverview({ phase }: { phase: number }) {
   const colors = useColors();
   const phaseWorkouts = WORKOUT_PROGRAMS.filter(w => w.phase === phase);
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
@@ -291,17 +290,14 @@ function ProgramOverview({ phase }: { phase: number }) {
         const w = phaseWorkouts.find(p => p.dayOfWeek === day);
         if (!w) return null;
         const isRestDay = w.type.includes('REST') || w.type.includes('Rest');
-        const isExpanded = expandedDay === day;
         return (
-          <Pressable
+          <View
             key={day}
-            onPress={() => !isRestDay && setExpandedDay(isExpanded ? null : day)}
-            style={({ pressed }) => ({
+            style={{
               backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 10,
               borderWidth: 1, borderColor: isRestDay ? colors.border : colors.primary + '40',
               borderLeftWidth: 4, borderLeftColor: isRestDay ? colors.border : colors.primary,
-              opacity: pressed ? 0.9 : 1,
-            })}
+            }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
@@ -311,52 +307,30 @@ function ProgramOverview({ phase }: { phase: number }) {
                 <Text style={{ fontSize: 15, fontWeight: '700', color: isRestDay ? colors.muted : colors.foreground }}>{w.type}</Text>
                 <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{w.description}</Text>
               </View>
-              {!isRestDay && (
-                <Text style={{ color: colors.muted, fontSize: 18, marginLeft: 8 }}>{isExpanded ? '▲' : '▼'}</Text>
-              )}
             </View>
 
-            {/* Show all exercises when expanded */}
+            {/* Always show full details of all exercises */}
             {!isRestDay && (
               <View style={{ marginTop: 10, gap: 4 }}>
-                {/* Always show first 4 as chips */}
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {(isExpanded ? w.exercises : w.exercises).map((e, i) => {
+                <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+                  {w.exercises.map((e, i) => {
                     const ex = EXERCISES.find(ex => ex.id === e.exerciseId);
                     return (
-                      <View key={i} style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                        <Text style={{ color: colors.foreground, fontSize: 10 }}>
-                          {ex?.name || e.exerciseId}
+                      <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: i < w.exercises.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>{ex?.name || e.exerciseId}</Text>
+                          {e.notes && <Text style={{ color: colors.primary, fontSize: 10, marginTop: 2 }}>{e.notes}</Text>}
+                        </View>
+                        <Text style={{ color: colors.muted, fontSize: 11, marginLeft: 8 }}>
+                          {e.sets}×{e.reps} · {e.restSeconds}s
                         </Text>
                       </View>
                     );
                   })}
                 </View>
-                {/* Show full details when expanded */}
-                {isExpanded && (
-                  <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                    {w.exercises.map((e, i) => {
-                      const ex = EXERCISES.find(ex => ex.id === e.exerciseId);
-                      return (
-                        <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: i < w.exercises.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>{ex?.name || e.exerciseId}</Text>
-                            {e.notes && <Text style={{ color: colors.primary, fontSize: 10, marginTop: 2 }}>{e.notes}</Text>}
-                          </View>
-                          <Text style={{ color: colors.muted, fontSize: 11, marginLeft: 8 }}>
-                            {e.sets}×{e.reps} · {e.restSeconds}s
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-                {!isExpanded && (
-                  <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontWeight: '600' }}>Tap to see all {w.exercises.length} exercises with details ›</Text>
-                )}
               </View>
             )}
-          </Pressable>
+          </View>
         );
       })}
 
@@ -373,93 +347,170 @@ function ProgramOverview({ phase }: { phase: number }) {
 
 // ─── Animated Exercise Visual ─────────────────────────────────────────────────
 
+import { Image } from 'react-native';
+
+const EXERCISE_IMAGE_MAPPING: Record<string, string> = {
+  'wall-pushup': 'Wall_Push_Up',
+  'incline-pushup': 'Incline_Push-Up',
+  'standard-pushup': 'Pushups',
+  'wide-pushup': 'Wide-Grip_Push-Up',
+  'diamond-pushup': 'Diamond_Push-Up',
+  'decline-pushup': 'Decline_Push-Up',
+  'weighted-pushup': 'Pushups',
+  'archer-pushup': 'Archer_Push_Up',
+  'one-arm-pushup': 'One-Arm_Push-Up',
+  'pike-pushup': 'Pike_Push_Up',
+  'handstand-pushup': 'Handstand_Push-Up',
+  'overhead-press-bag': 'Standing_Military_Press',
+  'lateral-raise': 'Side_Lateral_Raise',
+  'front-raise': 'Front_Dumbbell_Raise',
+  'shoulder-taps': 'Plank',
+  'tricep-dips': 'Bench_Dips',
+  'tricep-dips-elevated': 'Bench_Dips',
+  'tricep-extension-bag': 'Standing_Dumbbell_Triceps_Extension',
+  'plank-to-pushup': 'Plank',
+  'dead-hangs': 'Pullups',
+  'negative-pullup': 'Pullups',
+  'assisted-pullup': 'Pullups',
+  'standard-pullup': 'Pullups',
+  'chin-up': 'Chin-Up',
+  'wide-grip-pullup': 'Wide-Grip_Pull-Up',
+  'archer-pullup': 'Pullups',
+  'muscle-up': 'Muscle_Up',
+  'bent-over-row': 'Bent_Over_Barbell_Row',
+  'inverted-row': 'Inverted_Row',
+  'bicep-curls-bag': 'Dumbbell_Bicep_Curl',
+  'hammer-curls': 'Hammer_Curls',
+  'reverse-curls': 'Reverse_Barbell_Curl',
+  'face-pulls': 'Face_Pull',
+  'band-pull-aparts': 'Band_Pull_Apart',
+  'shrugs': 'Dumbbell_Shrug',
+  'rear-delt-flyes': 'Reverse_Flyes',
+  'bw-squats': 'Bodyweight_Squat',
+  'bulgarian-split-squat': 'Bulgarian_Split_Squat',
+  'weighted-bulgarian': 'Bulgarian_Split_Squat',
+  'reverse-lunge': 'Reverse_Lunge',
+  'walking-lunge': 'Walking_Lunge',
+  'pistol-squat': 'Pistol_Squat',
+  'jump-squats': 'Jump_Squat',
+  'glute-bridges': 'Glute_Bridge',
+  'single-leg-bridge': 'Glute_Bridge',
+  'hip-thrusts': 'Barbell_Hip_Thrust',
+  'calf-raises': 'Standing_Calf_Raises',
+  'single-calf-raise': 'Calf_Raise_On_A_Dumbbell',
+  'wall-sit': 'Wall_Sit',
+  'step-ups': 'Step-up',
+  'plank': 'Plank',
+  'side-plank': 'Side_Plank',
+  'dead-bugs': 'Dead_Bug',
+  'hollow-body': 'Hollow_Body_Hold',
+  'superman': 'Superman',
+  'leg-raises': 'Flat_Bench_Lying_Leg_Raise',
+  'hanging-leg-raises': 'Hanging_Leg_Raise',
+  'russian-twists': 'Russian_Twist',
+  'mountain-climbers': 'Mountain_Climbers',
+  'bicycle-crunches': 'Bicycle_Crunch',
+  'flutter-kicks': 'Flutter_Kicks',
+  'bird-dogs': 'Bird_Dog',
+  'ab-roller': 'Ab_Roller',
+  'l-sit': 'L-Sit',
+  'doorway-stretch': 'Doorway_Stretch',
+  'wall-angels': 'Wall_Angel',
+  'chin-tucks': 'Neck_Curl',
+  'cat-cow': 'Cat_Cow',
+  'thoracic-rotation': 'Thoracic_Rotation',
+  'scapular-pushup': 'Scapular_Push-Up',
+  'wall-slides': 'Wall_Slide',
+  'ytw-raises': 'YTW',
+  'thoracic-foam-roll': 'Foam_Roll',
+  'spinal-decompression': 'Dead_Hang',
+  'towel-pull-aparts': 'Band_Pull_Apart',
+  'prone-cobra': 'Prone_Cobra',
+  'priority-lateral-raise': 'Side_Lateral_Raise',
+  'neck-curls': 'Neck_Curl',
+  'neck-extensions': 'Neck_Extension',
+  'neck-side-flexion': 'Neck_Side_Flexion',
+  'priority-shrugs': 'Dumbbell_Shrug',
+};
+
 function ExerciseVisual({ exercise }: { exercise: Exercise }) {
   const colors = useColors();
   const [frame, setFrame] = useState(0);
+  const [imgError, setImgError] = useState(false);
   const animValue = useRef(new Animated.Value(0)).current;
 
-  // Build animation frames from category
-  const getFrames = (): string[] => {
-    const cat = exercise.category;
-    if (cat === 'push') {
-      return ['🧍‍♂️ Stand ready', '💪 Lower down', '⬇️ Full depth', '🚀 Push up!', '✅ Full extension'];
-    } else if (cat === 'pull') {
-      return ['🤚 Grip bar', '⬆️ Initiate pull', '💪 Elbows down', '🎯 Chin over bar', '⬇️ Lower slowly'];
-    } else if (cat === 'legs') {
-      return ['🧍‍♂️ Stand tall', '🦵 Bend knees', '⬇️ Lower hips', '💪 Drive up!', '✅ Stand straight'];
-    } else if (cat === 'core') {
-      return ['🧍‍♂️ Start position', '💪 Brace core', '🔥 Engage abs', '⏱ Hold tension', '✅ Release slowly'];
-    } else if (cat === 'posture') {
-      return ['🧍‍♂️ Stand/sit tall', '🎯 Find neutral', '💪 Hold position', '😤 Feel the stretch', '✅ Return slowly'];
-    } else if (cat === 'priority') {
-      return ['🤚 Start position', '⬆️ Initiate lift', '💪 Control peak', '⬇️ Slow return', '🔁 Repeat!'];
-    } else {
-      return ['🧍‍♂️ Start', '💪 Move', '🎯 Mid-point', '😤 Control', '✅ Complete'];
-    }
-  };
-
-  const frames = getFrames();
-
+  // Toggle between 0 and 1 every 1 second to create a GIF-like effect using two images
   useEffect(() => {
     const interval = setInterval(() => {
-      setFrame(prev => (prev + 1) % frames.length);
-    }, 800);
+      setFrame(prev => (prev === 0 ? 1 : 0));
+    }, 1000);
     return () => clearInterval(interval);
-  }, [frames.length]);
+  }, []);
 
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(animValue, { toValue: 0, duration: 0, useNativeDriver: true }),
-      Animated.timing(animValue, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [frame]);
+  const mappedId = EXERCISE_IMAGE_MAPPING[exercise.id] || exercise.id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('_');
+  const imageUrl = `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${mappedId}/${frame}.jpg`;
+
+  // Fallback text cues if image fails to load
+  const getFallbackCues = (): string[] => {
+    const cat = exercise.category;
+    if (cat === 'push') return ['Stand ready', 'Lower down', 'Full depth', 'Push up!', 'Full extension'];
+    if (cat === 'pull') return ['Grip bar', 'Initiate pull', 'Elbows down', 'Chin over bar', 'Lower slowly'];
+    if (cat === 'legs') return ['Stand tall', 'Bend knees', 'Lower hips', 'Drive up!', 'Stand straight'];
+    if (cat === 'core') return ['Start position', 'Brace core', 'Engage abs', 'Hold tension', 'Release slowly'];
+    if (cat === 'posture') return ['Stand/sit tall', 'Find neutral', 'Hold position', 'Feel the stretch', 'Return slowly'];
+    if (cat === 'priority') return ['Start position', 'Initiate lift', 'Control peak', 'Slow return', 'Repeat!'];
+    return ['Start', 'Move', 'Mid-point', 'Control', 'Complete'];
+  };
+
+  const fallbacks = getFallbackCues();
 
   return (
     <View style={{
-      backgroundColor: colors.primary + '10',
+      backgroundColor: colors.surface,
       borderRadius: 14, padding: 16, marginBottom: 16,
-      borderWidth: 1, borderColor: colors.primary + '30',
-      alignItems: 'center',
+      borderWidth: 1, borderColor: colors.border,
+      alignItems: 'center', overflow: 'hidden'
     }}>
-      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>FORM ANIMATION</Text>
+      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 12 }}>EXERCISE VISUAL</Text>
 
-      {/* Frame indicator dots */}
-      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
-        {frames.map((_, i) => (
-          <View key={i} style={{
-            width: i === frame ? 20 : 8, height: 8, borderRadius: 4,
-            backgroundColor: i === frame ? colors.primary : colors.border,
-          }} />
-        ))}
-      </View>
-
-      {/* Animated frame display */}
-      <Animated.View style={{ opacity: animValue }}>
-        <Text style={{ fontSize: 40, marginBottom: 8, textAlign: 'center' }}>
-          {frames[frame].split(' ')[0]}
-        </Text>
-        <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
-          Step {frame + 1} of {frames.length}
-        </Text>
-        <Text style={{ color: colors.primary, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
-          {frames[frame].split(' ').slice(1).join(' ')}
-        </Text>
-      </Animated.View>
-
-      {/* Phase labels */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' }}>
-        {frames.map((f, i) => (
-          <View key={i} style={{
-            backgroundColor: i === frame ? colors.primary + '30' : 'transparent',
-            borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
-            borderWidth: 1, borderColor: i === frame ? colors.primary : colors.border,
-          }}>
-            <Text style={{ color: i === frame ? colors.primary : colors.muted, fontSize: 10, fontWeight: i === frame ? '700' : '400' }}>
-              {f.split(' ').slice(1).join(' ') || `Phase ${i + 1}`}
-            </Text>
+      {!imgError ? (
+        <View style={{ width: '100%', alignItems: 'center' }}>
+          <View style={{ width: 240, height: 240, backgroundColor: colors.background, borderRadius: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+            <Image 
+              source={{ uri: imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="contain"
+              onError={() => setImgError(true)}
+            />
           </View>
-        ))}
-      </View>
+          <Text style={{ color: colors.muted, fontSize: 10, marginTop: 12 }}>
+            {frame === 0 ? 'Step 1: Start position' : 'Step 2: End position'}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ width: '100%', alignItems: 'center', paddingVertical: 20 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12, color: colors.primary }}>⚡</Text>
+          <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 4 }}>
+            Visualize the movement
+          </Text>
+          <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center' }}>
+            {exercise.description}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 16, justifyContent: 'center' }}>
+            {fallbacks.map((f, i) => (
+              <View key={i} style={{
+                backgroundColor: colors.background,
+                borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
+                borderWidth: 1, borderColor: colors.border,
+              }}>
+                <Text style={{ color: colors.foreground, fontSize: 10, fontWeight: '500' }}>
+                  {f}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -549,7 +600,7 @@ function ExerciseLibrary() {
           {[null, ...categories].map(cat => (
             <Pressable key={cat ?? 'all'} onPress={() => setFilterCategory(cat)}
               style={{ backgroundColor: filterCategory === cat ? colors.primary : colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: filterCategory === cat ? colors.primary : colors.border }}>
-              <Text style={{ color: filterCategory === cat ? '#000' : colors.foreground, fontWeight: '600', fontSize: 12, textTransform: 'capitalize' }}>
+              <Text style={{ color: filterCategory === cat ? colors.background : colors.foreground, fontWeight: '600', fontSize: 12, textTransform: 'capitalize' }}>
                 {cat ?? 'All'} {cat === null ? `(${EXERCISES.length})` : `(${EXERCISES.filter(e => e.category === cat).length})`}
               </Text>
             </Pressable>
@@ -614,7 +665,7 @@ function PostureScreen() {
             borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.border,
             marginRight: 12, alignItems: 'center', justifyContent: 'center',
           }}>
-            {done[ex.id] && <Check size={14} color="#000" />}
+            {done[ex.id] && <Check size={14} color={colors.background} />}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '700', color: done[ex.id] ? colors.muted : colors.foreground, textDecorationLine: done[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
@@ -668,7 +719,7 @@ function PriorityMovements() {
               borderWidth: 2, borderColor: done[ex.id] ? colors.success : colors.primary,
               marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
             }}>
-              {done[ex.id] && <Check size={14} color="#000" />}
+              {done[ex.id] && <Check size={14} color={colors.background} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '800', fontSize: 15, color: done[ex.id] ? colors.success : colors.foreground }}>
@@ -736,7 +787,7 @@ function TrainingProgress() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Body Measurements (cm)</Text>
           <Pressable onPress={() => setShowMeasure(!showMeasure)} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Update</Text>
+            <Text style={{ color: colors.background, fontWeight: '700', fontSize: 12 }}>Update</Text>
           </Pressable>
         </View>
         {measureFields.map(field => (

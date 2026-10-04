@@ -38,6 +38,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyScheme(colorScheme);
   }, [applyScheme, colorScheme]);
 
+  useEffect(() => {
+    if (systemScheme !== colorScheme) {
+      setColorScheme(systemScheme);
+    }
+  }, [systemScheme]);
+
   const themeVariables = useMemo(
     () =>
       vars({

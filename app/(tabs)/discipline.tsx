@@ -17,80 +17,6 @@ const TABS = [
   { key: 'knowledge' as Tab, label: 'Knowledge', icon: '📚' },
 ];
 
-// ─── Habits Tracker ────────────────────────────────────────────────────────────
-
-function HabitsScreen() {
-  const colors = useColors();
-  const [done, setDone] = useState<Record<string, boolean>>({});
-  const todayStr = new Date().toISOString().split('T')[0];
-  const isWeekend = [0, 6].includes(new Date().getDay());
-
-  useEffect(() => {
-    DisciplineRepo.getHabits(todayStr).then(setDone);
-  }, []);
-
-  const toggle = async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const n = { ...done, [id]: !done[id] };
-    setDone(n);
-    await DisciplineRepo.setHabits(todayStr, n);
-  };
-
-  const categories = ['sleep', 'dopamine', 'nutrition', 'training', 'appearance'] as const;
-  const categoryNames = { sleep: 'Sleep & Wake', dopamine: 'Dopamine & Mind', nutrition: 'Nutrition & Diet', training: 'Training & Posture', appearance: 'Appearance & Grooming' };
-  const categoryColors = { sleep: '#A78BFA', dopamine: '#F87171', nutrition: '#34D399', training: '#60A5FA', appearance: '#F472B6' };
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: colors.primary, marginBottom: 8 }}>32 Core Habits</Text>
-        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 20 }}>
-          Your entire transformation is built on these 32 daily actions. Perfection isn't required, but consistency is. Complete 80%+ daily to guarantee success.
-        </Text>
-      </View>
-
-      {categories.map(cat => {
-        const catHabits = HABITS.filter(h => h.category === cat && (!isWeekend || !h.weekdayOnly));
-        if (catHabits.length === 0) return null;
-        
-        const completed = catHabits.filter(h => done[h.id]).length;
-        const total = catHabits.length;
-        
-        return (
-          <View key={cat} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: categoryColors[cat] }}>{categoryNames[cat]}</Text>
-              <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '700' }}>{completed}/{total}</Text>
-            </View>
-            
-            {catHabits.map((habit, i) => (
-              <Pressable key={habit.id} onPress={() => toggle(habit.id)} style={({ pressed }) => ({
-                flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-                borderBottomWidth: i < catHabits.length - 1 ? 1 : 0, borderBottomColor: colors.border,
-                opacity: pressed ? 0.8 : 1,
-              })}>
-                <View style={{
-                  width: 22, height: 22, borderRadius: 11,
-                  backgroundColor: done[habit.id] ? categoryColors[cat] : 'transparent',
-                  borderWidth: 2, borderColor: done[habit.id] ? categoryColors[cat] : colors.border,
-                  marginRight: 12, alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {done[habit.id] && <Check size={14} color="#000" />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: done[habit.id] ? colors.muted : colors.foreground, fontSize: 13, textDecorationLine: done[habit.id] ? 'line-through' : 'none' }}>
-                    {isWeekend && habit.weekendVariant ? habit.weekendVariant : habit.name}
-                  </Text>
-                  {habit.description && <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{habit.description}</Text>}
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-}
 
 // ─── Dopamine Reset ────────────────────────────────────────────────────────────
 
@@ -244,7 +170,7 @@ function JournalScreen() {
       />
 
       <Pressable onPress={saveEntry} style={{ backgroundColor: saved ? colors.success : colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center' }}>
-        <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>{saved ? '✓ Saved' : 'Save Entry'}</Text>
+        <Text style={{ color: colors.background, fontWeight: '800', fontSize: 16 }}>{saved ? '✓ Saved' : 'Save Entry'}</Text>
       </Pressable>
 
 
@@ -304,134 +230,6 @@ function JournalHistoryCard({ entry }: { entry: { date: string; content: string 
   );
 }
 
-// ─── Milestones ────────────────────────────────────────────────────────────────
-
-function MilestonesScreen() {
-  const colors = useColors();
-  const [milestones, setMilestones] = useState(DEFAULT_MILESTONES.map(m => ({ ...m, completed: false })));
-
-  useEffect(() => {
-    MilestoneRepo.getAll().then(ms => {
-      if (ms && ms.length > 0) setMilestones(ms);
-    });
-  }, []);
-
-  const toggle = async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const ms = milestones.map(m => m.id === id ? { ...m, completed: !m.completed } : m);
-    setMilestones(ms);
-    await MilestoneRepo.save(ms);
-  };
-
-  const phases = [
-    { title: 'Phase 1: 30-Day Foundation', days: 30, color: colors.primary },
-    { title: 'Phase 2: 90-Day Build', days: 90, color: colors.warning },
-    { title: 'Phase 3: 365-Day Maximize', days: 365, color: colors.success },
-  ];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {phases.map(phase => {
-        const phaseMs = milestones.filter(m => m.days === phase.days);
-        const done = phaseMs.filter(m => m.completed).length;
-        const total = phaseMs.length;
-        const pct = Math.round((done / total) * 100) || 0;
-        
-        return (
-          <View key={phase.days} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: phase.color }}>{phase.title}</Text>
-              <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700' }}>{pct}%</Text>
-            </View>
-            
-            <View style={{ height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginBottom: 16 }}>
-              <View style={{ height: 8, backgroundColor: phase.color, borderRadius: 4, width: `${pct}%` }} />
-            </View>
-
-            {phaseMs.map((m, i) => (
-              <Pressable key={m.id} onPress={() => toggle(m.id)} style={({ pressed }) => ({
-                flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-                borderBottomWidth: i < phaseMs.length - 1 ? 1 : 0, borderBottomColor: colors.border,
-                opacity: pressed ? 0.8 : 1,
-              })}>
-                <View style={{
-                  width: 22, height: 22, borderRadius: 6,
-                  backgroundColor: m.completed ? phase.color : 'transparent',
-                  borderWidth: 2, borderColor: m.completed ? phase.color : colors.border,
-                  marginRight: 12, alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {m.completed && <Check size={14} color="#000" />}
-                </View>
-                <Text style={{ color: m.completed ? colors.muted : colors.foreground, fontSize: 13, flex: 1, textDecorationLine: m.completed ? 'line-through' : 'none' }}>
-                  {m.title}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-// ─── Body Language ─────────────────────────────────────────────────────────────
-
-function BodyLanguageScreen() {
-  const colors = useColors();
-  
-  const sections = [
-    {
-      title: 'Walk & Posture',
-      points: [
-        'Slow down. Rushing signals anxiety and low status.',
-        'Chest up, shoulders pulled back and down.',
-        'Take up space when sitting (man-spread slightly, arm on adjacent chair).',
-        'Keep hands out of pockets. Thumbs out if in pockets.',
-      ]
-    },
-    {
-      title: 'Eye Contact',
-      points: [
-        'Maintain 70% eye contact during conversations.',
-        'When looking away, look horizontally, not down (looking down signals submissiveness).',
-        'Hold eye contact 1 second longer than comfortable.',
-        'Blink less frequently when making a serious point.',
-      ]
-    },
-    {
-      title: 'Voice & Speech',
-      points: [
-        'Speak 10% slower than you think you should.',
-        'Speak from the chest (diaphragm), not the throat.',
-        'Pause before answering questions. Silence is power.',
-        'Eliminate filler words (um, ah, like). Replace them with silence.',
-      ]
-    }
-  ];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 8 }}>The Science of Presence</Text>
-        <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>
-          Your body language dictates how others perceive you before you speak, and dictates how you perceive yourself (embodied cognition).
-        </Text>
-      </View>
-
-      {sections.map((section, i) => (
-        <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground, marginBottom: 12 }}>{section.title}</Text>
-          {section.points.map((p, j) => (
-            <View key={j} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-              <Text style={{ color: colors.primary, marginRight: 8, fontSize: 14 }}>•</Text>
-              <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 18, flex: 1 }}>{p}</Text>
-            </View>
-          ))}
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
 
 // ─── Knowledge Base ────────────────────────────────────────────────────────────
 
@@ -506,39 +304,6 @@ function KnowledgeScreen() {
   );
 }
 
-// ─── Commitment Letter ─────────────────────────────────────────────────────────
-
-function CommitmentScreen() {
-  const colors = useColors();
-  
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <View style={{ backgroundColor: '#1C1917', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#444' }}>
-        <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 24, textAlign: 'center' }}>DECLARATION</Text>
-        
-        <Text style={{ color: '#D4D4D8', fontSize: 14, lineHeight: 24, marginBottom: 16 }}>
-          I accept that I am currently not the man I want to be. My choices, my laziness, and my excuses have built the body and life I have today.
-        </Text>
-        
-        <Text style={{ color: '#D4D4D8', fontSize: 14, lineHeight: 24, marginBottom: 16 }}>
-          Starting now, I take absolute responsibility. No one is coming to save me. No one cares if I fail. If I want respect, I must build a respectable vessel.
-        </Text>
-        
-        <Text style={{ color: '#D4D4D8', fontSize: 14, lineHeight: 24, marginBottom: 16 }}>
-          I commit to this 365-day protocol. I will eat when I am not hungry. I will train when I am tired. I will apply minoxidil when I am exhausted. I will sleep when I want to scroll.
-        </Text>
-        
-        <Text style={{ color: '#D4D4D8', fontSize: 14, lineHeight: 24, marginBottom: 24 }}>
-          I will not negotiate with weakness. I will forge myself in the fire of discipline.
-        </Text>
-        
-        <View style={{ height: 1, backgroundColor: '#444', marginBottom: 24 }} />
-        
-        <Text style={{ color: colors.primary, fontSize: 12, textAlign: 'center', fontStyle: 'italic' }}>Read this out loud whenever you feel like giving up.</Text>
-      </View>
-    </ScrollView>
-  );
-}
 
 // ─── Main Discipline Screen ───────────────────────────────────────────────────
 

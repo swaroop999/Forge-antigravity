@@ -259,7 +259,7 @@ export default function AICoachScreen() {
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Send size={18} color={inputText.trim() && !isLoading ? '#000' : colors.muted} />
+            <Send size={18} color={inputText.trim() && !isLoading ? colors.background : colors.muted} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
