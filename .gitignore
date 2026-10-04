@@ -67,3 +67,8 @@ Thumbs.db
 
 # nested duplicate clone (never commit)
 /forge-app/
+
+# User personal info images & screenshots (protect privacy on public repo)
+INFO IMAGES/
+screenshots/
+feedback/
