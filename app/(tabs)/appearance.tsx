@@ -142,7 +142,6 @@ function SkincareScreen() {
   const [pmDone, setPmDone] = useState<Record<number, boolean>>({});
   const [selectedStep, setSelectedStep] = useState<SkincareStep | null>(null);
   const [infoModalVisible, setInfoModalVisible] = useState(false);
-  const [showPigmentGuide, setShowPigmentGuide] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
   const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
@@ -207,6 +206,21 @@ function SkincareScreen() {
     await DailyLogRepo.save(log);
   };
 
+  const [patchProtocolArchived, setPatchProtocolArchived] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('patch_protocol_archived').then(val => {
+      if (val === 'true') setPatchProtocolArchived(true);
+    });
+  }, []);
+
+  const toggleArchivePatchProtocol = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = !patchProtocolArchived;
+    setPatchProtocolArchived(next);
+    AsyncStorage.setItem('patch_protocol_archived', next ? 'true' : 'false').catch(() => {});
+  };
+
   const openStepInfo = (step: SkincareStep) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedStep(step);
@@ -232,38 +246,85 @@ function SkincareScreen() {
         </Text>
       </View>
 
-      {/* Pigmentation Protocol Clarification Accordion */}
-      <Pressable
-        onPress={() => setShowPigmentGuide(!showPigmentGuide)}
-        style={({ pressed }) => ({
-          backgroundColor: colors.primary + '18',
-          borderRadius: 14, padding: 14, marginBottom: 16,
-          borderWidth: 1, borderColor: colors.primary + '45',
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <Sparkles size={18} color={colors.primary} />
-            <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>
-              Moustache Patch & Full Face Pigmentation Guide
-            </Text>
+      {/* Temporary Targeted Spot Treatment Card (Only exists as long as needed) */}
+      {!patchProtocolArchived ? (
+        <View style={{
+          backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16,
+          borderWidth: 1, borderColor: colors.primary + '40', borderLeftWidth: 4, borderLeftColor: colors.primary,
+        }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={16} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground }}>
+                  Targeted Spot Treatment Protocol
+                </Text>
+              </View>
+              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+                Active only until the moustache patch and acne spots clear.
+              </Text>
+            </View>
+            <Pressable
+              onPress={toggleArchivePatchProtocol}
+              style={({ pressed }) => ({
+                backgroundColor: colors.success + '20',
+                borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={{ color: colors.success, fontSize: 11, fontWeight: '700' }}>✓ Mark Cleared</Text>
+            </Pressable>
           </View>
-          <Text style={{ color: colors.primary, fontSize: 14 }}>{showPigmentGuide ? '▲' : '▼'}</Text>
-        </View>
-        {showPigmentGuide && (
-          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.primary + '30' }}>
+
+          {/* Spot Action 1: Moustache Patch & Dark Spots */}
+          <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>
+                🎯 Target 1: Moustache Patch & Dark Spots
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 10, fontWeight: '600' }}>AM & PM</Text>
+            </View>
             <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-              <Text style={{ fontWeight: '700', color: colors.primary }}>Does this routine treat only the patch or the entire face?{'\n'}</Text>
-              It treats <Text style={{ fontWeight: '700' }}>BOTH</Text> simultaneously! The patch beside your moustache had localized trauma/inflammation causing concentrated melanin, while chin, lips, and cheeks have diffuse post-inflammatory hyperpigmentation (PIH).{'\n\n'}
-              • <Text style={{ fontWeight: '700' }}>Alpha Arbutin 2%:</Text> Dabbed specifically on the dark patch beside moustache and mouth perimeter to halt tyrosinase.{'\n'}
-              • <Text style={{ fontWeight: '700' }}>10% Niacinamide:</Text> Applied across entire face to stop pigment transfer and balance tone.{'\n'}
-              • <Text style={{ fontWeight: '700' }}>Adapalene 0.1%:</Text> Applied thinly across full face at night to force rapid turnover of pigmented cells.{'\n'}
-              • <Text style={{ fontWeight: '700' }}>Aqualogica SPF 50+:</Text> Full face protection every morning so UV does not re-darken healing zones.
+              • <Text style={{ fontWeight: '700' }}>Product:</Text> Alpha Arbutin 2% Serum{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Technique:</Text> Dab 1 drop directly onto the patch beside your moustache and any dark chin marks before all-over serum.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Why:</Text> Safely deactivates tyrosinase in hyperactive pigment clusters without bleaching surrounding skin.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Duration:</Text> Stop once the patch blends into your natural surrounding skin tone.
             </Text>
           </View>
-        )}
-      </Pressable>
+
+          {/* Spot Action 2: Active Inflammatory Pimples */}
+          <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ color: colors.error, fontWeight: '700', fontSize: 12 }}>
+                🔴 Target 2: Active Red Pimples Only
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 10, fontWeight: '600' }}>PM Spot Dab</Text>
+            </View>
+            <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
+              • <Text style={{ fontWeight: '700' }}>Product:</Text> Benzomycin Gel (Doctor's spot prescription){'\n'}
+              • <Text style={{ fontWeight: '700' }}>Technique:</Text> Use a clean Q-tip to place a pinpoint dot strictly on active, swollen red pimples overnight.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Rule:</Text> Never rub over clear skin or flat dark spots. Only use as long as an active bump is raised.
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={{
+          backgroundColor: colors.success + '15', borderRadius: 12, padding: 12, marginBottom: 16,
+          borderWidth: 1, borderColor: colors.success + '40', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+            <Text style={{ fontSize: 14 }}>🎉</Text>
+            <Text style={{ color: colors.success, fontWeight: '700', fontSize: 12 }}>
+              Spot Treatment Protocol: Cleared & Archived
+            </Text>
+          </View>
+          <Pressable onPress={toggleArchivePatchProtocol} hitSlop={8}>
+            <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', textDecorationLine: 'underline' }}>
+              Reactivate
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Tonight's Active */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.primary + '40', borderLeftWidth: 4, borderLeftColor: colors.primary }}>
