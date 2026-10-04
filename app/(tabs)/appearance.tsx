@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Info, Sparkles, Shield, Sun, Moon } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, Modal } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
@@ -739,6 +740,25 @@ function BodyCareScreen() {
 function LooksmaxScreen() {
   const colors = useColors();
   const [expanded, setExpanded] = useState<string | null>('asymmetry');
+  const today = new Date().toISOString().split('T')[0];
+  const [actionsDone, setActionsDone] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    AsyncStorage.getItem(`looksmax_actions_${today}`).then(stored => {
+      if (stored) {
+        try { setActionsDone(JSON.parse(stored)); } catch {}
+      }
+    });
+  }, [today]);
+
+  const toggleAction = (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setActionsDone(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      AsyncStorage.setItem(`looksmax_actions_${today}`, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
 
   const strategies = [
     {
@@ -818,6 +838,56 @@ function LooksmaxScreen() {
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      {/* Daily Face Asymmetry Action Tracker */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>Daily Asymmetry Actions</Text>
+          <View style={{ backgroundColor: colors.primary + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+            <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>NON-NEGOTIABLE</Text>
+          </View>
+        </View>
+        <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 12 }}>
+          Reverse unconscious habits that pull your jaw, eyes, and cheekbones out of horizontal alignment.
+        </Text>
+
+        {[
+          { key: 'chew', title: 'Bilateral Chewing Balance', desc: 'Chew 70% on weaker/smaller jaw side during meals today' },
+          { key: 'sleep', title: 'Back-Sleeping (Zero Compression)', desc: 'Sleep flat on back with cervical support (no side-cheek squash)' },
+          { key: 'scm', title: 'SCM & Neck Realignment Stretch', desc: 'Gentle lateral neck stretches to level horizontal eye plane' },
+          { key: 'mewing', title: 'Palatal Tongue Suction (Mewing)', desc: 'Whole tongue resting firmly against roof of mouth + nasal breathing' },
+        ].map((item) => {
+          const isDone = !!actionsDone[item.key];
+          return (
+            <Pressable
+              key={item.key}
+              onPress={() => toggleAction(item.key)}
+              style={({ pressed }) => ({
+                flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 8,
+                backgroundColor: isDone ? colors.success + '15' : colors.background,
+                borderWidth: 1, borderColor: isDone ? colors.success : colors.border,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                backgroundColor: isDone ? colors.success : 'transparent',
+                borderWidth: 2, borderColor: isDone ? colors.success : colors.border,
+                alignItems: 'center', justifyContent: 'center', marginRight: 12,
+              }}>
+                {isDone && <Check size={14} color="#FFFFFF" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: isDone ? colors.success : colors.foreground, fontWeight: '700', fontSize: 13 }}>
+                  {item.title}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
+                  {item.desc}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
       {strategies.map((s) => (
         <Pressable
           key={s.id}
