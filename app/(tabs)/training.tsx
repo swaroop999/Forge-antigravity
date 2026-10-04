@@ -24,6 +24,182 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'priority', label: 'Priority', icon: '⭐' },
 ];
 
+// ─── Animated Exercise Visual ─────────────────────────────────────────────────
+
+function ExerciseVisual({ exercise }: { exercise: Exercise }) {
+  const colors = useColors();
+  const [gifLoaded, setGifLoaded] = useState(false);
+  const [gifFailed, setGifFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Reset state when switching exercises
+  useEffect(() => {
+    setGifLoaded(false);
+    setGifFailed(false);
+    setRetryCount(0);
+  }, [exercise.id, exercise.gifUrl]);
+
+  const frames: [string, string, string] = exercise.formEmojiSequence && exercise.formEmojiSequence.length === 3
+    ? exercise.formEmojiSequence
+    : ['🧍', '💪', '✨'];
+
+  const hasGif = !!exercise.gifUrl && !gifFailed;
+
+  // Cache-busting suffix to defeat sticky image caches on retry
+  const imageUri = exercise.gifUrl
+    ? (retryCount > 0 ? `${exercise.gifUrl}${exercise.gifUrl.includes('?') ? '&' : '?'}r=${retryCount}` : exercise.gifUrl)
+    : null;
+
+  return (
+    <View style={{
+      backgroundColor: colors.primary + '10',
+      borderRadius: 14, padding: 16, marginBottom: 16,
+      borderWidth: 1, borderColor: colors.primary + '30',
+      alignItems: 'center',
+    }}>
+      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>
+        FORM DEMONSTRATION
+      </Text>
+
+      {hasGif ? (
+        <View style={{
+          width: '100%', aspectRatio: 1.0, maxHeight: 300,
+          borderRadius: 12, overflow: 'hidden',
+          backgroundColor: colors.background,
+          borderWidth: 1, borderColor: colors.primary + '40',
+          marginBottom: 10, alignItems: 'center', justifyContent: 'center',
+        }}>
+          {!gifLoaded && (
+            <Text style={{ color: colors.muted, fontSize: 12 }}>Loading demo…</Text>
+          )}
+          <Image
+            key={`${exercise.id}-${retryCount}`}
+            source={{ uri: imageUri!, cache: 'reload' }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="contain"
+            onLoad={() => setGifLoaded(true)}
+            onError={() => {
+              if (retryCount < 1) {
+                // Try once more with a cache-bust
+                setTimeout(() => setRetryCount(c => c + 1), 400);
+              } else {
+                setGifFailed(true);
+              }
+            }}
+          />
+        </View>
+      ) : (
+        <View style={{
+          width: '100%', borderRadius: 12, paddingVertical: 14,
+          backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+          marginBottom: 10, alignItems: 'center',
+        }}>
+          <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8 }}>Form phases</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {frames.map((emoji, i) => (
+              <View key={i} style={{
+                width: 56, height: 56, borderRadius: 12,
+                backgroundColor: i === 1 ? colors.primary + '25' : colors.background,
+                borderWidth: i === 1 ? 2 : 1,
+                borderColor: i === 1 ? colors.primary : colors.border,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 28 }}>{emoji}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Primary form cue as caption */}
+      {exercise.formCues?.[0] && (
+        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6, textAlign: 'center', fontStyle: 'italic' }}>
+          💡 {exercise.formCues[0]}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+// ─── Direct Form Demonstration & Library Cues Modal ───────────────────────────
+
+function ExerciseDetailModal({ exercise, visible, onClose }: { exercise: Exercise | null; visible: boolean; onClose: () => void }) {
+  const colors = useColors();
+  if (!exercise) return null;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          paddingHorizontal: 20, paddingTop: 50, paddingBottom: 16,
+          borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface,
+        }}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>{exercise.name}</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+              <View style={{ backgroundColor: colors.primary + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{exercise.category}</Text>
+              </View>
+              <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.muted, fontSize: 10 }}>{exercise.difficulty}</Text>
+              </View>
+            </View>
+          </View>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => ({
+              backgroundColor: colors.primary,
+              borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>✕ Done</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+          {/* Animated Visual Guidance without [Start] [Mid] [End] */}
+          <ExerciseVisual exercise={exercise} />
+
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>TARGET MUSCLES</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {exercise.muscles.map((m, i) => (
+                <View key={i} style={{ backgroundColor: colors.border, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: colors.foreground, fontSize: 12 }}>{m}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>How to do it</Text>
+            <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>{exercise.description}</Text>
+          </View>
+
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.success, fontWeight: '700', marginBottom: 8 }}>✓ Form Cues</Text>
+            {exercise.formCues.map((c, i) => <Text key={i} style={{ color: colors.foreground, fontSize: 13, marginBottom: 4 }}>• {c}</Text>)}
+          </View>
+
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.error, fontWeight: '700', marginBottom: 8 }}>✗ Common Mistakes</Text>
+            {exercise.mistakes.map((m, i) => <Text key={i} style={{ color: colors.foreground, fontSize: 13, marginBottom: 4 }}>• {m}</Text>)}
+          </View>
+
+          {exercise.progression && (
+            <View style={{ backgroundColor: colors.warning + '20', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.warning + '40' }}>
+              <Text style={{ color: colors.warning, fontWeight: '700', marginBottom: 4 }}>Progression Path</Text>
+              <Text style={{ color: colors.foreground, fontSize: 13 }}>{exercise.progression}</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Today's Workout ──────────────────────────────────────────────────────────
 
 function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string }) {
@@ -35,6 +211,7 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   const [workoutStarted, setWorkoutStarted] = useState(false);
   const [workoutComplete, setWorkoutComplete] = useState(false);
   const [lastCompletedExercise, setLastCompletedExercise] = useState<string | null>(null);
+  const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<Exercise | null>(null);
   const today = new Date().toISOString().split('T')[0];
   const STORAGE_KEY = `workout_progress_${today}`;
 
@@ -231,16 +408,26 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
             borderRadius: 16, padding: 16, marginBottom: 12,
             borderWidth: 1, borderColor: allDone ? colors.success + '66' : colors.border,
           }}>
+            {/* Header: tapping title/badge opens demonstration modal smoothly */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: allDone ? colors.success : colors.foreground }}>
-                  {allDone ? '✓ ' : ''}{exercise?.name || ex.exerciseId}
-                </Text>
+              <Pressable
+                onPress={() => exercise && setSelectedExerciseForModal(exercise)}
+                style={({ pressed }) => ({ flex: 1, paddingRight: 8, opacity: pressed ? 0.75 : 1 })}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: allDone ? colors.success : colors.foreground }}>
+                    {allDone ? '✓ ' : ''}{exercise?.name || ex.exerciseId}
+                  </Text>
+                  <View style={{ backgroundColor: colors.primary + '22', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>DEMO ℹ️</Text>
+                  </View>
+                </View>
                 <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
                   {ex.sets} sets × {ex.reps} reps · {ex.restSeconds}s rest
                 </Text>
                 {ex.notes && <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>{ex.notes}</Text>}
-              </View>
+              </Pressable>
+
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {/* Undo button — shown whenever this exercise has at least 1 completed set */}
                 {exSets.done > 0 && (
@@ -263,13 +450,22 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
               </View>
             </View>
 
-            {/* Form Cues */}
+            {/* Form Cues with tap to view library demo & cues */}
             {exercise?.formCues && (
-              <View style={{ backgroundColor: colors.background, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+              <Pressable
+                onPress={() => exercise && setSelectedExerciseForModal(exercise)}
+                style={({ pressed }) => ({
+                  backgroundColor: colors.background, borderRadius: 8, padding: 10, marginBottom: 10,
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
                 {exercise.formCues.slice(0, 2).map((cue, ci) => (
                   <Text key={ci} style={{ color: colors.muted, fontSize: 11, marginBottom: 2 }}>• {cue}</Text>
                 ))}
-              </View>
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 3 }}>
+                  Tap card for animated form demo & cues →
+                </Text>
+              </Pressable>
             )}
 
             {/* Set Buttons */}
@@ -308,6 +504,13 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
           <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>✓ Complete Workout</Text>
         </Pressable>
       )}
+
+      {/* Direct Exercise Form & Cues Modal */}
+      <ExerciseDetailModal
+        exercise={selectedExerciseForModal}
+        visible={!!selectedExerciseForModal}
+        onClose={() => setSelectedExerciseForModal(null)}
+      />
     </ScrollView>
   );
 }
@@ -408,122 +611,6 @@ function ProgramOverview({ phase }: { phase: number }) {
         </Text>
       </View>
     </ScrollView>
-  );
-}
-
-// ─── Animated Exercise Visual ─────────────────────────────────────────────────
-
-function ExerciseVisual({ exercise }: { exercise: Exercise }) {
-  const colors = useColors();
-  const [gifLoaded, setGifLoaded] = useState(false);
-  const [gifFailed, setGifFailed] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-
-  // Reset state when switching exercises
-  useEffect(() => {
-    setGifLoaded(false);
-    setGifFailed(false);
-    setRetryCount(0);
-  }, [exercise.id, exercise.gifUrl]);
-
-  const PHASE_LABELS = ['Start', 'Mid', 'End'];
-  const frames: [string, string, string] = exercise.formEmojiSequence && exercise.formEmojiSequence.length === 3
-    ? exercise.formEmojiSequence
-    : ['🧍', '💪', '✨'];
-
-  const hasGif = !!exercise.gifUrl && !gifFailed;
-
-  // Cache-busting suffix to defeat sticky image caches on retry
-  const imageUri = exercise.gifUrl
-    ? (retryCount > 0 ? `${exercise.gifUrl}${exercise.gifUrl.includes('?') ? '&' : '?'}r=${retryCount}` : exercise.gifUrl)
-    : null;
-
-  return (
-    <View style={{
-      backgroundColor: colors.primary + '10',
-      borderRadius: 14, padding: 16, marginBottom: 16,
-      borderWidth: 1, borderColor: colors.primary + '30',
-      alignItems: 'center',
-    }}>
-      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 }}>
-        FORM DEMONSTRATION
-      </Text>
-
-      {hasGif ? (
-        <View style={{
-          width: '100%', aspectRatio: 1.0, maxHeight: 300,
-          borderRadius: 12, overflow: 'hidden',
-          backgroundColor: colors.background,
-          borderWidth: 1, borderColor: colors.primary + '40',
-          marginBottom: 10, alignItems: 'center', justifyContent: 'center',
-        }}>
-          {!gifLoaded && (
-            <Text style={{ color: colors.muted, fontSize: 12 }}>Loading demo…</Text>
-          )}
-          <Image
-            key={`${exercise.id}-${retryCount}`}
-            source={{ uri: imageUri!, cache: 'reload' }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="contain"
-            onLoad={() => setGifLoaded(true)}
-            onError={() => {
-              if (retryCount < 1) {
-                // Try once more with a cache-bust
-                setTimeout(() => setRetryCount(c => c + 1), 400);
-              } else {
-                setGifFailed(true);
-              }
-            }}
-          />
-        </View>
-      ) : (
-        <View style={{
-          width: '100%', borderRadius: 12, paddingVertical: 14,
-          backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-          marginBottom: 10, alignItems: 'center',
-        }}>
-          <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8 }}>Form phases</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {frames.map((emoji, i) => (
-              <View key={i} style={{
-                width: 56, height: 56, borderRadius: 12,
-                backgroundColor: i === 1 ? colors.primary + '25' : colors.background,
-                borderWidth: i === 1 ? 2 : 1,
-                borderColor: i === 1 ? colors.primary : colors.border,
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ fontSize: 28 }}>{emoji}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Start / Mid / End labels */}
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 6 }}>
-        {PHASE_LABELS.map((label, i) => (
-          <View key={i} style={{
-            backgroundColor: i === 1 ? colors.primary + '30' : 'transparent',
-            borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4,
-            borderWidth: 1, borderColor: i === 1 ? colors.primary : colors.border,
-          }}>
-            <Text style={{
-              color: i === 1 ? colors.primary : colors.muted,
-              fontSize: 11, fontWeight: i === 1 ? '700' : '500',
-            }}>
-              {label}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Primary form cue as caption */}
-      {exercise.formCues?.[0] && (
-        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6, textAlign: 'center', fontStyle: 'italic' }}>
-          💡 {exercise.formCues[0]}
-        </Text>
-      )}
-    </View>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   type DailyLog, type UserProfile,
 } from '@/lib/db/database';
 import {
-  QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
+  QUOTES, NAVAL_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
   DEFAULT_MILESTONES,
 } from '@/lib/db/seeds';
 
@@ -176,7 +176,9 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [log, setLog] = useState<DailyLog | null>(null);
-  const [quote, setQuote] = useState('');
+  const [wisdomSource, setWisdomSource] = useState<'forge' | 'naval'>('forge');
+  const [forgeIndex, setForgeIndex] = useState(0);
+  const [navalIndex, setNavalIndex] = useState(0);
   const [dayNumber, setDayNumber] = useState(1);
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [scheduleItems, setScheduleItems] = useState<any[]>([]);
@@ -212,8 +214,9 @@ export default function DashboardScreen() {
       setCompletedItems(map);
     } catch {}
 
-    // Random quote
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    // Initial random quote indices
+    setForgeIndex(Math.floor(Math.random() * QUOTES.length));
+    setNavalIndex(Math.floor(Math.random() * NAVAL_QUOTES.length));
 
     // Weekly data
     const logs7 = await DailyLogRepo.getLast7Days();
@@ -237,6 +240,17 @@ export default function DashboardScreen() {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  const nextQuote = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (wisdomSource === 'naval') {
+      setNavalIndex((prev) => (prev + 1) % NAVAL_QUOTES.length);
+    } else {
+      setForgeIndex((prev) => (prev + 1) % QUOTES.length);
+    }
+  };
+
+  const currentQuote = wisdomSource === 'naval' ? NAVAL_QUOTES[navalIndex] : QUOTES[forgeIndex];
 
   const toggleScheduleItem = useCallback(async (item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -270,7 +284,7 @@ export default function DashboardScreen() {
     { icon: Activity, label: 'Weight', value: profile?.currentWeight || 45, unit: 'kg', color: colors.primary },
     { icon: Flame, label: 'Streak', value: dayNumber, unit: 'days', color: colors.warning },
     { icon: Droplets, label: 'Water', value: log?.waterGlasses || 0, unit: 'gl', color: '#60A5FA' },
-    { icon: Dumbbell, label: 'Workout', value: log?.workoutCompleted ? 'Done' : 'Wait', color: log?.workoutCompleted ? colors.success : colors.muted },
+    { icon: Check, label: 'Tasks', value: `${completedCount}/${totalTasks}`, unit: 'done', color: completedCount === totalTasks && totalTasks > 0 ? colors.success : colors.primary },
   ];
 
   /** Map a schedule task to { tabPath, subTab } so "View" lands on the right section. */
@@ -292,29 +306,23 @@ export default function DashboardScreen() {
     }
 
     // Skincare / appearance
-    if (cat === 'skincare' || cat === 'appearance' || t.includes('skincare') || t.includes('minoxidil') || t.includes('body scrub') || t.includes('face mask') || t.includes('ubtan') || t.includes('hair oil') || t.includes('mewing') || t.includes('sun exposure')) {
-      // Task-specific sub-tabs
-      if (t.includes('hair oil') && !t.includes('mask') && !t.includes('scrub'))
+    if (cat === 'skincare' || cat === 'appearance' || t.includes('skincare') || t.includes('hair') || t.includes('scalp') || t.includes('dermastamp') || t.includes('body scrub') || t.includes('face mask') || t.includes('ubtan') || t.includes('mewing') || t.includes('chewing') || t.includes('looksmax') || t.includes('sun exposure')) {
+      if (t.includes('hair') || t.includes('scalp') || t.includes('dermastamp'))
         return { tabPath: '/(tabs)/appearance', subTab: 'hair' };
-      if (t.includes('spf') || t.includes('helmet') || t.includes('sun') || t.includes('tan'))
+      if (t.includes('spf') || t.includes('helmet') || t.includes('sun') || t.includes('tan') || t.includes('visor'))
         return { tabPath: '/(tabs)/appearance', subTab: 'tanremoval' };
       if (t.includes('body scrub') || t.includes('body pack') || t.includes('body'))
         return { tabPath: '/(tabs)/appearance', subTab: 'bodycare' };
-      if (t.includes('mewing') || t.includes('looksmax'))
+      if (t.includes('mewing') || t.includes('looksmax') || t.includes('chewing') || t.includes('asymmetry'))
         return { tabPath: '/(tabs)/appearance', subTab: 'looksmax' };
-      // Combined "Skincare AM + Minoxidil PM" / "Skincare AM" etc. → skincare section
-      // (minoxidil is co-listed with skincare, not its own screen)
       return { tabPath: '/(tabs)/appearance', subTab: 'skincare' };
     }
 
     // Nutrition
     if (cat === 'nutrition') {
-      if (t.includes('supplement') || t.includes('zinc') || t.includes('b12') || t.includes('omega') || t.includes('magnesium') || t.includes('d3') || t.includes('whey') || t.includes('creatine') || t.includes('turmeric'))
+      if (t.includes('supplement') || t.includes('zinc') || t.includes('b12') || t.includes('omega') || t.includes('magnesium') || t.includes('d3') || t.includes('whey') || t.includes('creatine') || t.includes('turmeric') || t.includes('pumpkin'))
         return { tabPath: '/(tabs)/nutrition', subTab: 'supplements' };
       if (t.includes('water')) return { tabPath: '/(tabs)/nutrition', subTab: 'water' };
-      if (t.includes('meal prep')) return { tabPath: '/(tabs)/nutrition', subTab: 'mealplan' };
-      if (t.includes('snack') || t.includes('breakfast') || t.includes('lunch') || t.includes('dinner') || t.includes('shake') || t.includes('restaurant') || t.includes('cheat') || t.includes('meal'))
-        return { tabPath: '/(tabs)/nutrition', subTab: 'meals' };
       return { tabPath: '/(tabs)/nutrition', subTab: 'meals' };
     }
 
@@ -443,17 +451,51 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── Daily Quote ─────────────────────────── */}
+        {/* ── Daily Wisdom Quote with Person Selection ─────────────── */}
         <View style={{ paddingHorizontal: 22, marginBottom: 20 }}>
           <View style={{
-            backgroundColor: colors.surface, borderRadius: 16, padding: 20,
+            backgroundColor: colors.surface, borderRadius: 16, padding: 18,
             borderWidth: 1, borderColor: colors.border,
             borderLeftWidth: 4, borderLeftColor: colors.primary,
           }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary, letterSpacing: 1.5, marginBottom: 8 }}>DAILY WISDOM</Text>
+            {/* Toggle header between Forge and Naval Ravikant */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <Pressable
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWisdomSource('forge'); }}
+                  style={{
+                    backgroundColor: wisdomSource === 'forge' ? colors.primary : colors.background,
+                    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                    borderWidth: 1, borderColor: wisdomSource === 'forge' ? colors.primary : colors.border,
+                  }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: wisdomSource === 'forge' ? '#FFFFFF' : colors.muted }}>⚡ Forge Daily</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWisdomSource('naval'); }}
+                  style={{
+                    backgroundColor: wisdomSource === 'naval' ? colors.primary : colors.background,
+                    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                    borderWidth: 1, borderColor: wisdomSource === 'naval' ? colors.primary : colors.border,
+                  }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: wisdomSource === 'naval' ? '#FFFFFF' : colors.muted }}>🧠 Naval Ravikant</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                onPress={nextQuote}
+                hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, flexDirection: 'row', alignItems: 'center', gap: 4 })}>
+                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>Next Quote ↻</Text>
+              </Pressable>
+            </View>
+
             <Text style={{ color: colors.foreground, fontSize: 14, fontStyle: 'italic', lineHeight: 22 }}>
-              "{quote}"
+              "{currentQuote}"
             </Text>
+            {wisdomSource === 'naval' && (
+              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600', marginTop: 8, textAlign: 'right' }}>
+                — Naval Ravikant
+              </Text>
+            )}
           </View>
         </View>
 

@@ -124,6 +124,37 @@ export const QUOTES = [
   "Champions aren't made in the gyms. Champions are made from something they have deep inside them.",
 ];
 
+// ─── Naval Ravikant Wisdom Quotes ──────────────────────────────────────────────
+
+export const NAVAL_QUOTES = [
+  "Seek wealth, not money or status. Wealth is having assets that earn while you sleep.",
+  "A fit body, a calm mind, a house full of love. These things cannot be bought — they must be earned.",
+  "Impatience with actions, patience with results.",
+  "Earn with your mind, not your time.",
+  "If you can't see yourself working with someone for life, don't work with them for a day.",
+  "You're not going to get rich renting out your time. You must own equity to gain financial freedom.",
+  "The most important skill for getting rich is becoming a perpetual learner.",
+  "A busy mind cannot achieve peace. Peace is happiness at rest, and happiness is peace in motion.",
+  "All real scorecards are internal. The closer you are to truth, the more peaceful you become.",
+  "Desire is a contract that you make with yourself to be unhappy until you get what you want.",
+  "Escape competition through authenticity. When you're competing, it's because you're copying.",
+  "Specific knowledge is found by pursuing your genuine curiosity rather than what's hot right now.",
+  "Learn to sell. Learn to build. If you can do both, you will be unstoppable.",
+  "Play iterated games. All returns in life, whether wealth, relationships, or knowledge, come from compounding.",
+  "To be honest, speak without fear. To be calm, act without expectation. To be free, live without comparison.",
+  "The greatest superpower is the ability to change yourself.",
+  "Happiness is not something you inherit or choose, but a personal skill learned like fitness.",
+  "Clear thinkers appeal to their own judgment. Muddled thinkers appeal to consensus.",
+  "The compound interest on reading, exercising, and meditating is invisible day to day, but staggering over decades.",
+  "Discipline is the bridge between goals and accomplishment, but inspiration provides the fuel.",
+  "Be present above all else. Memory is a ghost and anticipation is a fantasy.",
+  "If you want to make an easy job seem mighty hard, just keep putting off doing it.",
+  "Self-image is the master key to human personality and human behavior.",
+  "Value your time. It is all you have. It's more important than your money, friends, or anything.",
+  "Free education is abundant, all over the internet. It's the desire to learn that's scarce."
+];
+
+
 // ─── 93 Exercises ─────────────────────────────────────────────────────────────
 
 export interface Exercise {
@@ -554,6 +585,7 @@ export interface Supplement {
   warning?: string;
   form?: string;
   cost?: number;
+  purpose?: string;
 }
 
 export const SUPPLEMENTS: Supplement[] = [
@@ -564,10 +596,11 @@ export const SUPPLEMENTS: Supplement[] = [
   { id: 'magnesium', name: 'Magnesium Glycinate', dose: '200-400mg', timing: '30 min before bed', phase: 1, warning: 'Must be GLYCINATE form. Oxide/Citrate = poor absorption + digestive issues.', form: 'Glycinate ONLY', cost: 500 },
   { id: 'b12', name: 'Vitamin B12 (Methylcobalamin)', dose: '1500 mcg', timing: 'After breakfast', phase: 1, warning: 'Must be METHYLCOBALAMIN form. Not Cyanocobalamin.', form: 'Methylcobalamin', cost: 300 },
   { id: 'd3-60k', name: 'Vitamin D3 (60K IU Sachet)', dose: '1 sachet', timing: 'Once per week (Sunday with fatty meal)', phase: 1, warning: 'Only 1 sachet per week for first 8 weeks. Then switch to daily D3+K2.', cost: 200 },
-  { id: 'zinc', name: 'Zinc Picolinate', dose: '15-30mg', timing: 'After lunch (NEVER empty stomach)', phase: 1, warning: 'NEVER take on empty stomach — causes nausea. Always after lunch.', cost: 300 },
+  { id: 'zinc', name: 'Zinc Picolinate + Vit C', dose: '15-30mg', timing: 'After lunch (NEVER empty stomach)', phase: 1, warning: 'NEVER take on empty stomach — causes nausea. Always after lunch.', cost: 300 },
+  { id: 'pumpkin-seeds', name: 'Raw Pumpkin Seeds', dose: '1-2 tbsp (30g)', timing: 'Mid-Morning or Evening Snack', phase: 1, warning: 'Delta-7 Sterols & Zinc naturally inhibit 5-alpha reductase to protect hairline without chemicals.', cost: 250 },
   { id: 'd3-k2', name: 'Vitamin D3 + K2 (Phase 2+)', dose: '2000 IU D3 + K2', timing: 'Daily after breakfast', phase: 2, cost: 500, warning: 'Switch from 60K sachet after 8 weeks' },
   { id: 'ashwagandha', name: 'Ashwagandha KSM-66 (Optional Phase 3)', dose: '600mg', timing: 'Before bed', phase: 3, warning: 'Only if sleep/stress still poor at Phase 3', cost: 600 },
-  { id: 'biotin', name: 'Biotin + Silica (Optional Phase 3)', dose: 'As per label', timing: 'With breakfast', phase: 3, warning: 'Only if hair not improving after 3 months Minoxidil', cost: 400 },
+  { id: 'biotin', name: 'Biotin + Silica (Optional Phase 3)', dose: 'As per label', timing: 'With breakfast', phase: 3, warning: 'Nutritional keratin support for hair density', cost: 400 },
 ];
 
 // ─── 32 Core Daily Habits ─────────────────────────────────────────────────────
@@ -588,24 +621,24 @@ export const HABITS: Habit[] = [
   { id: 'posture-am', name: 'Posture routine — Morning', category: 'training' },
   { id: 'priority-movements', name: 'Priority movements done', category: 'training' },
   { id: 'skincare-am', name: 'Skincare AM completed', category: 'appearance' },
-  { id: 'minoxidil-am', name: 'Minoxidil AM applied', category: 'appearance' },
+  { id: 'scalp-massage-am', name: 'Hairline scalp massage (4 min)', category: 'appearance' },
   { id: 'breakfast-protein', name: 'Breakfast with protein', category: 'nutrition' },
   { id: 'b12-omega3-am', name: 'B12 + Omega-3 taken (AM)', category: 'nutrition' },
-  { id: 'mid-morning-snack', name: 'Mid-morning snack', category: 'nutrition' },
+  { id: 'mid-morning-snack', name: 'Mid-morning snack + Pumpkin seeds', category: 'nutrition' },
   { id: 'lunch-protein', name: 'Lunch with protein tiffin', category: 'nutrition', weekdayOnly: true },
   { id: 'zinc-after-lunch', name: 'Zinc taken after lunch', category: 'nutrition' },
   { id: 'post-lunch-walk', name: 'Post-lunch walk (10 min)', category: 'training', weekdayOnly: true },
   { id: 'pre-commute-snack', name: 'Pre-commute snack', category: 'nutrition', weekdayOnly: true },
   { id: 'body-spf', name: 'Body SPF before commute', category: 'appearance', weekdayOnly: true },
-  { id: 'helmet-visor', name: 'Helmet visor worn', category: 'appearance', weekdayOnly: true },
+  { id: 'helmet-visor', name: 'Helmet visor closed when riding', category: 'appearance', weekdayOnly: true },
   { id: 'workout-done', name: 'Training session completed', category: 'training' },
   { id: 'post-workout-shake', name: 'Whey + Creatine post-workout', category: 'nutrition' },
   { id: 'evening-snack', name: 'Evening snack (healthy)', category: 'nutrition' },
   { id: 'dinner-done', name: 'Dinner completed', category: 'nutrition' },
   { id: 'omega3-pm', name: 'Omega-3 taken (PM)', category: 'nutrition' },
   { id: 'skincare-pm', name: 'Skincare PM completed', category: 'appearance' },
-  { id: 'adapalene', name: 'Adapalene/Active applied (scheduled night)', category: 'appearance' },
-  { id: 'minoxidil-pm', name: 'Minoxidil PM applied', category: 'appearance' },
+  { id: 'adapalene', name: 'PM Active applied (scheduled night)', category: 'appearance' },
+  { id: 'hair-protocol-pm', name: 'Hairline care (Rosemary oil / massage)', category: 'appearance' },
   { id: 'journal', name: 'Journal written (5 min)', category: 'dopamine' },
   { id: 'reading', name: 'Reading (15+ min)', category: 'dopamine' },
   { id: 'magnesium', name: 'Magnesium before bed', category: 'nutrition' },
@@ -616,8 +649,8 @@ export const HABITS: Habit[] = [
   { id: 'no-junk', name: 'No junk food (weekday)', category: 'nutrition', weekdayOnly: true },
   { id: 'no-porn', name: 'No porn today', category: 'dopamine' },
   { id: 'posture-pm', name: 'Posture routine — Evening', category: 'training' },
-  { id: 'sun-exposure', name: 'Sun exposure (15 min)', category: 'appearance' },
-  { id: 'mewing', name: 'Mewing practiced', category: 'appearance' },
+  { id: 'sun-exposure', name: 'Sun exposure (15 min safe window)', category: 'appearance' },
+  { id: 'mewing', name: 'Mewing & chewing posture practiced', category: 'appearance' },
 ];
 
 // ─── Skincare Routines ────────────────────────────────────────────────────────
@@ -626,36 +659,127 @@ export interface SkincareStep {
   step: number;
   product: string;
   action: string;
+  duration?: string;
   waitAfter?: string;
+  rinseRule?: string;
+  targetArea?: string;
+  procedureDetails?: string;
 }
 
 export const SKINCARE_AM: SkincareStep[] = [
-  { step: 1, product: 'Water', action: 'Lukewarm water splash only. No cleanser AM — preserves skin barrier.' },
-  { step: 2, product: 'Vitamin C Serum 10%', action: '3-4 drops, pat into skin.', waitAfter: 'Wait 5 minutes' },
-  { step: 3, product: 'Derma Co Niacinamide 10%', action: '3-4 drops, focus on right cheek area.' },
-  { step: 4, product: 'Moisturizer (Cetaphil/Minimalist)', action: 'Pea-sized amount, face + neck.' },
-  { step: 5, product: 'Caffeine Solution', action: 'Tiny amount under both eyes.' },
-  { step: 6, product: 'Aqualogica SPF 50+', action: '2 finger-lengths, face + neck + ears. NON-NEGOTIABLE.' },
-  { step: 7, product: 'Lip Balm', action: 'Apply to lips.' },
+  {
+    step: 1,
+    product: 'Lukewarm Water Splash',
+    action: 'Gentle splash only — no harsh soap/cleanser in AM.',
+    duration: '30 seconds',
+    waitAfter: '1-2 min (pat lightly damp)',
+    rinseRule: 'Rinse with lukewarm water',
+    targetArea: 'Full face and neck',
+    procedureDetails: 'Splash face gently with lukewarm water. Do NOT use harsh foaming cleansers in the morning; overnight your skin creates vital lipids. Pat lightly with a fresh towel, leaving skin barely damp.',
+  },
+  {
+    step: 2,
+    product: 'Alpha Arbutin 2% Serum',
+    action: 'Dab on dark moustache patch, chin & pigmented spots.',
+    duration: '30 seconds',
+    waitAfter: 'Wait 2-3 minutes to absorb',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Moustache patch, chin, lip perimeter & dark marks',
+    procedureDetails: 'Dispense 2-3 drops on clean fingertips. Gently press and pat directly onto the dark patch next to your moustache, around the lips, and on chin marks. Alpha Arbutin halts tyrosinase, directly stopping excess melanin creation at the source.',
+  },
+  {
+    step: 3,
+    product: 'Derma Co 10% Niacinamide Serum',
+    action: '3-4 drops across entire face & neck for tone and pores.',
+    duration: '30 seconds',
+    waitAfter: 'Wait 2 minutes',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Entire face and neck',
+    procedureDetails: 'Smooth 3-4 drops across the entire face. Niacinamide blocks melanosome transfer into surface keratinocytes, refines skin texture, regulates oil, and soothes redness.',
+  },
+  {
+    step: 4,
+    product: 'Nivea Soft Moisturizer',
+    action: 'Pea-sized amount to lock in hydration.',
+    duration: '45 seconds',
+    waitAfter: 'Wait 3-5 minutes before sunscreen',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Face and neck',
+    procedureDetails: 'Warm a pea-sized dot between fingertips. Gently spread upwards across your cheeks, forehead, chin, and neck. Gives a lightweight barrier and ensures sunscreen does not pill.',
+  },
+  {
+    step: 5,
+    product: 'Aqualogica SPF 50+ Sunscreen',
+    action: '2 finger-lengths over face, ears & neck. NON-NEGOTIABLE.',
+    duration: '60 seconds',
+    waitAfter: 'Wait 15 min before stepping out',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Face, ears, jawline & neck',
+    procedureDetails: 'Measure two full finger-lengths of sunscreen. Pat and smooth generously over face, neck, and ears. UV light triggers immediate melanin rebound in pigmented zones — this step locks in every bit of progress.',
+  },
+  {
+    step: 6,
+    product: 'Lip Care Balm',
+    action: 'Apply to lips for moisture & protection.',
+    duration: '10 seconds',
+    waitAfter: 'Immediate',
+    rinseRule: 'Leave on',
+    targetArea: 'Lips',
+    procedureDetails: 'Swipe moisturizing balm over lips to prevent cracking, peeling, and dryness.',
+  },
 ];
 
 export const SKINCARE_PM: SkincareStep[] = [
-  { step: 1, product: 'Cetaphil Cleanser', action: 'Massage 30-60 sec, rinse lukewarm.' },
-  { step: 2, product: 'WAIT', action: 'Skin must be completely dry before actives.', waitAfter: 'Wait 15-20 minutes' },
-  { step: 3, product: 'Active (see rotation)', action: 'Pea-sized for entire face. See tonight\'s rotation below.' },
-  { step: 4, product: 'WAIT', action: 'Let active absorb.', waitAfter: 'Wait 5 minutes' },
-  { step: 5, product: 'Moisturizer', action: 'Generous layer, face + neck.' },
-  { step: 6, product: 'Benzomycin (Spot Only)', action: 'ONLY on active pimples with Q-tip. Not all over face.' },
+  {
+    step: 1,
+    product: 'Gentle Cleanser / Water Wash',
+    action: 'Wash off commute dust and SPF, then dry completely.',
+    duration: '45 seconds',
+    waitAfter: 'Wait 10-15 minutes (must be 100% bone dry)',
+    rinseRule: 'Rinse thoroughly with lukewarm water',
+    targetArea: 'Face and neck',
+    procedureDetails: 'Wash face gently to lift Bangalore pollution, sebum, and sunscreen. Pat dry with a fresh towel. CRITICAL: Wait 10-15 minutes until your skin is 100% bone-dry before applying your active — applying on damp skin causes stinging and barrier damage.',
+  },
+  {
+    step: 2,
+    product: 'Active Treatment (Follow Tonight\'s Schedule)',
+    action: 'Mon/Wed/Fri Adapalene · Tue/Sat Arbutin · Thu/Sun Rest',
+    duration: '45 seconds',
+    waitAfter: 'Wait 5 minutes',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Face (avoiding lips/nostrils)',
+    procedureDetails: 'Tonight\'s Active:\\n• Mon/Wed/Fri: Pea-sized dot of Adapalene 0.1% (Adaferin) spread thinly across entire face (avoid lips & eye creases). Accelerates cellular turnover and sloughs off deep pigment.\\n• Tue/Sat: Alpha Arbutin 2% on dark patches + Niacinamide.\\n• Thu/Sun: REST night — no actives, moisturizer only.',
+  },
+  {
+    step: 3,
+    product: 'Nivea Soft Moisturizer',
+    action: 'Generous layer to soothe and protect skin barrier.',
+    duration: '60 seconds',
+    waitAfter: 'Wait 2 minutes',
+    rinseRule: 'Leave on — DO NOT rinse',
+    targetArea: 'Face and neck',
+    procedureDetails: 'Smooth a generous pea-sized amount over face and neck. Replenishes moisture, calms retinol irritation, and keeps your skin barrier thick and resilient.',
+  },
+  {
+    step: 4,
+    product: 'Benzomycin Gel (Spot Treatment Only)',
+    action: 'Dab with Q-tip strictly on active inflamed pimples only.',
+    duration: '15 seconds',
+    waitAfter: 'Overnight',
+    rinseRule: 'Leave on overnight — Rinse in AM',
+    targetArea: 'Active pimples/acne spots only',
+    procedureDetails: 'Dip a clean Q-tip into Benzomycin gel and apply a pinpoint dot directly on red, inflamed pimples. DO NOT rub across clear skin, dark spots, or healthy cheeks.',
+  },
 ];
 
 export const PM_ACTIVES_ROTATION: Record<string, string> = {
-  Monday: 'Adapalene 0.1% (all face) — Acne, texture, marks, tone',
-  Tuesday: 'Alpha Arbutin 2% + Niacinamide 10% — Tan removal, brightening, marks',
-  Wednesday: 'Adapalene 0.1% (all face) — Acne, texture, marks',
-  Thursday: 'REST — Cleanse + Moisturize Only — Barrier recovery',
-  Friday: 'Adapalene 0.1% (all face) — Acne, texture, marks',
-  Saturday: 'Vitamin C Serum (PM dose) + Niacinamide — Brightening, antioxidant',
-  Sunday: 'REST — Cleanse + Moisturize Only — Barrier recovery + deep treatment day',
+  Monday: 'Adapalene 0.1% (Adaferin) — Cell turnover, acne clearing, deep pigment shedding',
+  Tuesday: 'Alpha Arbutin 2% + 10% Niacinamide — Melanin block, spot fading, tone evening',
+  Wednesday: 'Adapalene 0.1% (Adaferin) — Cell turnover & hyperpigmentation fading',
+  Thursday: 'REST NIGHT — Cleanse + Nivea Soft Only — Skin barrier recovery',
+  Friday: 'Adapalene 0.1% (Adaferin) — Cell turnover, acne prevention & skin smoothing',
+  Saturday: 'Alpha Arbutin 2% + 10% Niacinamide — Pigment suppression & even tone',
+  Sunday: 'REST NIGHT — Cleanse + Nivea Soft Only (Mask earlier in day)',
 };
 
 // ─── Daily Schedule ────────────────────────────────────────────────────────────
@@ -669,11 +793,11 @@ export interface ScheduleItem {
 export const WEEKDAY_SCHEDULE: ScheduleItem[] = [
   { time: '7:30 AM', task: 'Wake + 500ml water + lemon', category: 'nutrition' },
   { time: '7:35 AM', task: 'Posture routine (10 min)', category: 'training' },
-  { time: '7:45 AM', task: 'Priority movements (lat raises, neck, shrugs)', category: 'training' },
-  { time: '7:50 AM', task: 'Skincare AM + Minoxidil AM', category: 'skincare' },
+  { time: '7:45 AM', task: 'Priority Hypertrophy (Side Delts, Neck, Traps) — 15 min', category: 'training' },
+  { time: '8:00 AM', task: 'Skincare AM Routine (Arbutin, Niacinamide, Sunscreen)', category: 'skincare' },
   { time: '8:15 AM', task: 'Breakfast + AM supplements (B12, Omega-3)', category: 'nutrition' },
-  { time: '8:45 AM', task: 'Leave for work (helmet + SPF body)', category: 'appearance' },
-  { time: '11:00 AM', task: 'Mid-morning snack', category: 'nutrition' },
+  { time: '8:45 AM', task: 'Leave for work (helmet closed + SPF body)', category: 'appearance' },
+  { time: '11:00 AM', task: 'Mid-morning snack + Raw Pumpkin Seeds', category: 'nutrition' },
   { time: '12:15 PM', task: 'Lunch (protein tiffin) + Zinc after lunch', category: 'nutrition' },
   { time: '1:00 PM', task: 'Post-lunch walk (10 min)', category: 'training' },
   { time: '4:00 PM', task: 'Pre-commute snack', category: 'nutrition' },
@@ -681,49 +805,50 @@ export const WEEKDAY_SCHEDULE: ScheduleItem[] = [
   { time: '6:30 PM', task: 'Post-workout: Whey + Creatine + shower', category: 'nutrition' },
   { time: '7:00 PM', task: 'Evening snack (healthy, NOT junk)', category: 'nutrition' },
   { time: '9:00 PM', task: 'Dinner + Omega-3', category: 'nutrition' },
-  { time: '9:30 PM', task: 'Skincare PM + Minoxidil PM', category: 'skincare' },
-  { time: '10:00 PM', task: 'Journal (5 min)', category: 'discipline' },
+  { time: '9:30 PM', task: 'Skincare PM Routine (Bone-dry Active + Nivea Soft)', category: 'skincare' },
+  { time: '9:45 PM', task: 'Hairline Scalp Massage (4 min gentle circular)', category: 'appearance' },
+  { time: '10:00 PM', task: 'Journal (5 min reflection)', category: 'discipline' },
   { time: '10:15 PM', task: 'Reading (physical book)', category: 'discipline' },
   { time: '10:45 PM', task: 'Magnesium Glycinate + Turmeric milk', category: 'nutrition' },
   { time: '11:00 PM', task: 'Phone out of bedroom', category: 'sleep' },
   { time: '11:15 PM', task: 'Lights out', category: 'sleep' },
-  { time: '11:30 PM', task: 'Sleep', category: 'sleep' },
+  { time: '11:30 PM', task: 'Sleep (back-sleeping for face symmetry)', category: 'sleep' },
 ];
 
 export const SATURDAY_SCHEDULE: ScheduleItem[] = [
   { time: '8:00 AM', task: 'Wake + water', category: 'nutrition' },
   { time: '8:15 AM', task: 'Posture routine', category: 'training' },
-  { time: '8:30 AM', task: 'Skincare AM + Minoxidil AM', category: 'skincare' },
+  { time: '8:30 AM', task: 'Skincare AM Routine', category: 'skincare' },
   { time: '9:00 AM', task: 'Breakfast + supplements + D3 60K sachet', category: 'nutrition' },
-  { time: '10:00 AM', task: 'Training session (Priority Movements Focus)', category: 'training' },
+  { time: '10:00 AM', task: 'Priority Hypertrophy Focus (Side Delts, Neck, Traps)', category: 'training' },
   { time: '11:00 AM', task: 'Protein shake + shower', category: 'nutrition' },
   { time: '11:30 AM', task: 'Meal prep (2 hours)', category: 'nutrition' },
   { time: '1:30 PM', task: 'Lunch + Zinc', category: 'nutrition' },
   { time: '2:00 PM', task: 'Personal time / GF time', category: 'discipline' },
   { time: '6:00 PM', task: 'Evening — Restaurant (1 cheat meal allowed)', category: 'nutrition' },
   { time: '9:00 PM', task: 'Dinner (home) + Omega-3', category: 'nutrition' },
-  { time: '9:30 PM', task: 'Skincare PM + Minoxidil PM + Body scrub', category: 'skincare' },
+  { time: '9:30 PM', task: 'Skincare PM + Coffee Body Scrub in shower', category: 'skincare' },
   { time: '10:00 PM', task: 'Journal + Plan next week', category: 'discipline' },
   { time: '10:45 PM', task: 'Magnesium + Turmeric milk', category: 'nutrition' },
   { time: '11:00 PM', task: 'Phone out', category: 'sleep' },
-  { time: '12:00 AM', task: 'Sleep', category: 'sleep' },
+  { time: '12:00 AM', task: 'Sleep (back-sleeping)', category: 'sleep' },
 ];
 
 export const SUNDAY_SCHEDULE: ScheduleItem[] = [
   { time: '8:00 AM', task: 'Wake + water', category: 'nutrition' },
   { time: '8:15 AM', task: 'Posture routine', category: 'training' },
-  { time: '8:30 AM', task: 'Skincare AM + Minoxidil AM', category: 'skincare' },
+  { time: '8:30 AM', task: 'Skincare AM Routine', category: 'skincare' },
   { time: '9:00 AM', task: 'Breakfast + supplements', category: 'nutrition' },
-  { time: '10:00 AM', task: 'Long walk / light activity (30 min)', category: 'training' },
-  { time: '10:45 AM', task: 'Deep skincare: Face mask + Ubtan body pack', category: 'skincare' },
-  { time: '11:15 AM', task: 'Let masks dry (read/plan week)', category: 'discipline' },
-  { time: '11:30 AM', task: 'Shower + rinse masks + hair oil application', category: 'skincare' },
+  { time: '10:00 AM', task: '0.5mm Hairline Dermastamp + Rosemary Oil', category: 'appearance' },
+  { time: '10:45 AM', task: 'Multani Mitti + Rose Water Face Pack', category: 'skincare' },
+  { time: '11:15 AM', task: 'Let pack dry (15-20 min) — reading/reflection', category: 'discipline' },
+  { time: '11:35 AM', task: 'Shower: Rinse pack with lukewarm water + Nivea Soft', category: 'skincare' },
   { time: '12:00 PM', task: 'Lunch + Zinc', category: 'nutrition' },
   { time: '1:00 PM', task: 'Weekly review + Planning', category: 'discipline' },
   { time: '3:00 PM', task: 'Reading / Hobby', category: 'discipline' },
   { time: '6:00 PM', task: 'Evening snack', category: 'nutrition' },
   { time: '9:00 PM', task: 'Dinner + Omega-3', category: 'nutrition' },
-  { time: '9:30 PM', task: 'Skincare PM + Minoxidil PM', category: 'skincare' },
+  { time: '9:30 PM', task: 'Skincare PM (Barrier Rest Night + Nivea Soft)', category: 'skincare' },
   { time: '10:00 PM', task: 'Journal', category: 'discipline' },
   { time: '10:30 PM', task: 'Magnesium + Turmeric milk', category: 'nutrition' },
   { time: '10:45 PM', task: 'Phone out', category: 'sleep' },
@@ -739,10 +864,11 @@ export const DEFAULT_MILESTONES = [
   { id: 'm30-03', phase: 1, days: 30, title: 'Zero coke consumed' },
   { id: 'm30-04', phase: 1, days: 30, title: 'Minimal weekday junk (0-1 in past 7 days)' },
   { id: 'm30-05', phase: 1, days: 30, title: 'Skincare AM + PM daily (30 days straight)' },
-  { id: 'm30-06', phase: 1, days: 30, title: 'Adapalene routine started' },
-  { id: 'm30-07', phase: 1, days: 30, title: 'Minoxidil started (daily AM + PM)' },
+  { id: 'm30-06', phase: 1, days: 30, title: 'Adapalene 0.1% rotation established' },
+  { id: 'm30-07', phase: 1, days: 30, title: 'Natural Hairline Protocol: Rosemary Oil + 0.5mm Dermastamping' },
   { id: 'm30-08', phase: 1, days: 30, title: 'Working out 4x/week (4 consecutive weeks)' },
   { id: 'm30-09', phase: 1, days: 30, title: 'Priority movements 5x/week' },
+
   { id: 'm30-10', phase: 1, days: 30, title: 'Porn reduced to 1-2x/week' },
   { id: 'm30-11', phase: 1, days: 30, title: 'Phone out of bedroom (30 days straight)' },
   { id: 'm30-12', phase: 1, days: 30, title: 'Dandruff visibly reduced' },

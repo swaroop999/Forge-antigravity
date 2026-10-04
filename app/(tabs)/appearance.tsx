@@ -1,32 +1,151 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check } from 'lucide-react-native';
-import { ScrollView, View, Text, Pressable, Alert } from "react-native";
+import { Check, Info, Sparkles, Shield, Sun, Moon } from 'lucide-react-native';
+import { ScrollView, View, Text, Pressable, Modal } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, AppearanceRepo, NavRepo } from '@/lib/db/database';
-import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION } from '@/lib/db/seeds';
+import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION, type SkincareStep } from '@/lib/db/seeds';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
 const TABS = [
   { key: 'skincare' as Tab, label: 'Skincare', icon: '🧴' },
   { key: 'tanremoval' as Tab, label: 'Tan', icon: '☀️' },
-  { key: 'hair' as Tab, label: 'Hair', icon: '💈' },
+  { key: 'hair' as Tab, label: 'Hair', icon: '🌿' },
   { key: 'bodycare' as Tab, label: 'Body', icon: '🧼' },
   { key: 'looksmax' as Tab, label: 'Looksmax', icon: '⭐' },
 ];
 
-// ─── Skincare ─────────────────────────────────────────────────────────────────
+// ─── Skincare Step Detail Modal ────────────────────────────────────────────────
+
+function StepDetailModal({
+  step,
+  visible,
+  onClose,
+}: {
+  step: SkincareStep | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  if (!step) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable
+        onPress={onClose}
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 20,
+            padding: 22,
+            width: '100%',
+            maxWidth: 380,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>
+                STEP {step.step} INSTRUCTION
+              </Text>
+              <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: '800', marginTop: 2 }}>
+                {step.product}
+              </Text>
+            </View>
+            <Pressable onPress={onClose} hitSlop={10} style={{ padding: 4 }}>
+              <Text style={{ color: colors.muted, fontSize: 18, fontWeight: '700' }}>✕</Text>
+            </Pressable>
+          </View>
+
+          {/* Quick Stats Grid */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {step.duration && (
+              <View style={{ flex: 1, backgroundColor: colors.background, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.muted, fontSize: 10, fontWeight: '600' }}>⏱ Time Spent</Text>
+                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', marginTop: 2 }}>{step.duration}</Text>
+              </View>
+            )}
+            {step.waitAfter && (
+              <View style={{ flex: 1, backgroundColor: colors.background, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.warning, fontSize: 10, fontWeight: '600' }}>⏳ Wait Gap</Text>
+                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', marginTop: 2 }}>{step.waitAfter}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Rinse Rule */}
+          {step.rinseRule && (
+            <View style={{
+              backgroundColor: step.rinseRule.toLowerCase().includes('rinse') ? '#3B82F620' : colors.primary + '20',
+              borderRadius: 10, padding: 10, marginBottom: 14,
+              borderWidth: 1, borderColor: step.rinseRule.toLowerCase().includes('rinse') ? '#3B82F650' : colors.primary + '50',
+            }}>
+              <Text style={{ color: step.rinseRule.toLowerCase().includes('rinse') ? '#60A5FA' : colors.primary, fontWeight: '700', fontSize: 12 }}>
+                💧 Rule: {step.rinseRule}
+              </Text>
+            </View>
+          )}
+
+          {/* Target Area */}
+          {step.targetArea && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', marginBottom: 2 }}>🎯 TARGET AREA</Text>
+              <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>{step.targetArea}</Text>
+            </View>
+          )}
+
+          {/* Detailed Instructions */}
+          <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 14, marginBottom: 18 }}>
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>PROCEDURAL DETAILS</Text>
+            <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 19 }}>
+              {step.procedureDetails || step.action}
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => ({
+              backgroundColor: colors.primary,
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: 'center',
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Got It</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ─── Skincare Screen ──────────────────────────────────────────────────────────
 
 function SkincareScreen() {
   const colors = useColors();
   const [amDone, setAmDone] = useState<Record<number, boolean>>({});
   const [pmDone, setPmDone] = useState<Record<number, boolean>>({});
+  const [selectedStep, setSelectedStep] = useState<SkincareStep | null>(null);
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [showPigmentGuide, setShowPigmentGuide] = useState(false);
+
   const today = new Date().toISOString().split('T')[0];
   const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
-  const todayActive = PM_ACTIVES_ROTATION[dayName] || 'Cleanser + Moisturizer Only';
+  const todayActive = PM_ACTIVES_ROTATION[dayName] || 'Cleanse + Nivea Soft Only';
 
   const [amStreak, setAmStreak] = useState(0);
   const [pmStreak, setPmStreak] = useState(0);
@@ -68,7 +187,6 @@ function SkincareScreen() {
     const n = { ...amDone, [step]: !amDone[step] };
     setAmDone(n);
     await AppearanceRepo.setSkincareAM(today, n);
-    // Update daily log
     const amComplete = SKINCARE_AM.every((_, i) => n[i]);
     let log = await DailyLogRepo.getForDate(today);
     if (!log) log = await DailyLogRepo.getDefault(today, []);
@@ -88,102 +206,229 @@ function SkincareScreen() {
     await DailyLogRepo.save(log);
   };
 
+  const openStepInfo = (step: SkincareStep) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedStep(step);
+    setInfoModalVisible(true);
+  };
+
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Warnings */}
-      <View style={{ backgroundColor: colors.error + '15', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.error + '40' }}>
-        <Text style={{ color: colors.error, fontWeight: '700', marginBottom: 6 }}>❌ STOP Immediately</Text>
+      {/* Step Detail Modal */}
+      <StepDetailModal
+        step={selectedStep}
+        visible={infoModalVisible}
+        onClose={() => setInfoModalVisible(false)}
+      />
+
+      {/* Safety Alert */}
+      <View style={{ backgroundColor: colors.error + '15', borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.error + '40' }}>
+        <Text style={{ color: colors.error, fontWeight: '700', fontSize: 13, marginBottom: 6 }}>❌ STRICT CONTRAINDICATIONS</Text>
         <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          • Mometasone (Humasone) — steroid, thins face skin permanently{'\n'}
-          • Touching face with hands{'\n'}
-          • Picking pimples — scars that take months to heal{'\n'}
-          • Phone screen on right cheek — clean phone daily{'\n'}
-          • Helmet visor touching face without cleaning
+          • <Text style={{ fontWeight: '700' }}>Humasone (Mometasone):</Text> Potent corticosteroid. Keep completely off face to prevent permanent dermal thinning, telangiectasia, and rebound rosacea.{'\n'}
+          • <Text style={{ fontWeight: '700' }}>Benzomycin:</Text> Use clean Q-tip on active pimples ONLY. Do NOT spread on cheeks or dark spots.{'\n'}
+          • Never apply Adapalene on damp skin — wait 10-15 minutes after washing.
         </Text>
       </View>
 
-      {/* Today's Active */}
-      <View style={{ backgroundColor: colors.primary + '20', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.primary + '50' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 4 }}>🌙 Tonight's Active ({dayName})</Text>
-        <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 18 }}>{todayActive}</Text>
+      {/* Pigmentation Protocol Clarification Accordion */}
+      <Pressable
+        onPress={() => setShowPigmentGuide(!showPigmentGuide)}
+        style={({ pressed }) => ({
+          backgroundColor: colors.primary + '18',
+          borderRadius: 14, padding: 14, marginBottom: 16,
+          borderWidth: 1, borderColor: colors.primary + '45',
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+            <Sparkles size={18} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>
+              Moustache Patch & Full Face Pigmentation Guide
+            </Text>
+          </View>
+          <Text style={{ color: colors.primary, fontSize: 14 }}>{showPigmentGuide ? '▲' : '▼'}</Text>
+        </View>
+        {showPigmentGuide && (
+          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.primary + '30' }}>
+            <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
+              <Text style={{ fontWeight: '700', color: colors.primary }}>Does this routine treat only the patch or the entire face?{'\n'}</Text>
+              It treats <Text style={{ fontWeight: '700' }}>BOTH</Text> simultaneously! The patch beside your moustache had localized trauma/inflammation causing concentrated melanin, while chin, lips, and cheeks have diffuse post-inflammatory hyperpigmentation (PIH).{'\n\n'}
+              • <Text style={{ fontWeight: '700' }}>Alpha Arbutin 2%:</Text> Dabbed specifically on the dark patch beside moustache and mouth perimeter to halt tyrosinase.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>10% Niacinamide:</Text> Applied across entire face to stop pigment transfer and balance tone.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Adapalene 0.1%:</Text> Applied thinly across full face at night to force rapid turnover of pigmented cells.{'\n'}
+              • <Text style={{ fontWeight: '700' }}>Aqualogica SPF 50+:</Text> Full face protection every morning so UV does not re-darken healing zones.
+            </Text>
+          </View>
+        )}
+      </Pressable>
+
+      {/* Tonight's Active */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.primary + '40', borderLeftWidth: 4, borderLeftColor: colors.primary }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <Moon size={16} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>Tonight's PM Active ({dayName})</Text>
+        </View>
+        <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>{todayActive}</Text>
       </View>
 
       {/* AM Routine */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.warning }}>☀️ AM Routine</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Sun size={18} color={colors.warning} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.warning }}>AM Routine</Text>
+          </View>
           <View style={{ backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: colors.success, fontSize: 11, fontWeight: '700' }}>🔥 {amStreak} day streak</Text>
           </View>
         </View>
+
         {SKINCARE_AM.map((step, i) => (
-          <Pressable key={i} onPress={() => toggleAM(i)}
-            style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10,
-              borderBottomWidth: i < SKINCARE_AM.length - 1 ? 1 : 0, borderBottomColor: colors.border,
-              opacity: pressed ? 0.8 : 1,
-            })}>
-            <View style={{
-              width: 22, height: 22, borderRadius: 11,
-              backgroundColor: amDone[i] ? colors.success : 'transparent',
-              borderWidth: 2, borderColor: amDone[i] ? colors.success : colors.border,
-              marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
-            }}>
-              {amDone[i] && <Check size={14} color="#FFFFFF" />}
+          <View
+            key={i}
+            style={{
+              paddingVertical: 10,
+              borderBottomWidth: i < SKINCARE_AM.length - 1 ? 1 : 0,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <Pressable
+                onPress={() => toggleAM(i)}
+                style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  backgroundColor: amDone[i] ? colors.success : 'transparent',
+                  borderWidth: 2, borderColor: amDone[i] ? colors.success : colors.border,
+                  marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
+                }}
+              >
+                {amDone[i] && <Check size={14} color="#FFFFFF" />}
+              </Pressable>
+
+              <Pressable onPress={() => toggleAM(i)} style={{ flex: 1 }}>
+                <Text style={{
+                  fontWeight: '700',
+                  color: amDone[i] ? colors.success : colors.foreground,
+                  fontSize: 13,
+                  textDecorationLine: amDone[i] ? 'line-through' : 'none',
+                }}>
+                  {step.step}. {step.product}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{step.action}</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                  {step.duration && <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '600' }}>⏱ {step.duration}</Text>}
+                  {step.waitAfter && <Text style={{ color: colors.warning, fontSize: 10, fontWeight: '600' }}>⏳ {step.waitAfter}</Text>}
+                </View>
+              </Pressable>
+
+              {/* Info Button */}
+              <Pressable
+                onPress={() => openStepInfo(step)}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  backgroundColor: colors.primary + '18',
+                  borderRadius: 16,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  opacity: pressed ? 0.6 : 1,
+                  marginLeft: 8,
+                })}
+              >
+                <Info size={11} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>Info</Text>
+              </Pressable>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', color: amDone[i] ? colors.success : colors.foreground, fontSize: 13, textDecorationLine: amDone[i] ? 'line-through' : 'none' }}>
-                {step.step}. {step.product}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{step.action}</Text>
-              {step.waitAfter && <Text style={{ color: colors.warning, fontSize: 11, marginTop: 2 }}>⏱ {step.waitAfter}</Text>}
-            </View>
-          </Pressable>
+          </View>
         ))}
       </View>
 
       {/* PM Routine */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.primary }}>🌙 PM Routine</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Moon size={18} color={colors.primary} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary }}>PM Routine</Text>
+          </View>
           <View style={{ backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: colors.success, fontSize: 11, fontWeight: '700' }}>🔥 {pmStreak} day streak</Text>
           </View>
         </View>
+
         {SKINCARE_PM.map((step, i) => (
-          <Pressable key={i} onPress={() => togglePM(i)}
-            style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10,
-              borderBottomWidth: i < SKINCARE_PM.length - 1 ? 1 : 0, borderBottomColor: colors.border,
-              opacity: pressed ? 0.8 : 1,
-            })}>
-            <View style={{
-              width: 22, height: 22, borderRadius: 11,
-              backgroundColor: pmDone[i] ? colors.success : 'transparent',
-              borderWidth: 2, borderColor: pmDone[i] ? colors.success : colors.border,
-              marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
-            }}>
-              {pmDone[i] && <Check size={14} color="#FFFFFF" />}
+          <View
+            key={i}
+            style={{
+              paddingVertical: 10,
+              borderBottomWidth: i < SKINCARE_PM.length - 1 ? 1 : 0,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <Pressable
+                onPress={() => togglePM(i)}
+                style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  backgroundColor: pmDone[i] ? colors.success : 'transparent',
+                  borderWidth: 2, borderColor: pmDone[i] ? colors.success : colors.border,
+                  marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
+                }}
+              >
+                {pmDone[i] && <Check size={14} color="#FFFFFF" />}
+              </Pressable>
+
+              <Pressable onPress={() => togglePM(i)} style={{ flex: 1 }}>
+                <Text style={{
+                  fontWeight: '700',
+                  color: pmDone[i] ? colors.success : colors.foreground,
+                  fontSize: 13,
+                  textDecorationLine: pmDone[i] ? 'line-through' : 'none',
+                }}>
+                  {step.step}. {step.product}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{step.action}</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                  {step.duration && <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '600' }}>⏱ {step.duration}</Text>}
+                  {step.waitAfter && <Text style={{ color: colors.warning, fontSize: 10, fontWeight: '600' }}>⏳ {step.waitAfter}</Text>}
+                </View>
+              </Pressable>
+
+              {/* Info Button */}
+              <Pressable
+                onPress={() => openStepInfo(step)}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  backgroundColor: colors.primary + '18',
+                  borderRadius: 16,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  opacity: pressed ? 0.6 : 1,
+                  marginLeft: 8,
+                })}
+              >
+                <Info size={11} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>Info</Text>
+              </Pressable>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', color: pmDone[i] ? colors.success : (step.product === 'WAIT' ? colors.warning : colors.foreground), fontSize: 13, textDecorationLine: pmDone[i] ? 'line-through' : 'none' }}>
-                {step.step}. {step.product}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{step.action}</Text>
-              {step.waitAfter && <Text style={{ color: colors.warning, fontSize: 11, marginTop: 2 }}>⏱ {step.waitAfter}</Text>}
-            </View>
-          </Pressable>
+          </View>
         ))}
       </View>
 
-      {/* Weekly Rotation */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+      {/* Weekly PM Actives Rotation */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>PM Actives Rotation</Text>
         {Object.entries(PM_ACTIVES_ROTATION).map(([day, active]) => (
           <View key={day} style={{
             flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8,
             borderBottomWidth: 1, borderBottomColor: colors.border,
-            backgroundColor: day === dayName ? colors.primary + '10' : 'transparent',
+            backgroundColor: day === dayName ? colors.primary + '15' : 'transparent',
             borderRadius: day === dayName ? 8 : 0,
             paddingHorizontal: day === dayName ? 8 : 0,
           }}>
@@ -192,225 +437,261 @@ function SkincareScreen() {
           </View>
         ))}
       </View>
+
+      {/* Sunday Deep Treatment Protocol */}
+      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
+        <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 14, marginBottom: 6 }}>
+          ✨ Sunday Deep Skin Reset: Multani Mitti + Rose Water
+        </Text>
+        <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
+          • <Text style={{ fontWeight: '700' }}>Mix:</Text> 1 tbsp Multani Mitti + pure Rose water into a smooth paste.{'\n'}
+          • <Text style={{ fontWeight: '700' }}>Apply:</Text> Spread evenly across face and neck (avoiding eye area).{'\n'}
+          • <Text style={{ fontWeight: '700' }}>Time:</Text> 15-20 minutes until almost dry (do NOT let it crack painfully).{'\n'}
+          • <Text style={{ fontWeight: '700' }}>Rinse:</Text> Splash with lukewarm water until dissolved. Follow immediately with Nivea Soft moisturizer to prevent moisture loss.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
-// ─── Tan Removal ─────────────────────────────────────────────────────────────
+// ─── Tan Removal Screen (Cleaned per Feedback 02) ─────────────────────────────
 
 function TanRemovalScreen() {
   const colors = useColors();
-  const [assessment, setAssessment] = useState<Record<string, number>>({});
-  const [showAssess, setShowAssess] = useState(false);
-
-  useEffect(() => {
-    AppearanceRepo.getTanAssessment().then(setAssessment);
-  }, []);
-
-  const bodyParts = ['Face', 'Neck', 'Arms', 'Hands', 'Legs', 'Feet'];
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Assessment */}
+      {/* Overview Banner */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Tan Level Assessment</Text>
-          <Pressable onPress={() => setShowAssess(!showAssess)} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Update</Text>
-          </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Shield size={20} color={colors.primary} />
+          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground }}>Bangalore Commute UV Shield</Text>
         </View>
-        {bodyParts.map(part => {
-          const score = assessment[part] || 0;
-          const progress = score * 10;
-          return (
-            <View key={part} style={{ marginBottom: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13 }}>{part}</Text>
-                <Text style={{ color: score >= 7 ? colors.success : score >= 4 ? colors.warning : colors.error, fontWeight: '700', fontSize: 12 }}>
-                  {score || '—'}/10
-                </Text>
-              </View>
-              <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
-                <View style={{
-                  height: 6, borderRadius: 3, width: `${progress}%`,
-                  backgroundColor: score >= 7 ? colors.success : score >= 4 ? colors.warning : colors.error,
-                }} />
-              </View>
-            </View>
-          );
-        })}
+        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+          Riding a two-wheeler in Bangalore without protection undoes weeks of skincare progress in 15 minutes. Follow these three non-negotiable protocols to reverse existing tan and prevent new pigmentation.
+        </Text>
       </View>
 
-      {/* Daily Protocol */}
+      {/* Pillar 1: Commute Armor */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Daily Protocol</Text>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: colors.warning, marginBottom: 10 }}>
+          🛡️ Pillar 1: Commute Armor (Daily Non-Negotiable)
+        </Text>
         {[
-          { time: 'Morning', steps: ['Apply SPF 50+ on all exposed skin (face, neck, arms)', 'Helmet visor CLOSED when riding'], urgent: true },
-          { time: 'Before Commute', steps: ['Dab Alpha Arbutin on dark patches', 'Body SPF on arms/legs if exposed'], urgent: false },
-          { time: 'At Night', steps: ['Body oil massage (coconut + lemon drops) on tan areas', 'Ubtan paste on elbows/knees (weekly)', 'Body lotion with niacinamide'], urgent: false },
-          { time: 'Weekly (Saturday)', steps: ['Coffee body scrub all over', 'Ubtan face + body pack (leave 20 min)', 'Coconut + rosemary hair oil massage'], urgent: false },
-        ].map((p, i) => (
-          <View key={i} style={{ marginBottom: 14 }}>
-            <Text style={{ color: p.urgent ? colors.error : colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 6 }}>
-              {p.urgent ? '❗' : '▸'} {p.time}
-            </Text>
-            {p.steps.map((step, si) => (
-              <Text key={si} style={{ color: colors.muted, fontSize: 12, marginBottom: 3, marginLeft: 12 }}>• {step}</Text>
-            ))}
-          </View>
-        ))}
-      </View>
-
-      {/* Products */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Products to Get</Text>
-        {[
-          { name: 'Aqualogica SPF 50+ (Face)', purpose: 'Daily sunscreen', priority: 'HIGH' },
-          { name: 'Nivea Sun SPF 50 (Body)', purpose: 'Arms/legs daily protection', priority: 'HIGH' },
-          { name: 'Mcaffeine Coffee Scrub', purpose: 'Weekly tan removal scrub', priority: 'HIGH' },
-          { name: 'Alpha Arbutin 2% (Minimalist)', purpose: 'Tan lightening active', priority: 'HIGH' },
-          { name: 'Derma Co Niacinamide Body Lotion', purpose: 'Daily brightening lotion', priority: 'MEDIUM' },
-          { name: 'Aloe Vera Gel (Patanjali)', purpose: 'Soothing + brightening base', priority: 'MEDIUM' },
-          { name: 'Kojic Acid Soap', purpose: 'Elbows/knees evening', priority: 'LOW' },
-        ].map((p, i) => (
-          <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: i < 6 ? 1 : 0, borderBottomColor: colors.border }}>
-            <View style={{
-              backgroundColor: p.priority === 'HIGH' ? colors.error + '30' : p.priority === 'MEDIUM' ? colors.warning + '30' : colors.border,
-              borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 10, marginTop: 2,
-            }}>
-              <Text style={{ color: p.priority === 'HIGH' ? colors.error : p.priority === 'MEDIUM' ? colors.warning : colors.muted, fontSize: 9, fontWeight: '700' }}>
-                {p.priority}
-              </Text>
-            </View>
+          { icon: '🪖', title: 'Helmet Visor CLOSED', desc: 'UV penetrates through open visors. Keep your full-face helmet visor down at all times when riding.' },
+          { icon: '☀️', title: 'Aqualogica SPF 50+ (Face & Neck)', desc: '2 full finger-lengths applied 15 min before stepping out into the sun.' },
+          { icon: '🧥', title: 'Sleeves / Body SPF', desc: 'Wear full-sleeve UV jackets or apply body sunscreen to exposed arms and hands.' },
+        ].map((item, i) => (
+          <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
+            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: '600' }}>{p.name}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{p.purpose}</Text>
+              <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: '700' }}>{item.title}</Text>
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{item.desc}</Text>
             </View>
           </View>
         ))}
       </View>
-    </ScrollView>
-  );
-}
 
-// ─── Hair Care ────────────────────────────────────────────────────────────────
-
-function HairCareScreen() {
-  const colors = useColors();
-  const [minoxDone, setMinoxDone] = useState<{ am: boolean; pm: boolean }>({ am: false, pm: false });
-  const today = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    AppearanceRepo.getMinox(today).then(setMinoxDone);
-  }, []);
-
-  const toggleMinox = async (slot: 'am' | 'pm') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const n = { ...minoxDone, [slot]: !minoxDone[slot] };
-    setMinoxDone(n);
-    await AppearanceRepo.setMinox(today, n);
-  };
-
-  const hairWashSchedule = ['Mon', 'Wed', 'Sat'];
-  const oilMassageSchedule = ['Sun', 'Wed'];
-  const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Minoxidil Tracker */}
+      {/* Pillar 2: Active Melanin Reversal */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>Minoxidil 5% Daily Tracker</Text>
-        <Text style={{ color: colors.error, fontSize: 11, marginBottom: 12 }}>⚠️ Missing even one day SLOWS regrowth. This is a lifetime commitment.</Text>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primary, marginBottom: 10 }}>
+          ⚡ Pillar 2: Melanin Reversal (Daily Actives)
+        </Text>
+        {[
+          { title: 'Alpha Arbutin 2% (AM & PM)', desc: 'Blocks tyrosinase enzymes from synthesizing new melanin in tanned cells.' },
+          { title: '10% Niacinamide Serum (AM)', desc: 'Stops transfer of pigment into surface skin cells and restores barrier.' },
+          { title: 'Adapalene 0.1% (Mon/Wed/Fri PM)', desc: 'Forces rapid epidermal exfoliation, shedding dark, sun-damaged layers.' },
+        ].map((item, i) => (
+          <View key={i} style={{ marginBottom: 10, paddingLeft: 8, borderLeftWidth: 3, borderLeftColor: colors.primary }}>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700' }}>{item.title}</Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>{item.desc}</Text>
+          </View>
+        ))}
+      </View>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          {(['am', 'pm'] as const).map(slot => (
-            <Pressable key={slot} onPress={() => toggleMinox(slot)} style={({ pressed }) => ({
-              flex: 1, backgroundColor: minoxDone[slot] ? colors.success + '20' : colors.surface,
-              borderRadius: 12, padding: 16, alignItems: 'center',
-              borderWidth: 2, borderColor: minoxDone[slot] ? colors.success : colors.border,
-              opacity: pressed ? 0.8 : 1,
-            })}>
-              <Text style={{ fontSize: 24 }}>{slot === 'am' ? '☀️' : '🌙'}</Text>
-              <Text style={{ color: minoxDone[slot] ? colors.success : colors.foreground, fontWeight: '700', fontSize: 14, marginTop: 8 }}>
-                {slot.toUpperCase()} Dose
-              </Text>
-              <Text style={{ color: minoxDone[slot] ? colors.success : colors.muted, fontSize: 12 }}>
-                {minoxDone[slot] ? '✓ Applied' : 'Tap to mark'}
-              </Text>
-            </Pressable>
-          ))}
+      {/* Pillar 3: Weekly Deep Exfoliation */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: colors.success, marginBottom: 10 }}>
+          🛁 Pillar 3: Weekly Tan Lifting
+        </Text>
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 13 }}>☕ mCaffeine Coffee Body Scrub (Saturday in Shower)</Text>
+          <Text style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>
+            Massage damp arms, elbows, knees, and neck in gentle circular motions for 2-3 minutes. Coffee grounds physically slough off oxidized tan, while caffeine boosts micro-circulation.
+          </Text>
         </View>
-
-        <View style={{ marginTop: 14, padding: 12, backgroundColor: colors.background, borderRadius: 8 }}>
-          <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 16 }}>
-            Apply with dropper to scalp (not hair). 1ml per application. Wait 2-4 hours before washing hair. Apply to dry scalp.{'\n\n'}
-            Week 1-3: Adjustment period{'\n'}
-            Week 4-12: Possible shedding (KEEP GOING — this is good!){'\n'}
-            Month 3-6: New growth begins{'\n'}
-            Month 6+: Full results visible
+        <View>
+          <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 13 }}>🌸 Multani Mitti & Rose Water (Sunday Face Reset)</Text>
+          <Text style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>
+            Draws out deep environmental impurities, calms inflammation from Bangalore sun exposure, and clarifies complexion.
           </Text>
         </View>
       </View>
+    </ScrollView>
+  );
+}
 
-      {/* Wash Schedule */}
+// ─── Hair Care Screen (100% Gentle & Natural — NO MINOXIDIL) ──────────────────
+
+function HairCareScreen() {
+  const colors = useColors();
+  const [massageDone, setMassageDone] = useState(false);
+  const [oilDone, setOilDone] = useState(false);
+  const [dermastampDone, setDermastampDone] = useState(false);
+
+  return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      {/* Header Banner */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Weekly Schedule</Text>
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-          const isToday = day === dayAbbr;
-          const isWash = hairWashSchedule.includes(day);
-          const isOil = oilMassageSchedule.includes(day);
-          return (
-            <View key={day} style={{
-              flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-              borderBottomWidth: 1, borderBottomColor: colors.border,
-              backgroundColor: isToday ? colors.primary + '10' : 'transparent',
-              borderRadius: isToday ? 8 : 0, paddingHorizontal: isToday ? 8 : 0,
-            }}>
-              <Text style={{ width: 36, color: isToday ? colors.primary : colors.muted, fontWeight: isToday ? '800' : '600', fontSize: 12 }}>{day}</Text>
-              <View style={{ flex: 1, flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                {isWash && (
-                  <View style={{ backgroundColor: colors.primary + '30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>Hair Wash (Nizoral or mild shampoo)</Text>
-                  </View>
-                )}
-                {isOil && (
-                  <View style={{ backgroundColor: colors.warning + '30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: colors.warning, fontSize: 10, fontWeight: '700' }}>Oil Massage (coconut + rosemary)</Text>
-                  </View>
-                )}
-                {!isWash && !isOil && (
-                  <Text style={{ color: colors.muted, fontSize: 11 }}>Minoxidil only</Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
+        <Text style={{ fontSize: 17, fontWeight: '800', color: colors.foreground, marginBottom: 4 }}>
+          Natural Hairline & Scalp Health 🌿
+        </Text>
+        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+          Zero chemicals, zero Minoxidil. A clinical-grade natural protocol to halt hairline recession, nourish follicle root vascularity, and trigger natural hair density.
+        </Text>
       </View>
 
-      {/* Protocol */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Minoxidil Phase Guide</Text>
+      {/* Today's Natural Hairline Action Tracker */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Today's Hairline Actions</Text>
+        
+        {/* Daily 4-Min Scalp Massage */}
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setMassageDone(!massageDone); }}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 10,
+            backgroundColor: massageDone ? colors.success + '15' : colors.background,
+            borderWidth: 1, borderColor: massageDone ? colors.success : colors.border,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <View style={{
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: massageDone ? colors.success : 'transparent',
+            borderWidth: 2, borderColor: massageDone ? colors.success : colors.border,
+            alignItems: 'center', justifyContent: 'center', marginRight: 12,
+          }}>
+            {massageDone && <Check size={14} color="#FFFFFF" />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: massageDone ? colors.success : colors.foreground, fontWeight: '700', fontSize: 13 }}>
+              Daily 4-Minute Scalp Massage
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
+              Gentle circular pressure on receding temples and hairline to maximize dermal papilla blood flow.
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* Rosemary Oil */}
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setOilDone(!oilDone); }}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 10,
+            backgroundColor: oilDone ? colors.success + '15' : colors.background,
+            borderWidth: 1, borderColor: oilDone ? colors.success : colors.border,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <View style={{
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: oilDone ? colors.success : 'transparent',
+            borderWidth: 2, borderColor: oilDone ? colors.success : colors.border,
+            alignItems: 'center', justifyContent: 'center', marginRight: 12,
+          }}>
+            {oilDone && <Check size={14} color="#FFFFFF" />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: oilDone ? colors.success : colors.foreground, fontWeight: '700', fontSize: 13 }}>
+              Rosemary Oil Scalp Application (2-3x/week)
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
+              5 drops Rosemary oil diluted in 1 tsp Coconut/Jojoba oil. Clinically proven to match 2% Minoxidil efficacy naturally.
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* 0.5mm Weekly Dermastamping */}
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setDermastampDone(!dermastampDone); }}
+          style={({ pressed }) => ({
+            flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12,
+            backgroundColor: dermastampDone ? colors.success + '15' : colors.background,
+            borderWidth: 1, borderColor: dermastampDone ? colors.success : colors.border,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <View style={{
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: dermastampDone ? colors.success : 'transparent',
+            borderWidth: 2, borderColor: dermastampDone ? colors.success : colors.border,
+            alignItems: 'center', justifyContent: 'center', marginRight: 12,
+          }}>
+            {dermastampDone && <Check size={14} color="#FFFFFF" />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: dermastampDone ? colors.success : colors.foreground, fontWeight: '700', fontSize: 13 }}>
+              0.5 mm Dermastamping (Weekly on Sunday)
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
+              Gentle vertical stamp on hairline & temples. Triggers growth factors and activates dormant follicle stem cells.
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
+      {/* The 4 Natural Hairline Pillars */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 12 }}>
+          Clinical Natural Hairline Pillars
+        </Text>
+
         {[
-          { phase: 'Weeks 1-3', title: 'Adjustment', desc: 'May feel dry or itchy. Normal. Use as directed.', color: colors.primary },
-          { phase: 'Weeks 4-12', title: 'The Dread Shed ⚠️', desc: 'SHEDDING IS EXPECTED. Old weak hairs fall to make way for new. DO NOT STOP.', color: colors.error },
-          { phase: 'Months 3-6', title: 'New Growth', desc: 'Thin vellus hairs appear. Looking patchy is normal. Keep going.', color: colors.warning },
-          { phase: 'Month 6-12', title: 'Results', desc: 'New hairs thicken and darken. Compare photos.', color: colors.success },
-          { phase: 'Month 12+', title: 'Maintenance', desc: 'Continue forever. Stopping = all gains lost within 3-6 months.', color: colors.success },
-        ].map((phase, i) => (
-          <View key={i} style={{ flexDirection: 'row', marginBottom: 10 }}>
-            <View style={{ width: 80 }}>
-              <Text style={{ color: phase.color, fontWeight: '700', fontSize: 10 }}>{phase.phase}</Text>
+          {
+            icon: '📌',
+            title: '1. 0.5 mm Dermastamping (Weekly)',
+            desc: 'Use a 0.5mm dermastamp (NOT a roller, which pulls hair at an angle). Disinfect with alcohol before use. Stamp gently 4-5 times over receding hairline corners. Triggers local Wnt/β-catenin hair-regeneration signaling.',
+          },
+          {
+            icon: '🌿',
+            title: '2. Rosemary Essential Oil',
+            desc: 'A landmark comparative study (Panahi et al.) proved Rosemary oil matches 2% minoxidil in hair count increase at 6 months, without scalp itching or drug side effects. Always dilute in carrier oil.',
+          },
+          {
+            icon: '🎃',
+            title: '3. Raw Pumpkin Seeds (Nutritional DHT Blocker)',
+            desc: 'Consume 1-2 tbsp (30g) raw pumpkin seeds daily. They contain Delta-7 Sterols which naturally inhibit the 5-alpha reductase enzyme that converts testosterone to DHT in hair follicles.',
+          },
+          {
+            icon: '💆',
+            title: '4. Daily Mechanical Scalp Massage (4 min)',
+            desc: 'A Japanese clinical study demonstrated that 4 minutes of standardized daily scalp massage increases hair thickness by mechanically stretching dermal papilla cells and opening blood vessels.',
+          },
+        ].map((pillar, i) => (
+          <View key={i} style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+              <Text style={{ fontSize: 16 }}>{pillar.icon}</Text>
+              <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 13 }}>{pillar.title}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 12 }}>{phase.title}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{phase.desc}</Text>
-            </View>
+            <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18, paddingLeft: 22 }}>
+              {pillar.desc}
+            </Text>
           </View>
         ))}
+      </View>
+
+      {/* Hair Wash Protocol */}
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 8 }}>Weekly Wash Protocol</Text>
+        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+          • <Text style={{ fontWeight: '700', color: colors.primary }}>Monday & Thursday:</Text> Nizoral 2% Ketoconazole Shampoo (leave on scalp for 3-5 min before rinsing). Keeps scalp fungal-free and acts as a mild topical androgen blocker.{'\n'}
+          • <Text style={{ fontWeight: '700', color: colors.primary }}>Sunday:</Text> Mild herbal/sulfate-free shampoo after morning oil session.
+        </Text>
       </View>
     </ScrollView>
   );
 }
+
 // ─── Body Care ─────────────────────────────────────────────────────────────────
 
 function BodyCareScreen() {
@@ -419,27 +700,26 @@ function BodyCareScreen() {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
       {[
         {
-          title: 'Daily Body Care', items: [
-            'Shower (lukewarm, not hot — hot dries skin)', 'Body lotion within 3 min of shower (damp skin)',
-            'Apply SPF body lotion on exposed areas before going out', 'Deodorant — antiperspirant under arms',
+          title: 'Daily Body Protocol', items: [
+            'Lukewarm shower (avoid steaming hot water which dries the barrier)',
+            'Nivea Soft or moisturizing lotion applied within 3 minutes of shower on damp skin',
+            'Full sunscreen coverage on exposed arms before two-wheeler commute',
+            'Deodorant applied to clean, dry underarms',
           ]
         },
         {
-          title: 'Weekly', items: [
-            'Coffee body scrub (Mcaffeine) — Saturday in shower', 'Ubtan pack on elbows and knees (10 min)',
-            'Coconut oil massage before Saturday shower', 'Pumice stone on feet/heels if rough',
+          title: 'Weekly Exfoliation & Treatment', items: [
+            'mCaffeine Coffee Body Scrub — Saturday in shower on arms, neck, elbows, knees',
+            'Gentle circular massage for 2-3 minutes before rinsing',
+            'Ubtan / Multani pack on elbows and knees for stubborn dark pigmentation',
+            'Pumice stone on rough heel edges',
           ]
         },
         {
-          title: 'Elbows & Knees Protocol (Dark Patches)', items: [
-            'Kojic acid soap on dark areas daily', 'Scrub vigorously with body scrub once/week',
-            'Apply lemon juice + sugar paste, leave 10 min, rinse', 'Moisturize immediately after',
-          ]
-        },
-        {
-          title: 'Sun Exposure (Strategic)', items: [
-            'Get 15 min morning sun on arms/back BEFORE 10 AM (Vitamin D)', 'Full SPF coverage AFTER 10 AM',
-            'Never allow cumulative tanning — the treatment undoes daily progress',
+          title: 'Dark Joints (Elbows & Knees)', items: [
+            'Avoid resting elbows directly on hard desk surfaces (friction triggers melanin)',
+            'Scrub gently 1-2x/week with coffee scrub',
+            'Apply thick layer of Nivea Soft before sleeping',
           ]
         },
       ].map((section, si) => (
@@ -453,105 +733,142 @@ function BodyCareScreen() {
     </ScrollView>
   );
 }
-// ─── Looksmax ─────────────────────────────────────────────────────────────────
+
+// ─── Looksmax & Face Asymmetry Correction Screen ──────────────────────────────
 
 function LooksmaxScreen() {
   const colors = useColors();
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>('asymmetry');
 
   const strategies = [
     {
-      id: 'body', tier: 'TIER 1 HIGHEST IMPACT', name: 'Body Composition (45→62 kg)',
-      impact: '10/10', status: 'IN PROGRESS', color: colors.primary,
-      desc: 'Your #1 lever. Weight gain at low-moderate fat fills face, builds physique, makes you look present rather than sickly. Every kg gained is visible progress.',
+      id: 'asymmetry',
+      tier: 'CRITICAL HIGH IMPACT',
+      name: 'Face Asymmetry Correction (Jaw, Eyes & Cheeks)',
+      impact: '10/10',
+      status: 'HIGH PRIORITY',
+      color: colors.primary,
+      desc: 'Fixing facial asymmetry requires reversing the unconscious daily habits that deform bone and muscle balance over years:\n\n' +
+        '1. Bilateral Chewing (50/50 Chewing Balance):\n' +
+        'Chewing food predominantly on one side of your mouth causes massive hypertrophy of that side’s masseter muscle, while the other side remains underdeveloped. This pulls the jawline and mouth off-center. ACTION: Consciously chew on your weaker/smaller side for 70% of bites during meals until both sides match.\n\n' +
+        '2. Back Sleeping (Zero Compression):\n' +
+        'Side-sleeping puts 5-8 kg of compressive force on one cheek and eye orbit for 8 hours every night. Over years, this shifts eye socket height and creates asymmetrical nasolabial folds. ACTION: Train yourself to sleep flat on your back with a supportive cervical pillow.\n\n' +
+        '3. Lateral Neck Tilt & SCM Balancing:\n' +
+        'Uneven tightness in the Sternocleidomastoid (SCM) and upper trapezius tilts your head slightly, causing your eye line to look slanted. ACTION: Perform daily neck curls and gentle side neck stretches to level your horizontal eye plane.\n\n' +
+        '4. Proper Mewing & Nasal Breathing:\n' +
+        'Rest entire tongue against the roof of the mouth (including posterior third). Breathe through nose 24/7 with lips sealed.\n\n' +
+        '5. Strategic Beard Grooming:\n' +
+        'While facial bones and muscles remodel, maintain a neat 3-5mm stubble with a sharp, squared neckline to visually frame and balance your jawline contour.',
     },
     {
-      id: 'shoulders', tier: 'TIER 1 HIGHEST IMPACT', name: 'Shoulder Width (Lateral Raises Daily)',
-      impact: '9/10', status: 'IN PROGRESS', color: colors.primary,
-      desc: 'Narrow shoulders are your #1 visual weakness. Lateral raises 5-6x/week with progressive overload creates visible width within 3-6 months.',
+      id: 'body',
+      tier: 'TIER 1 HIGHEST IMPACT',
+      name: 'Body Composition Hypertrophy (45 kg → 62 kg)',
+      impact: '10/10',
+      status: 'IN PROGRESS',
+      color: colors.primary,
+      desc: 'At 45 kg (BMI 16.1), extreme underweight causes facial fat pad depletion, hollow eye sockets, and an angular, tired look. Putting on 12-17 kg of lean muscle fills facial fat pads, builds a commanding jaw-to-neck ratio, and transforms visual presence.',
     },
     {
-      id: 'skincare', tier: 'TIER 1 HIGHEST IMPACT', name: 'Skin Health & Tan Removal',
-      impact: '9/10', status: 'IN PROGRESS', color: colors.primary,
-      desc: 'Clear, even-toned skin is scientifically proven to correlate with perceived attractiveness. Adapalene + SPF + consistency = transformative in 6 months.',
+      id: 'shoulders',
+      tier: 'TIER 1 HIGHEST IMPACT',
+      name: 'Shoulder & Neck Hypertrophy (V-Taper Illusion)',
+      impact: '9/10',
+      status: 'IN PROGRESS',
+      color: colors.primary,
+      desc: 'Lateral raises (side delts), neck curls, and shrugs daily. Building the side delts and neck by even 1 inch creates the optical illusion of a narrower waist and a masculine, capable frame.',
     },
     {
-      id: 'sleep', tier: 'TIER 1 HIGHEST IMPACT', name: 'Sleep Optimization (11PM-7:30AM)',
-      impact: '8/10', status: 'NEEDS WORK', color: colors.warning,
-      desc: '8+ hours is detectable on a face. Studies show well-slept faces are rated significantly more attractive. Also maximizes testosterone and muscle growth.',
+      id: 'skincare',
+      tier: 'TIER 1 HIGHEST IMPACT',
+      name: 'Eradicate Moustache Patch & Even Complexion',
+      impact: '9/10',
+      status: 'IN PROGRESS',
+      color: colors.primary,
+      desc: 'Clear, unified skin tone is one of the highest-rated universal beauty markers. Alpha Arbutin 2% + 10% Niacinamide + Adapalene 0.1% + Daily SPF 50+ systematically fades localized patches and evens overall skin tone.',
     },
     {
-      id: 'posture', tier: 'TIER 1 HIGHEST IMPACT', name: 'Posture Correction (+1.5 inches)',
-      impact: '8/10', status: 'IN PROGRESS', color: colors.primary,
-      desc: '1-1.5 inches of real visual height through daily posture work over 8-12 weeks. Chin tucks, band pull-aparts, dead hangs, face pulls.',
+      id: 'hairline',
+      tier: 'TIER 1 HIGHEST IMPACT',
+      name: 'Receding Hairline Halting & Density',
+      impact: '9/10',
+      status: 'ACTION NEEDED',
+      color: colors.warning,
+      desc: 'Protect your hairline naturally: 0.5mm dermastamping weekly + Rosemary oil 3x/week + 4-minute daily scalp massage + 30g raw pumpkin seeds (DHT inhibitor). Preserving hair now is 10x easier than regrowing it later.',
     },
     {
-      id: 'grooming', tier: 'TIER 2 MODERATE IMPACT', name: 'Haircut + Grooming',
-      impact: '7/10', status: 'ACTION NEEDED', color: colors.warning,
-      desc: 'Textured crop fade + styled properly = immediate improvement. Clean shave or shaped stubble. Groomed brows. These are low-hanging fruit.',
+      id: 'posture',
+      tier: 'TIER 1 HIGHEST IMPACT',
+      name: 'Posture Alignment (+1.5 Inches Visual Height)',
+      impact: '8/10',
+      status: 'IN PROGRESS',
+      color: colors.primary,
+      desc: 'Correcting forward head posture, rounded shoulders, and knee hyperextension unlocks 1-1.5 inches of compressed height and makes clothes hang properly.',
     },
     {
-      id: 'hair-preservation', tier: 'TIER 2 MODERATE IMPACT', name: 'Hair Preservation (Minoxidil)',
-      impact: '7/10', status: 'IN PROGRESS', color: colors.primary,
-      desc: 'At 22 with family history, hair preservation is critical. Minoxidil now is worth 10x what it would be at 30.',
-    },
-    {
-      id: 'style', tier: 'TIER 2 MODERATE IMPACT', name: 'Style Upgrade',
-      impact: '6/10', status: 'PENDING', color: colors.muted,
-      desc: 'Fitted, minimal clothing immediately adds perceived height and attractiveness. Cost effective — a few fitted basics outperform a wardrobe of wrong-fit clothes.',
-    },
-    {
-      id: 'fragrance', tier: 'TIER 2 MODERATE IMPACT', name: 'Fragrance',
-      impact: '6/10', status: 'PENDING', color: colors.muted,
-      desc: 'Scent creates a persistent positive impression. One quality fragrance (Sauvage, Eros, Bleu de Chanel dupe is fine) is worth it.',
-    },
-    {
-      id: 'mewing', tier: 'TIER 3 LONG TERM', name: 'Mewing (24/7 Oral Posture)',
-      impact: '4/10 (12-24 months)', status: 'PRACTICE DAILY', color: colors.muted,
-      desc: 'Real but slow. Tongue on roof of mouth 24/7. Improved jaw definition and wider palate over 12-24 months with genuine consistency.',
-    },
-    {
-      id: 'steroids', tier: 'AVOID', name: '❌ Anabolic Steroids',
-      impact: 'AVOID', status: 'NEVER', color: colors.error,
-      desc: 'At 22 with natural testosterone at peak, steroids: permanently shut down natural T production, accelerate hair loss, damage liver, cause cardiac issues. Destroys long-term health.',
+      id: 'sleep',
+      tier: 'TIER 2 MODERATE IMPACT',
+      name: 'Sleep Quality (11:30 PM - 7:30 AM)',
+      impact: '8/10',
+      status: 'NEEDS WORK',
+      color: colors.warning,
+      desc: 'Deep sleep releases 80% of daily human growth hormone (HGH). Reduces dark under-eye circles, optimizes testosterone, and repairs skin overnight.',
     },
   ];
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
       {strategies.map((s) => (
-        <Pressable key={s.id} onPress={() => setExpanded(expanded === s.id ? null : s.id)}
+        <Pressable
+          key={s.id}
+          onPress={() => setExpanded(expanded === s.id ? null : s.id)}
           style={({ pressed }) => ({
-            backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 8,
-            borderWidth: 1, borderColor: colors.border,
-            borderLeftWidth: 4, borderLeftColor: s.color,
-            opacity: pressed ? 0.8 : 1,
-          })}>
+            backgroundColor: colors.surface,
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: 10,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderLeftWidth: 4,
+            borderLeftColor: s.color,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 9, color: s.color, fontWeight: '700', letterSpacing: 1, marginBottom: 4 }}>{s.tier}</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.foreground }}>{s.name}</Text>
+              <Text style={{ fontSize: 9, color: s.color, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>
+                {s.tier}
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.foreground }}>
+                {s.name}
+              </Text>
             </View>
             <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
               <View style={{
-                backgroundColor: s.status === 'IN PROGRESS' ? colors.success + '20' : s.status === 'NEVER' ? colors.error + '20' : colors.warning + '20',
+                backgroundColor: s.status === 'HIGH PRIORITY' ? colors.primary + '25' : s.status === 'IN PROGRESS' ? colors.success + '20' : colors.warning + '20',
                 borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4,
               }}>
-                <Text style={{ color: s.status === 'IN PROGRESS' ? colors.success : s.status === 'NEVER' ? colors.error : colors.warning, fontSize: 9, fontWeight: '700' }}>
+                <Text style={{
+                  color: s.status === 'HIGH PRIORITY' ? colors.primary : s.status === 'IN PROGRESS' ? colors.success : colors.warning,
+                  fontSize: 9, fontWeight: '800',
+                }}>
                   {s.status}
                 </Text>
               </View>
-              <Text style={{ fontSize: 13 }}>{expanded === s.id ? '▲' : '▼'}</Text>
+              <Text style={{ fontSize: 13, color: colors.muted }}>{expanded === s.id ? '▲' : '▼'}</Text>
             </View>
           </View>
           {expanded === s.id && (
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 10, lineHeight: 18 }}>{s.desc}</Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, marginTop: 10, lineHeight: 18 }}>
+              {s.desc}
+            </Text>
           )}
         </Pressable>
       ))}
     </ScrollView>
   );
 }
+
 // ─── Main Appearance Screen ────────────────────────────────────────────────────
 
 export default function AppearanceScreen() {
@@ -560,7 +877,7 @@ export default function AppearanceScreen() {
 
   useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/appearance').then(sub => {
-      if (sub && ['skincare','tanremoval','hair','bodycare','looksmax'].includes(sub)) {
+      if (sub && ['skincare', 'tanremoval', 'hair', 'bodycare', 'looksmax'].includes(sub)) {
         setActiveTab(sub as Tab);
       }
     });

@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
-import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
+import { ScrollView, View, Text, Pressable, TextInput, Alert, Image } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
@@ -103,7 +103,7 @@ function DopamineResetScreen() {
 
 // ─── Journal ───────────────────────────────────────────────────────────────────
 
-type JournalEntry = { date: string; content: string };
+type JournalEntry = { date: string; content: string; photoUrl?: string | null };
 
 function JournalHistoryCard({ entry, onPress }: { entry: JournalEntry; onPress: () => void }) {
   const colors = useColors();
@@ -145,11 +145,21 @@ function JournalHistoryCard({ entry, onPress }: { entry: JournalEntry; onPress: 
           <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: '700' }}>{formattedDate}</Text>
           {relativeDate ? <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '600', marginTop: 2 }}>{relativeDate}</Text> : null}
         </View>
-        <Text style={{ color: colors.muted, fontSize: 10 }}>{entry.content.split(/\s+/).filter(Boolean).length} words</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ color: colors.muted, fontSize: 10 }}>{entry.content.split(/\s+/).filter(Boolean).length} words</Text>
+          {entry.photoUrl && <Text style={{ fontSize: 10 }}>📸</Text>}
+        </View>
       </View>
       <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>
         {expanded || !needsTruncation ? entry.content : entry.content.slice(0, PREVIEW_LENGTH) + '…'}
       </Text>
+      {entry.photoUrl && (
+        <Image
+          source={{ uri: entry.photoUrl }}
+          style={{ width: '100%', height: 180, borderRadius: 10, marginTop: 10, backgroundColor: colors.border }}
+          resizeMode="cover"
+        />
+      )}
       {needsTruncation && (
         <Pressable onPress={() => setExpanded(!expanded)} style={{ marginTop: 8, paddingVertical: 4 }}>
           <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
@@ -188,7 +198,13 @@ function JournalWriteView({ onSaved }: { onSaved: () => void }) {
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Daily Reflection — {todayDisplay}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Daily Reflection — {todayDisplay}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
+          <Text style={{ fontSize: 10 }}>☁️</Text>
+          <Text style={{ color: colors.success, fontSize: 10, fontWeight: '700' }}>Supabase</Text>
+        </View>
+      </View>
 
       <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 8 }}>Prompts</Text>
@@ -222,7 +238,7 @@ function JournalWriteView({ onSaved }: { onSaved: () => void }) {
 
       {saved && (
         <Text style={{ color: colors.success, fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-          Your entry is saved. Switch to "Past Entries" to browse your journal.
+          ✓ Saved locally and safely backed up to your Supabase database.
         </Text>
       )}
     </ScrollView>

@@ -4,6 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { JournalSupabaseService } from '../supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -562,34 +563,60 @@ export const DisciplineRepo = {
   },
   async getJournalReflection(date: string): Promise<string> {
     const val = await AsyncStorage.getItem(`journal_${date}`);
-    if (!val) return '';
-    try {
-      return JSON.parse(val);
-    } catch {
-      return val;
+    if (val) {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return val;
+      }
     }
+    // Fallback to Supabase if not in local storage
+    try {
+      const remote = await JournalSupabaseService.fetchAllJournals();
+      const match = remote.find(r => r.date === date);
+      if (match?.reflection) {
+        await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(match.reflection));
+        return match.reflection;
+      }
+    } catch {}
+    return '';
   },
-  async setJournalReflection(date: string, value: string): Promise<void> {
+  async setJournalReflection(date: string, value: string, photoUrl?: string | null): Promise<void> {
     await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(value));
+    // Asynchronously upsert to Supabase
+    JournalSupabaseService.upsertJournal(date, value, photoUrl).catch(() => {});
   },
-  async getAllJournalReflections(): Promise<{ date: string; content: string }[]> {
+  async getAllJournalReflections(): Promise<{ date: string; content: string; photoUrl?: string | null }[]> {
+    const localMap: Record<string, { date: string; content: string; photoUrl?: string | null }> = {};
     try {
       const keys = await AsyncStorage.getAllKeys();
       const journalKeys = keys.filter(k => k.startsWith('journal_'));
       const stores = await AsyncStorage.multiGet(journalKeys);
-      return stores.map(([key, val]) => {
+      stores.forEach(([key, val]) => {
         let content = '';
         if (val) {
           try { content = JSON.parse(val); } catch { content = val; }
         }
-        return {
-          date: key.replace('journal_', ''),
-          content
-        };
+        const date = key.replace('journal_', '');
+        if (content.trim()) {
+          localMap[date] = { date, content };
+        }
       });
-    } catch {
-      return [];
-    }
+    } catch {}
+
+    // Pull and merge remote entries from Supabase
+    try {
+      const remote = await JournalSupabaseService.fetchAllJournals();
+      remote.forEach(r => {
+        if (!localMap[r.date] || !localMap[r.date].content) {
+          localMap[r.date] = { date: r.date, content: r.reflection, photoUrl: r.photo_url };
+        } else if (r.photo_url && !localMap[r.date].photoUrl) {
+          localMap[r.date].photoUrl = r.photo_url;
+        }
+      });
+    } catch {}
+
+    return Object.values(localMap).sort((a, b) => b.date.localeCompare(a.date));
   },
 };
 

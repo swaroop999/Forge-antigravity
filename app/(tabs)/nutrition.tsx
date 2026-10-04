@@ -6,13 +6,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { DailyLogRepo, NutritionRepo, NavRepo } from '@/lib/db/database';
+import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
 
-type Tab = 'meals' | 'mealplan' | 'supplements' | 'water';
+type Tab = 'meals' | 'supplements' | 'water';
 const TABS = [
   { key: 'meals' as Tab, label: 'Meals', icon: '🍽️' },
-  { key: 'mealplan' as Tab, label: 'Plan', icon: '📅' },
   { key: 'supplements' as Tab, label: 'Supplements', icon: '💊' },
   { key: 'water' as Tab, label: 'Water', icon: '💧' },
 ];
@@ -163,69 +162,6 @@ function TodaysMeals() {
   );
 }
 
-// ─── Meal Plan ────────────────────────────────────────────────────────────────
-
-function MealPlanScreen() {
-  const colors = useColors();
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>Weekly Meal Plan</Text>
-      <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 16 }}>Consistent daily eating — same 8 meals. The BIGGEST variable is protein source with each meal.</Text>
-
-      {/* Calorie targets */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.foreground, fontWeight: '700', marginBottom: 12 }}>Daily Targets</Text>
-        {[
-          { label: 'Calories', value: '2,600-2,800 kcal', color: colors.primary },
-          { label: 'Protein', value: '90-110g', color: '#60A5FA' },
-          { label: 'Carbs', value: '350-400g', color: colors.warning },
-          { label: 'Fats', value: '70-80g', color: '#FB923C' },
-        ].map((t, i) => (
-          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: colors.border }}>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>{t.label}</Text>
-            <Text style={{ color: t.color, fontWeight: '700', fontSize: 13 }}>{t.value}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Junk food rules */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.foreground, fontWeight: '700', marginBottom: 12 }}>Weekly Junk Food Rules</Text>
-        {[
-          { day: 'Mon-Fri', rule: 'ZERO junk. No exceptions. Ever.', color: colors.success },
-          { day: 'Saturday', rule: '1 restaurant meal allowed (dinner)', color: colors.warning },
-          { day: 'Sunday', rule: 'Home food only — recovery day', color: colors.primary },
-        ].map((r, i) => (
-          <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-            <View style={{ backgroundColor: r.color + '30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginRight: 10, minWidth: 70, alignItems: 'center' }}>
-              <Text style={{ color: r.color, fontWeight: '700', fontSize: 11 }}>{r.day}</Text>
-            </View>
-            <Text style={{ color: colors.foreground, fontSize: 13, flex: 1 }}>{r.rule}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Meal Prep Saturday */}
-      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>Saturday Meal Prep (2 Hours)</Text>
-        {[
-          'Boil 2 dozen eggs for the week',
-          'Marinate and grill 1 kg chicken',
-          'Cook a large batch of rice/quinoa',
-          'Wash and chop vegetables',
-          'Prepare sprouts (soak moong)',
-          'Sort supplements for the week',
-          'Plan next week\'s meals',
-        ].map((item, i) => (
-          <Text key={i} style={{ color: colors.foreground, fontSize: 12, marginBottom: 6 }}>□ {item}</Text>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
 // ─── Supplements ──────────────────────────────────────────────────────────────
 
 function SupplementsScreen() {
@@ -236,6 +172,9 @@ function SupplementsScreen() {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     NutritionRepo.getSupplements(today).then(setChecked);
+    ProfileRepo.get().then(p => {
+      if (p?.phase) setPhase(p.phase);
+    });
   }, []);
 
   const toggle = async (id: string) => {
@@ -250,17 +189,18 @@ function SupplementsScreen() {
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Phase selector */}
-      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-        {([1, 2, 3] as const).map(p => (
-          <Pressable key={p} onPress={() => setPhase(p)} style={{
-            flex: 1, backgroundColor: phase === p ? colors.primary : colors.surface,
-            borderRadius: 10, paddingVertical: 10, alignItems: 'center',
-            borderWidth: 1, borderColor: phase === p ? colors.primary : colors.border,
-          }}>
-            <Text style={{ color: phase === p ? '#FFFFFF' : colors.foreground, fontWeight: '700', fontSize: 12 }}>Phase {p}</Text>
-          </Pressable>
-        ))}
+      {/* Active Phase Badge (no redundant duplicate selectors) */}
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 16,
+        borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 14 }}>Supplements & Micronutrients</Text>
+          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>Daily intake · Natural DHT & hair follicle support</Text>
+        </View>
+        <View style={{ backgroundColor: colors.primary + '22', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>PHASE {phase}</Text>
+        </View>
       </View>
 
       {/* Warnings */}
@@ -270,7 +210,8 @@ function SupplementsScreen() {
           • Zinc: NEVER on empty stomach — causes severe nausea{'\n'}
           • Creatine: Drink 3.5L water daily while on it{'\n'}
           • Vitamin D 60K: Once per week ONLY (8 weeks){'\n'}
-          • Magnesium: Must be GLYCINATE form only
+          • Magnesium: Must be GLYCINATE form only{'\n'}
+          • Pumpkin Seeds: Raw or lightly dry-roasted only (Delta-7 sterols for DHT suppression)
         </Text>
       </View>
 
@@ -297,6 +238,7 @@ function SupplementsScreen() {
               </Text>
               <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>🕐 {supp.timing}</Text>
               <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>Dose: {supp.dose}</Text>
+              {supp.purpose && <Text style={{ color: colors.foreground, fontSize: 11, marginTop: 4, opacity: 0.9 }}>🎯 {supp.purpose}</Text>}
               {supp.warning && <Text style={{ color: colors.warning, fontSize: 11, marginTop: 4 }}>⚠️ {supp.warning}</Text>}
             </View>
           </View>
@@ -397,7 +339,7 @@ export default function NutritionScreen() {
 
   useFocusEffect(useCallback(() => {
     NavRepo.consumePendingSubTab('/(tabs)/nutrition').then((pending) => {
-      if (pending && ['meals','mealplan','supplements','water'].includes(pending)) {
+      if (pending && ['meals','supplements','water'].includes(pending)) {
         setActiveTab(pending as Tab);
       }
     });
@@ -415,7 +357,6 @@ export default function NutritionScreen() {
 
         <View style={{ flex: 1 }}>
           {activeTab === 'meals' && <TodaysMeals />}
-          {activeTab === 'mealplan' && <MealPlanScreen />}
           {activeTab === 'supplements' && <SupplementsScreen />}
           {activeTab === 'water' && <WaterTracker />}
         </View>
