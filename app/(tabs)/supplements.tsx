@@ -48,16 +48,17 @@ export default function SupplementsScreen() {
   const phase1Supplements = [
     { name: 'Whey Protein', dose: '1 scoop (30g)', timing: 'Post-workout', id: 'whey' },
     { name: 'Creatine Monohydrate', dose: '5g (1 tsp)', timing: 'Any time with water', id: 'creatine' },
-    { name: 'Omega-3 Fish Oil', dose: '2 capsules', timing: '1 AM, 1 PM with meals', id: 'omega3' },
-    { name: 'Magnesium Glycinate', dose: '200-400mg', timing: '30 min before bed', id: 'mag' },
+    { name: 'Carbamide Forte Triple Strength Fish Oil (1400mg)', dose: '1 Softgel daily (900mg active Omega-3)', timing: 'With Breakfast (or Lunch)', id: 'omega3' },
+    { name: 'Nutrabay Chelated Magnesium Glycinate (2000mg)', dose: '2 Tablets serving (~250mg elemental Mg)', timing: '30-45 min before sleep', id: 'mag' },
     { name: 'Vitamin B12', dose: '1500 mcg', timing: 'After breakfast', id: 'b12' },
-    { name: 'Vitamin D3 (60K IU)', dose: '1 sachet', timing: 'Once per week (Sunday)', id: 'vitd' },
-    { name: 'Zinc Picolinate', dose: '15-30mg', timing: 'After lunch', id: 'zinc' },
+    { name: 'Vitamin D3 (60K IU)', dose: '1 sachet', timing: 'Once per week (Sunday with fatty meal)', id: 'vitd' },
+    { name: 'Carbamide Forte Zinc Picolinate + Vit C (85mg)', dose: '1 Tablet daily (~20mg elemental Zinc)', timing: 'Immediately after lunch (NEVER empty stomach)', id: 'zinc' },
+    { name: 'Raw Pumpkin Seeds', dose: '1-2 tbsp (30g)', timing: 'Mid-morning or snack (DHT blocker)', id: 'pumpkin' },
   ];
 
   const phase2Supplements = [
     { name: 'Vitamin D3 + K2', dose: '1 capsule', timing: 'Daily after breakfast', id: 'vitdk2' },
-    ...phase1Supplements.slice(0, -1), // All except Zinc
+    ...phase1Supplements.slice(0, -2), // All except Zinc & temporary D3
   ];
 
   const supplements = phase === 1 ? phase1Supplements : phase2Supplements;
@@ -71,7 +72,7 @@ export default function SupplementsScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View className="px-6 pt-6 pb-8">
           <Text className="text-3xl font-bold text-foreground mb-2">Supplements</Text>
-          <Text className="text-muted mb-6">💊 Optimize your stack</Text>
+          <Text className="text-muted mb-6">💊 Calibrated to your exact bottles</Text>
 
           {/* Phase Selector */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
@@ -103,20 +104,21 @@ export default function SupplementsScreen() {
             </Text>
             <Text className="text-xs text-muted">
               {phase === 1
-                ? 'Build foundation with essential micronutrients'
+                ? 'Build foundation with essential micronutrients, joint protection & DHT inhibition'
                 : 'Maintain gains with daily essentials'}
             </Text>
           </View>
 
           {/* Warnings */}
           <View style={styles.warningBox}>
-            <Text className="text-xs font-bold text-warning mb-2">⚠️ IMPORTANT WARNINGS</Text>
+            <Text className="text-xs font-bold text-warning mb-2">⚠️ CRITICAL SUPPLEMENT INSTRUCTIONS</Text>
             {phase === 1 ? (
               <>
-                <Text className="text-xs text-foreground mb-1">• Zinc: NEVER empty stomach (causes nausea)</Text>
-                <Text className="text-xs text-foreground mb-1">• Creatine: Drink 3.5L water daily</Text>
-                <Text className="text-xs text-foreground mb-1">• Vitamin D: 60K IU only for 8 weeks</Text>
-                <Text className="text-xs text-foreground">• Magnesium: Must be Glycinate form</Text>
+                <Text className="text-xs text-foreground mb-1">• Zinc Picolinate: Take strictly IMMEDIATELY after a full lunch with water. NEVER on an empty stomach (causes sudden nausea).</Text>
+                <Text className="text-xs text-foreground mb-1">• Triple Strength Fish Oil: 1 softgel daily at breakfast is sufficient (900mg active Omega-3). Do NOT take 2.</Text>
+                <Text className="text-xs text-foreground mb-1">• Magnesium Glycinate: 2 tablets per serving 30-45 min before sleep. Start with 1 tab for 3 days to test digestion.</Text>
+                <Text className="text-xs text-foreground mb-1">• Creatine: Drink 3.5L water daily while on it.</Text>
+                <Text className="text-xs text-foreground">• Vitamin D3: 60K IU once per week on Sunday for first 8 weeks.</Text>
               </>
             ) : (
               <Text className="text-xs text-foreground">Continue all Phase 1 supplements except Zinc</Text>
@@ -167,9 +169,9 @@ export default function SupplementsScreen() {
           <View style={styles.card}>
             <Text className="text-lg font-bold text-foreground mb-4">Notifications</Text>
             {[
-              { time: '8:30 AM', msg: 'Take B12 + Omega-3 with breakfast' },
-              { time: '1:00 PM', msg: 'Take Zinc AFTER lunch (not empty stomach)' },
-              { time: '9:00 PM', msg: 'Take Omega-3 + Magnesium before bed' },
+              { time: '8:30 AM', msg: 'Take B12 + 1 Softgel Triple Strength Fish Oil with breakfast' },
+              { time: '1:00 PM', msg: 'Take Zinc Picolinate immediately AFTER lunch with water' },
+              { time: '10:45 PM', msg: 'Take Nutrabay Magnesium Glycinate (1-2 tabs) before sleep' },
               { time: 'Post-workout', msg: 'Time for Whey + Creatine' },
               { time: 'Sunday 9 AM', msg: 'Take Vitamin D3 60K sachet' },
             ].map((notif, i) => (

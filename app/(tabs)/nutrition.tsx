@@ -205,13 +205,13 @@ function SupplementsScreen() {
 
       {/* Warnings */}
       <View style={{ backgroundColor: colors.warning + '15', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.warning + '40' }}>
-        <Text style={{ color: colors.warning, fontWeight: '700', marginBottom: 6 }}>⚠️ Critical Warnings</Text>
+        <Text style={{ color: colors.warning, fontWeight: '700', marginBottom: 6 }}>⚠️ Critical Supplement Protocol</Text>
         <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          • Zinc: NEVER on empty stomach — causes severe nausea{'\n'}
-          • Creatine: Drink 3.5L water daily while on it{'\n'}
-          • Vitamin D 60K: Once per week ONLY (8 weeks){'\n'}
-          • Magnesium: Must be GLYCINATE form only{'\n'}
-          • Pumpkin Seeds: Raw or lightly dry-roasted only (Delta-7 sterols for DHT suppression)
+          • Zinc Picolinate: Strictly IMMEDIATELY after lunch with a full glass of water. NEVER on an empty stomach (causes sudden nausea/spasms).{'\n'}
+          • Triple Strength Fish Oil: Take 1 softgel daily at breakfast with fatty meal. 1 softgel provides 900mg active Omega-3 (550 EPA / 350 DHA) — no need to take 2.{'\n'}
+          • Magnesium Glycinate: Take 2 tablets (60 servings / 120 tabs bottle) 30-45 min before sleep with water/turmeric milk. (Start with 1 tab for 3 days to test digestion).{'\n'}
+          • Creatine: Drink 3.5L water daily while on it.{'\n'}
+          • Vitamin D 60K: Once per week ONLY on Sundays (first 8 weeks).
         </Text>
       </View>
 
@@ -238,6 +238,7 @@ function SupplementsScreen() {
               </Text>
               <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>🕐 {supp.timing}</Text>
               <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>Dose: {supp.dose}</Text>
+              {supp.form && <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>📦 Bottle: {supp.form}</Text>}
               {supp.purpose && <Text style={{ color: colors.foreground, fontSize: 11, marginTop: 4, opacity: 0.9 }}>🎯 {supp.purpose}</Text>}
               {supp.warning && <Text style={{ color: colors.warning, fontSize: 11, marginTop: 4 }}>⚠️ {supp.warning}</Text>}
             </View>
