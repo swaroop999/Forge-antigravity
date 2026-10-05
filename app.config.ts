@@ -62,13 +62,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: [
-      "POST_NOTIFICATIONS",
-      "CAMERA",
-      "READ_MEDIA_IMAGES",
-      "READ_EXTERNAL_STORAGE",
-      "WRITE_EXTERNAL_STORAGE"
-    ],
+    permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
       {
         action: "VIEW",
@@ -126,6 +120,7 @@ const config: ExpoConfig = {
     ],
     "expo-font",
     "expo-web-browser",
+    "expo-asset",
     [
       "expo-image-picker",
       {

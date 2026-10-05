@@ -393,19 +393,21 @@ export const PhotoRepo = {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const photoKeys = keys.filter(k => k.startsWith('journal_photo_') && !k.startsWith('journal_photo_cat_'));
-      const stores = await AsyncStorage.multiGet(photoKeys);
-      for (const [k, uri] of stores) {
-        if (uri) {
-          const date = k.replace('journal_photo_', '');
-          if (!direct.some(p => p.date === date && p.uri === uri)) {
-            const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
-            direct.push({
-              id: `j_${date}`,
-              date,
-              category: cat,
-              angle: 'Daily Journal',
-              uri,
-            });
+      if (photoKeys.length > 0) {
+        const stores = await AsyncStorage.multiGet(photoKeys);
+        for (const [k, uri] of stores) {
+          if (uri) {
+            const date = k.replace('journal_photo_', '');
+            if (!direct.some(p => p.date === date && p.uri === uri)) {
+              const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
+              direct.push({
+                id: `j_${date}`,
+                date,
+                category: cat,
+                angle: 'Daily Journal',
+                uri,
+              });
+            }
           }
         }
       }
@@ -644,17 +646,19 @@ export const DisciplineRepo = {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const journalKeys = keys.filter(k => k.startsWith('journal_') && !k.startsWith('journal_photo_'));
-      const stores = await AsyncStorage.multiGet(journalKeys);
-      for (const [key, val] of stores) {
-        let content = '';
-        if (val) {
-          try { content = JSON.parse(val); } catch { content = val; }
-        }
-        const date = key.replace('journal_', '');
-        if (content.trim()) {
-          const photoUrl = await AsyncStorage.getItem(`journal_photo_${date}`);
-          const category = await AsyncStorage.getItem(`journal_photo_cat_${date}`);
-          localMap[date] = { date, content, photoUrl: photoUrl || undefined, category: category || undefined };
+      if (journalKeys.length > 0) {
+        const stores = await AsyncStorage.multiGet(journalKeys);
+        for (const [key, val] of stores) {
+          let content = '';
+          if (val) {
+            try { content = JSON.parse(val); } catch { content = val; }
+          }
+          const date = key.replace('journal_', '');
+          if (content.trim()) {
+            const photoUrl = await AsyncStorage.getItem(`journal_photo_${date}`);
+            const category = await AsyncStorage.getItem(`journal_photo_cat_${date}`);
+            localMap[date] = { date, content, photoUrl: photoUrl || undefined, category: category || undefined };
+          }
         }
       }
     } catch {}
