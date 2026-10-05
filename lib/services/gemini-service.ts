@@ -18,10 +18,9 @@ export interface GeminiMessage {
   parts: Array<{ text: string }>;
 }
 
-// Default model. Alternatives you can store via Settings:
-//   'gemini-2.5-flash-lite' — higher free-tier quota, lower quality
-//   'gemini-2.5-pro'        — strongest reasoning, lower quota
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+// Default model is Gemini 2.0 Flash (fast, free tier, multimodal, high reasoning).
+// Fallback: 'gemini-1.5-flash'
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
 
 export class GeminiService {
   private apiKey: string | null = null;
@@ -84,23 +83,29 @@ Day: ${currentDay} of 365
 Phase: ${currentPhase === 1 ? 'PHASE 1: FOUNDATION (Days 1-30)' : currentPhase === 2 ? 'PHASE 2: BUILD (Days 31-90)' : 'PHASE 3: OPTIMIZE (Days 91-365)'}
 
 CORE PLAN:
-Sleep: 11:30 PM to 7:30 AM (target 8 hours)
-Nutrition: 2600-2800 kcal daily, 90-110g protein, 3L water
-Training: Home workouts 4-5x/week (bodyweight + book-bag + pull-up bar)
-Skincare: AM routine (Niacinamide + Moisturizer + SPF 50) + PM routine (Cleanser + Adapalene + Moisturizer)
-Hair: Nizoral 2x/week + Coconut+Rosemary oil 2x/week + Minoxidil 5% 2x daily
-Supplements: Whey, Multivitamin, Omega-3, Vitamin D3, Creatine (Phase 2+)
-Discipline: Journal nightly, 30-day dopamine reset, reduce porn to 0
+Sleep: 11:30 PM to 7:30 AM (target 8 hours, strict back-sleeping for facial symmetry)
+Nutrition: 2600-2800 kcal daily, 90-110g protein, 3.5L water
+Training: Home workouts 4-5x/week (bodyweight + book-bag + pull-up bar + priority lateral delts/neck/traps for frame width)
+Skincare:
+  - AM: Lukewarm splash + Alpha Arbutin 2% spot treatment (moustache patch & dark spots) + 10% Niacinamide + Nivea Soft + Aqualogica SPF 50+
+  - PM: Gentle cleanser + Bone-Dry Adapalene 0.1% rotation (Mon/Wed/Fri) / Arbutin (Tue/Sat) / Barrier Rest (Thu/Sun) + Nivea Soft + Benzomycin pinpoint only on active inflamed pimples
+Hair: 100% Natural Hairline Protocol: Nizoral 2x/week, Rosemary oil (in carrier oil) 2x/week, 4-min daily scalp massage, weekly 0.5mm dermastamp, raw pumpkin seeds (Delta-7 sterols for DHT suppression). Strictly NO Minoxidil.
+Supplements (Calibrated to User's Exact Bottles):
+  - Carbamide Forte Triple Strength Fish Oil (1400mg / 900mg active Omega-3): 1 Softgel daily with breakfast (never take 2).
+  - Carbamide Forte Zinc Picolinate 85mg + Vit C: 1 Tablet daily strictly IMMEDIATELY after a solid Lunch with water (NEVER on empty stomach).
+  - Nutrabay Chelated Magnesium Glycinate 2000mg: 2 Tablets (~250mg elemental Mg) 30-45 min before sleep with water/turmeric milk.
+  - Whey Protein (post-workout), Creatine Monohydrate (5g daily with 3.5L water), Vitamin D3 (60K IU once weekly for 8 weeks).
+Discipline: Daily journal reflections with progress photo tracking, 30-day dopamine reset, zero porn.
+Looksmax & Symmetry: Unilateral chewing on weaker right side, back-sleeping, proper tongue posture (mewing), neck and shoulder posture alignment.
 
 KNOWN ISSUES:
 - Underweight (severe ectomorph)
-- Right cheek acne + post-inflammatory hyperpigmentation
+- Right-side facial asymmetry (uneven chewing habit, side-sleeping)
+- Hyperpigmentation patch on left moustache perimeter + acne marks on chin/cheeks
 - Forward head posture, rounded shoulders
-- Dandruff, fine/thinning hair
-- Father bald at 48 (AGA risk)
-- Porn addiction (working to reduce)
+- Dandruff, fine/thinning hairline (AGA family history)
+- Dopamine/porn recovery
 - High screen time
-- Chronic procrastination
 
 COACHING STYLE:
 - Direct and brutally honest but never cruel
@@ -173,31 +178,37 @@ RESPONSE RULES:
     };
 
     try {
-      const model = await this.getModel();
-      const response = await fetch(
-        `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
+      const preferredModel = await this.getModel();
+      const modelsToTry = [preferredModel];
+      if (preferredModel !== 'gemini-2.0-flash') modelsToTry.push('gemini-2.0-flash');
+      if (preferredModel !== 'gemini-1.5-flash') modelsToTry.push('gemini-1.5-flash');
+
+      let lastError: any = null;
+      for (const model of modelsToTry) {
+        try {
+          const response = await fetch(
+            `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody),
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (aiResponse) return aiResponse;
+          } else {
+            const error = await response.json();
+            lastError = new Error(`Gemini API error (${model}): ${error.error?.message || 'Unknown error'}`);
+          }
+        } catch (e) {
+          lastError = e;
         }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Gemini API error: ${error.error?.message || 'Unknown error'}`);
       }
 
-      const data = await response.json();
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!aiResponse) {
-        throw new Error('No response from Gemini');
-      }
-
-      return aiResponse;
+      throw lastError || new Error('No response from Gemini');
     } catch (error) {
       console.error('Gemini API error:', error);
       throw error;
@@ -213,28 +224,36 @@ RESPONSE RULES:
     const apiKey = await this.getApiKey();
     if (!apiKey) throw new Error('No API key configured');
 
-    const model = await this.getModel();
-    const response = await fetch(
-      `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'Say "ok".' }] }],
-        }),
-      }
-    );
+    const preferredModel = await this.getModel();
+    const modelsToTry = [preferredModel];
+    if (preferredModel !== 'gemini-2.0-flash') modelsToTry.push('gemini-2.0-flash');
+    if (preferredModel !== 'gemini-1.5-flash') modelsToTry.push('gemini-1.5-flash');
 
-    if (!response.ok) {
-      let msg = `HTTP ${response.status}`;
+    let lastError: any = null;
+    for (const model of modelsToTry) {
       try {
-        const errBody = await response.json();
-        msg = errBody?.error?.message || msg;
-      } catch { /* ignore parse errors */ }
-      throw new Error(msg);
-    }
+        const response = await fetch(
+          `${this.baseUrl}/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: 'Say "ok".' }] }],
+            }),
+          }
+        );
 
-    return `Connected — using ${model}`;
+        if (response.ok) {
+          return `Connected — using ${model}`;
+        } else {
+          const errBody = await response.json();
+          lastError = new Error(errBody?.error?.message || `HTTP ${response.status}`);
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError || new Error('Connection failed');
   }
 
   /**

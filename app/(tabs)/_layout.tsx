@@ -1,5 +1,5 @@
 import { Tabs, router } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Animated, Modal, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Alert, Animated, Modal, ScrollView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/use-colors';
 import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight } from 'lucide-react-native';
@@ -62,6 +62,16 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const [urgeModalVisible, setUrgeModalVisible] = useState(false);
   const [selectedUrgeAction, setSelectedUrgeAction] = useState<any>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const URGE_ACTIONS = [
     { id: 'pushups', icon: Dumbbell, label: '20 push-ups RIGHT NOW', color: colors.primary },
@@ -125,20 +135,22 @@ export default function TabLayout() {
         <Tabs.Screen name="tan-removal" options={{ href: null }} />
       </Tabs>
 
-      {/* Floating Urge Button */}
-      <Pressable
-        onPress={() => setUrgeModalVisible(true)}
-        style={({ pressed }) => ({
-          position: 'absolute', right: 20, bottom: insets.bottom + 70,
-          backgroundColor: colors.error, width: 56, height: 56,
-          borderRadius: 28, alignItems: 'center', justifyContent: 'center',
-          shadowColor: colors.error, shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
-          opacity: pressed ? 0.8 : 1, zIndex: 100,
-        })}
-      >
-        <Text style={{ fontSize: 24 }}>🚨</Text>
-      </Pressable>
+      {/* Floating Urge Button (hidden when keyboard is open to avoid blocking text input) */}
+      {!keyboardVisible && (
+        <Pressable
+          onPress={() => setUrgeModalVisible(true)}
+          style={({ pressed }) => ({
+            position: 'absolute', right: 20, bottom: insets.bottom + 70,
+            backgroundColor: colors.error, width: 56, height: 56,
+            borderRadius: 28, alignItems: 'center', justifyContent: 'center',
+            shadowColor: colors.error, shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+            opacity: pressed ? 0.8 : 1, zIndex: 100,
+          })}
+        >
+          <Text style={{ fontSize: 24 }}>🚨</Text>
+        </Pressable>
+      )}
 
       {/* Urge Modal Bottom Sheet */}
       <Modal visible={urgeModalVisible} transparent animationType="slide" onRequestClose={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }}>

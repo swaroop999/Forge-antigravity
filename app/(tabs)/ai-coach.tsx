@@ -154,7 +154,7 @@ export default function AICoachScreen() {
   return (
     <ScreenContainer>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
@@ -162,7 +162,7 @@ export default function AICoachScreen() {
         <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>FORGE AI Coach</Text>
-            <Text style={{ fontSize: 11, color: colors.success }}>● Online — Powered by Gemini</Text>
+            <Text style={{ fontSize: 11, color: colors.success }}>● Online — Powered by Gemini 2.0</Text>
           </View>
           <Pressable onPress={clearHistory} style={{ padding: 8 }}>
             <Text style={{ fontSize: 13, color: colors.muted }}>Clear</Text>
@@ -175,9 +175,9 @@ export default function AICoachScreen() {
           data={messages}
           keyExtractor={item => item.id}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode="interactive"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={() => (
             <View style={{ flex: 1, alignItems: 'center', paddingTop: 40 }}>
@@ -220,7 +220,7 @@ export default function AICoachScreen() {
         />
 
         {isLoading && (
-          <View style={{ paddingHorizontal: 20, paddingBottom: 4, alignItems: 'flex-start' }}>
+          <View style={{ paddingHorizontal: 20, paddingBottom: 6, alignItems: 'flex-start' }}>
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator size="small" color={colors.primary} />
               <Text style={{ color: colors.muted, fontSize: 13 }}>Thinking...</Text>
@@ -236,36 +236,59 @@ export default function AICoachScreen() {
           }} />
         )}
 
-        {/* Input */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, gap: 10 }}>
+        {/* Input Bar with solid background and proper flex-end alignment */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          paddingHorizontal: 14,
+          paddingTop: 10,
+          paddingBottom: Platform.OS === 'ios' ? 14 : 10,
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          gap: 10,
+          zIndex: 20,
+          elevation: 5,
+        }}>
           <TextInput
-            placeholder="Ask me anything..."
+            placeholder="Ask your coach anything..."
             placeholderTextColor={colors.muted}
             value={inputText}
             onChangeText={setInputText}
             multiline
+            scrollEnabled
+            textAlignVertical="top"
             style={{
               flex: 1,
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
-              borderRadius: 24,
-              paddingHorizontal: 18,
-              paddingVertical: 12,
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingTop: 10,
+              paddingBottom: 10,
               color: colors.foreground,
               fontSize: 14,
-              maxHeight: 100,
+              lineHeight: 20,
+              minHeight: 44,
+              maxHeight: 120,
             }}
-            onSubmitEditing={() => sendMessage()}
           />
           <Pressable
             onPress={() => sendMessage()}
             disabled={!inputText.trim() || isLoading}
-            style={{
-              width: 44, height: 44, borderRadius: 22,
-              backgroundColor: inputText.trim() && !isLoading ? colors.primary : colors.border,
-              alignItems: 'center', justifyContent: 'center',
-            }}
+            style={({ pressed }) => ({
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: inputText.trim() && !isLoading ? colors.primary : colors.surface,
+              borderWidth: 1,
+              borderColor: inputText.trim() && !isLoading ? colors.primary : colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.75 : 1,
+              marginBottom: 0,
+            })}
           >
             <Send size={18} color={inputText.trim() && !isLoading ? '#FFFFFF' : colors.muted} />
           </Pressable>
