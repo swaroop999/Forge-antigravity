@@ -62,7 +62,13 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+    permissions: [
+      "POST_NOTIFICATIONS",
+      "CAMERA",
+      "READ_MEDIA_IMAGES",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE"
+    ],
     intentFilters: [
       {
         action: "VIEW",
@@ -119,7 +125,14 @@ const config: ExpoConfig = {
       },
     ],
     "expo-font",
-    "expo-web-browser"
+    "expo-web-browser",
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Allow Forge to access your photos for daily progress tracking.",
+        cameraPermission: "Allow Forge to access your camera for daily progress tracking."
+      }
+    ]
   ],
   experiments: {
     typedRoutes: true,

@@ -388,16 +388,44 @@ export const MilestoneRepo = {
 
 export const PhotoRepo = {
   async getAll(): Promise<ProgressPhoto[]> {
-    return (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
+    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
+    // Also merge any journal photos stored locally
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const photoKeys = keys.filter(k => k.startsWith('journal_photo_') && !k.startsWith('journal_photo_cat_'));
+      const stores = await AsyncStorage.multiGet(photoKeys);
+      for (const [k, uri] of stores) {
+        if (uri) {
+          const date = k.replace('journal_photo_', '');
+          if (!direct.some(p => p.date === date && p.uri === uri)) {
+            const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
+            direct.push({
+              id: `j_${date}`,
+              date,
+              category: cat,
+              angle: 'Daily Journal',
+              uri,
+            });
+          }
+        }
+      }
+    } catch {}
+    return direct.sort((a, b) => b.date.localeCompare(a.date));
   },
   async add(photo: ProgressPhoto): Promise<void> {
-    const all = await this.getAll();
-    all.unshift(photo);
-    await setItem(KEYS.PROGRESS_PHOTOS, all);
+    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
+    direct.unshift(photo);
+    await setItem(KEYS.PROGRESS_PHOTOS, direct);
   },
   async getByCategory(category: string): Promise<ProgressPhoto[]> {
     const all = await this.getAll();
-    return all.filter(p => p.category === category);
+    if (!category || category === 'All') return all;
+    return all.filter(p => p.category.toLowerCase().includes(category.toLowerCase()));
+  },
+  async delete(id: string): Promise<void> {
+    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
+    const filtered = direct.filter(p => p.id !== id);
+    await setItem(KEYS.PROGRESS_PHOTOS, filtered);
   },
 };
 
@@ -581,27 +609,54 @@ export const DisciplineRepo = {
     } catch {}
     return '';
   },
-  async setJournalReflection(date: string, value: string, photoUrl?: string | null): Promise<void> {
+  async getJournalPhoto(date: string): Promise<{ photoUrl: string | null; category: string }> {
+    const val = await AsyncStorage.getItem(`journal_photo_${date}`);
+    const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
+    if (val) return { photoUrl: val, category: cat };
+    try {
+      const remote = await JournalSupabaseService.fetchAllJournals();
+      const match = remote.find(r => r.date === date);
+      if (match?.photo_url) {
+        await AsyncStorage.setItem(`journal_photo_${date}`, match.photo_url);
+        return { photoUrl: match.photo_url, category: cat };
+      }
+    } catch {}
+    return { photoUrl: null, category: cat };
+  },
+  async setJournalReflection(date: string, value: string, photoUrl?: string | null, photoCategory?: string): Promise<void> {
     await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(value));
+    if (photoUrl !== undefined) {
+      if (photoUrl) {
+        await AsyncStorage.setItem(`journal_photo_${date}`, photoUrl);
+        if (photoCategory) {
+          await AsyncStorage.setItem(`journal_photo_cat_${date}`, photoCategory);
+        }
+      } else {
+        await AsyncStorage.removeItem(`journal_photo_${date}`);
+        await AsyncStorage.removeItem(`journal_photo_cat_${date}`);
+      }
+    }
     // Asynchronously upsert to Supabase
     JournalSupabaseService.upsertJournal(date, value, photoUrl).catch(() => {});
   },
-  async getAllJournalReflections(): Promise<{ date: string; content: string; photoUrl?: string | null }[]> {
-    const localMap: Record<string, { date: string; content: string; photoUrl?: string | null }> = {};
+  async getAllJournalReflections(): Promise<{ date: string; content: string; photoUrl?: string | null; category?: string }[]> {
+    const localMap: Record<string, { date: string; content: string; photoUrl?: string | null; category?: string }> = {};
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const journalKeys = keys.filter(k => k.startsWith('journal_'));
+      const journalKeys = keys.filter(k => k.startsWith('journal_') && !k.startsWith('journal_photo_'));
       const stores = await AsyncStorage.multiGet(journalKeys);
-      stores.forEach(([key, val]) => {
+      for (const [key, val] of stores) {
         let content = '';
         if (val) {
           try { content = JSON.parse(val); } catch { content = val; }
         }
         const date = key.replace('journal_', '');
         if (content.trim()) {
-          localMap[date] = { date, content };
+          const photoUrl = await AsyncStorage.getItem(`journal_photo_${date}`);
+          const category = await AsyncStorage.getItem(`journal_photo_cat_${date}`);
+          localMap[date] = { date, content, photoUrl: photoUrl || undefined, category: category || undefined };
         }
-      });
+      }
     } catch {}
 
     // Pull and merge remote entries from Supabase
