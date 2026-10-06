@@ -48,6 +48,23 @@ export const JournalSupabaseService = {
   },
 
   /**
+   * Delete journal entry for a date from Supabase
+   */
+  async deleteJournal(date: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('journals').delete().eq('date', date);
+      if (error) {
+        console.warn('Supabase delete warning:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('Supabase network / delete error:', err);
+      return false;
+    }
+  },
+
+  /**
    * Fetch all journal entries from Supabase, ordered by date descending.
    */
   async fetchAllJournals(): Promise<SupabaseJournal[]> {

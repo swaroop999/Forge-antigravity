@@ -388,46 +388,42 @@ export const MilestoneRepo = {
 
 export const PhotoRepo = {
   async getAll(): Promise<ProgressPhoto[]> {
-    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
-    // Also merge any journal photos stored locally
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const photoKeys = keys.filter(k => k.startsWith('journal_photo_') && !k.startsWith('journal_photo_cat_'));
-      if (photoKeys.length > 0) {
-        const stores = await AsyncStorage.multiGet(photoKeys);
-        for (const [k, uri] of stores) {
-          if (uri) {
-            const date = k.replace('journal_photo_', '');
-            if (!direct.some(p => p.date === date && p.uri === uri)) {
-              const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
-              direct.push({
-                id: `j_${date}`,
-                date,
-                category: cat,
-                angle: 'Daily Journal',
-                uri,
-              });
-            }
-          }
-        }
+      const days = await DisciplineRepo.getAllJournalDays();
+      const photos: ProgressPhoto[] = [];
+      for (const day of days) {
+        day.photoUrls.forEach((uri, idx) => {
+          photos.push({
+            id: `p_${day.date}_${idx}`,
+            date: day.date,
+            category: 'Progress Photo',
+            angle: `Photo ${idx + 1}`,
+            uri,
+            notes: day.content,
+          });
+        });
       }
-    } catch {}
-    return direct.sort((a, b) => b.date.localeCompare(a.date));
+      return photos;
+    } catch {
+      return [];
+    }
   },
   async add(photo: ProgressPhoto): Promise<void> {
-    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
-    direct.unshift(photo);
-    await setItem(KEYS.PROGRESS_PHOTOS, direct);
+    const day = await DisciplineRepo.getJournalDay(photo.date);
+    if (!day.photoUrls.includes(photo.uri)) {
+      await DisciplineRepo.setJournalDay(photo.date, day.content, [photo.uri, ...day.photoUrls]);
+    }
   },
   async getByCategory(category: string): Promise<ProgressPhoto[]> {
-    const all = await this.getAll();
-    if (!category || category === 'All') return all;
-    return all.filter(p => p.category.toLowerCase().includes(category.toLowerCase()));
+    return this.getAll();
   },
   async delete(id: string): Promise<void> {
-    const direct = (await getItem<ProgressPhoto[]>(KEYS.PROGRESS_PHOTOS)) ?? [];
-    const filtered = direct.filter(p => p.id !== id);
-    await setItem(KEYS.PROGRESS_PHOTOS, filtered);
+    // Delete photo by id pattern: p_YYYY-MM-DD_idx or uri match
+    const all = await this.getAll();
+    const target = all.find(p => p.id === id);
+    if (target) {
+      await DisciplineRepo.deleteJournalPhoto(target.date, target.uri);
+    }
   },
 };
 
@@ -611,71 +607,186 @@ export const DisciplineRepo = {
     } catch {}
     return '';
   },
-  async getJournalPhoto(date: string): Promise<{ photoUrl: string | null; category: string }> {
-    const val = await AsyncStorage.getItem(`journal_photo_${date}`);
-    const cat = (await AsyncStorage.getItem(`journal_photo_cat_${date}`)) || 'Face & Skin';
-    if (val) return { photoUrl: val, category: cat };
+  async getJournalPhotos(date: string): Promise<string[]> {
+    const photosRaw = await AsyncStorage.getItem(`journal_photos_${date}`);
+    if (photosRaw) {
+      try {
+        const parsed = JSON.parse(photosRaw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {}
+    }
+    // Legacy single photo fallback
+    const single = await AsyncStorage.getItem(`journal_photo_${date}`);
+    if (single && single.trim()) {
+      return [single];
+    }
+    // Remote fallback
     try {
       const remote = await JournalSupabaseService.fetchAllJournals();
       const match = remote.find(r => r.date === date);
       if (match?.photo_url) {
-        await AsyncStorage.setItem(`journal_photo_${date}`, match.photo_url);
-        return { photoUrl: match.photo_url, category: cat };
+        try {
+          const parsed = JSON.parse(match.photo_url);
+          if (Array.isArray(parsed)) {
+            await AsyncStorage.setItem(`journal_photos_${date}`, JSON.stringify(parsed));
+            return parsed;
+          }
+        } catch {}
+        await AsyncStorage.setItem(`journal_photos_${date}`, JSON.stringify([match.photo_url]));
+        return [match.photo_url];
       }
     } catch {}
-    return { photoUrl: null, category: cat };
+    return [];
+  },
+  async getJournalDay(date: string): Promise<{ date: string; content: string; photoUrls: string[] }> {
+    const content = await this.getJournalReflection(date);
+    const photoUrls = await this.getJournalPhotos(date);
+    return { date, content, photoUrls };
+  },
+  async setJournalDay(date: string, content: string, photoUrls: string[]): Promise<void> {
+    if (content.trim()) {
+      await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(content));
+    } else {
+      await AsyncStorage.removeItem(`journal_${date}`);
+    }
+    if (photoUrls && photoUrls.length > 0) {
+      await AsyncStorage.setItem(`journal_photos_${date}`, JSON.stringify(photoUrls));
+      await AsyncStorage.setItem(`journal_photo_${date}`, photoUrls[0]);
+    } else {
+      await AsyncStorage.removeItem(`journal_photos_${date}`);
+      await AsyncStorage.removeItem(`journal_photo_${date}`);
+    }
+    // Upsert to cloud in background
+    const cloudPhotoPayload = photoUrls.length > 0 ? JSON.stringify(photoUrls) : null;
+    JournalSupabaseService.upsertJournal(date, content, cloudPhotoPayload).catch(() => {});
+  },
+  async deleteJournalDay(date: string): Promise<void> {
+    await AsyncStorage.removeItem(`journal_${date}`);
+    await AsyncStorage.removeItem(`journal_photos_${date}`);
+    await AsyncStorage.removeItem(`journal_photo_${date}`);
+    await AsyncStorage.removeItem(`journal_photo_cat_${date}`);
+    JournalSupabaseService.deleteJournal(date).catch(() => {});
+  },
+  async deleteJournalPhoto(date: string, photoUrlToDelete: string): Promise<string[]> {
+    const current = await this.getJournalPhotos(date);
+    const remaining = current.filter(p => p !== photoUrlToDelete);
+    const content = await this.getJournalReflection(date);
+    await this.setJournalDay(date, content, remaining);
+    return remaining;
+  },
+  async deleteJournalReflectionOnly(date: string): Promise<void> {
+    const photos = await this.getJournalPhotos(date);
+    await this.setJournalDay(date, '', photos);
+  },
+  async getJournalPhoto(date: string): Promise<{ photoUrl: string | null; category: string }> {
+    const photos = await this.getJournalPhotos(date);
+    return { photoUrl: photos[0] || null, category: 'Journal' };
   },
   async setJournalReflection(date: string, value: string, photoUrl?: string | null, photoCategory?: string): Promise<void> {
-    await AsyncStorage.setItem(`journal_${date}`, JSON.stringify(value));
+    const existingPhotos = await this.getJournalPhotos(date);
+    let newPhotos = existingPhotos;
     if (photoUrl !== undefined) {
-      if (photoUrl) {
-        await AsyncStorage.setItem(`journal_photo_${date}`, photoUrl);
-        if (photoCategory) {
-          await AsyncStorage.setItem(`journal_photo_cat_${date}`, photoCategory);
-        }
-      } else {
-        await AsyncStorage.removeItem(`journal_photo_${date}`);
-        await AsyncStorage.removeItem(`journal_photo_cat_${date}`);
+      if (photoUrl && !existingPhotos.includes(photoUrl)) {
+        newPhotos = [photoUrl, ...existingPhotos];
+      } else if (!photoUrl) {
+        newPhotos = [];
       }
     }
-    // Asynchronously upsert to Supabase
-    JournalSupabaseService.upsertJournal(date, value, photoUrl).catch(() => {});
+    await this.setJournalDay(date, value, newPhotos);
   },
-  async getAllJournalReflections(): Promise<{ date: string; content: string; photoUrl?: string | null; category?: string }[]> {
-    const localMap: Record<string, { date: string; content: string; photoUrl?: string | null; category?: string }> = {};
+  async getAllJournalDays(): Promise<{ date: string; content: string; photoUrls: string[] }[]> {
+    const localMap: Record<string, { date: string; content: string; photoUrls: string[] }> = {};
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const journalKeys = keys.filter(k => k.startsWith('journal_') && !k.startsWith('journal_photo_'));
-      if (journalKeys.length > 0) {
-        const stores = await AsyncStorage.multiGet(journalKeys);
-        for (const [key, val] of stores) {
-          let content = '';
-          if (val) {
-            try { content = JSON.parse(val); } catch { content = val; }
-          }
-          const date = key.replace('journal_', '');
-          if (content.trim()) {
-            const photoUrl = await AsyncStorage.getItem(`journal_photo_${date}`);
-            const category = await AsyncStorage.getItem(`journal_photo_cat_${date}`);
-            localMap[date] = { date, content, photoUrl: photoUrl || undefined, category: category || undefined };
-          }
+      const journalKeys = keys.filter(k => k.startsWith('journal_') && !k.startsWith('journal_photo_') && !k.startsWith('journal_photos_'));
+      for (const k of journalKeys) {
+        const date = k.replace('journal_', '');
+        const val = await AsyncStorage.getItem(k);
+        let content = '';
+        if (val) {
+          try { content = JSON.parse(val); } catch { content = val; }
+        }
+        if (!localMap[date]) localMap[date] = { date, content, photoUrls: [] };
+        else localMap[date].content = content;
+      }
+
+      // Check multi-photo keys
+      const multiPhotoKeys = keys.filter(k => k.startsWith('journal_photos_'));
+      for (const k of multiPhotoKeys) {
+        const date = k.replace('journal_photos_', '');
+        const val = await AsyncStorage.getItem(k);
+        if (val) {
+          try {
+            const arr = JSON.parse(val);
+            if (Array.isArray(arr) && arr.length > 0) {
+              if (!localMap[date]) localMap[date] = { date, content: '', photoUrls: arr };
+              else localMap[date].photoUrls = arr;
+            }
+          } catch {}
+        }
+      }
+
+      // Legacy single photo keys fallback
+      const singlePhotoKeys = keys.filter(k => k.startsWith('journal_photo_') && !k.startsWith('journal_photos_') && !k.startsWith('journal_photo_cat_'));
+      for (const k of singlePhotoKeys) {
+        const date = k.replace('journal_photo_', '');
+        const val = await AsyncStorage.getItem(k);
+        if (val && (!localMap[date] || localMap[date].photoUrls.length === 0)) {
+          if (!localMap[date]) localMap[date] = { date, content: '', photoUrls: [val] };
+          else if (!localMap[date].photoUrls.includes(val)) localMap[date].photoUrls.push(val);
         }
       }
     } catch {}
 
-    // Pull and merge remote entries from Supabase
+    // Merge remote entries
     try {
       const remote = await JournalSupabaseService.fetchAllJournals();
       remote.forEach(r => {
-        if (!localMap[r.date] || !localMap[r.date].content) {
-          localMap[r.date] = { date: r.date, content: r.reflection, photoUrl: r.photo_url };
-        } else if (r.photo_url && !localMap[r.date].photoUrl) {
-          localMap[r.date].photoUrl = r.photo_url;
+        let remotePhotos: string[] = [];
+        if (r.photo_url) {
+          try {
+            const parsed = JSON.parse(r.photo_url);
+            if (Array.isArray(parsed)) remotePhotos = parsed;
+            else remotePhotos = [r.photo_url];
+          } catch {
+            remotePhotos = [r.photo_url];
+          }
+        }
+        if (!localMap[r.date]) {
+          localMap[r.date] = { date: r.date, content: r.reflection || '', photoUrls: remotePhotos };
+        } else {
+          if (!localMap[r.date].content && r.reflection) localMap[r.date].content = r.reflection;
+          if (localMap[r.date].photoUrls.length === 0 && remotePhotos.length > 0) {
+            localMap[r.date].photoUrls = remotePhotos;
+          }
         }
       });
     } catch {}
 
-    return Object.values(localMap).sort((a, b) => b.date.localeCompare(a.date));
+    return Object.values(localMap)
+      .filter(item => (item.content && item.content.trim().length > 0) || item.photoUrls.length > 0)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  },
+  async getEntryDatesMap(): Promise<Record<string, { hasReflection: boolean; hasPhotos: boolean; photoCount: number }>> {
+    const all = await this.getAllJournalDays();
+    const map: Record<string, { hasReflection: boolean; hasPhotos: boolean; photoCount: number }> = {};
+    for (const item of all) {
+      map[item.date] = {
+        hasReflection: !!(item.content && item.content.trim().length > 0),
+        hasPhotos: item.photoUrls.length > 0,
+        photoCount: item.photoUrls.length,
+      };
+    }
+    return map;
+  },
+  async getAllJournalReflections(): Promise<{ date: string; content: string; photoUrl?: string | null; category?: string }[]> {
+    const days = await this.getAllJournalDays();
+    return days.map(d => ({
+      date: d.date,
+      content: d.content,
+      photoUrl: d.photoUrls[0] || null,
+      category: 'Journal',
+    }));
   },
 };
 

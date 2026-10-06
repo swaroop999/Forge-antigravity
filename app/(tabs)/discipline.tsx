@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, Alert, Image, Modal, ActivityIndicator } from "react-native";
-import { Camera, Image as ImageIcon, Trash2, X, RefreshCw } from 'lucide-react-native';
+import { Camera, Image as ImageIcon, Trash2, X, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Check } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar } from '@/components/sub-tab-bar';
@@ -109,8 +109,8 @@ function DopamineResetScreen() {
 interface ActivePhotoModal {
   url: string;
   date: string;
-  category?: string;
   note?: string;
+  onDelete?: () => void;
 }
 
 function PhotoDetailModal({
@@ -125,23 +125,31 @@ function PhotoDetailModal({
 
   return (
     <Modal visible={!!photo} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
         {/* Header bar */}
-        <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 36, paddingBottom: 16, paddingHorizontal: 4 }}>
-          <View>
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '800' }}>{photo.date}</Text>
-            {photo.category ? (
-              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
-                🏷️ {photo.category}
-              </Text>
+        <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 40, paddingBottom: 16, paddingHorizontal: 4 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '800' }}>{photo.date}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {photo.onDelete ? (
+              <Pressable
+                onPress={() => {
+                  photo.onDelete?.();
+                  onClose();
+                }}
+                style={({ pressed }) => ({
+                  backgroundColor: 'rgba(239,68,68,0.3)', width: 38, height: 38, borderRadius: 19,
+                  alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
+                })}>
+                <Trash2 size={18} color="#EF4444" />
+              </Pressable>
             ) : null}
+            <Pressable onPress={onClose} style={({ pressed }) => ({
+              backgroundColor: 'rgba(255,255,255,0.2)', width: 38, height: 38, borderRadius: 19,
+              alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
+            })}>
+              <X size={20} color="#FFFFFF" />
+            </Pressable>
           </View>
-          <Pressable onPress={onClose} style={({ pressed }) => ({
-            backgroundColor: 'rgba(255,255,255,0.2)', width: 38, height: 38, borderRadius: 19,
-            alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
-          })}>
-            <X size={20} color="#FFFFFF" />
-          </Pressable>
         </View>
 
         {/* Image preview */}
@@ -151,7 +159,7 @@ function PhotoDetailModal({
           resizeMode="contain"
         />
 
-        {/* Note / reflection snippet */}
+        {/* Note snippet */}
         {photo.note ? (
           <View style={{ width: '100%', backgroundColor: 'rgba(25,25,25,0.92)', borderRadius: 14, padding: 14, marginTop: 14, borderWidth: 1, borderColor: '#333333' }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 }}>Daily Reflection Note</Text>
@@ -163,136 +171,51 @@ function PhotoDetailModal({
   );
 }
 
-type JournalEntry = { date: string; content: string; photoUrl?: string | null; category?: string };
-
-function JournalHistoryCard({
-  entry,
-  onPress,
-  onPhotoPress,
+function JournalWriteView({
+  date,
+  onSaved,
+  onViewCalendar,
+  onResetToToday,
 }: {
-  entry: JournalEntry;
-  onPress?: () => void;
-  onPhotoPress?: (photo: ActivePhotoModal) => void;
+  date: string;
+  onSaved: () => void;
+  onViewCalendar: () => void;
+  onResetToToday: () => void;
 }) {
   const colors = useColors();
-  const [expanded, setExpanded] = useState(false);
-  const PREVIEW_LENGTH = 140;
-  const needsTruncation = entry.content.length > PREVIEW_LENGTH;
+  const [entry, setEntry] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<ActivePhotoModal | null>(null);
+
+  const today = new Date().toISOString().split('T')[0];
+  const isToday = date === today;
 
   const formattedDate = (() => {
     try {
-      return new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+      return new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric',
       });
-    } catch { return entry.date; }
+    } catch { return date; }
   })();
 
-  const relativeDate = (() => {
+  const loadData = async () => {
     try {
-      const entryDate = new Date(entry.date + 'T00:00:00');
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const diffMs = today.getTime() - entryDate.getTime();
-      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 30) return `${Math.floor(diffDays/7)} weeks ago`;
-      return `${Math.floor(diffDays/30)} months ago`;
-    } catch { return ''; }
-  })();
-
-  return (
-    <View
-      style={{
-        backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 14,
-        borderWidth: 1, borderColor: colors.border,
-      }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '700' }}>{formattedDate}</Text>
-          {relativeDate ? <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '600', marginTop: 2 }}>{relativeDate}</Text> : null}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {entry.category && (
-            <View style={{ backgroundColor: colors.primary + '18', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>{entry.category}</Text>
-            </View>
-          )}
-          <Text style={{ color: colors.muted, fontSize: 10 }}>{entry.content.split(/\s+/).filter(Boolean).length} words</Text>
-        </View>
-      </View>
-
-      {/* Attached Progress Photo */}
-      {entry.photoUrl ? (
-        <Pressable
-          onPress={() => onPhotoPress?.({
-            url: entry.photoUrl!,
-            date: formattedDate,
-            category: entry.category,
-            note: entry.content,
-          })}
-          style={({ pressed }) => ({
-            borderRadius: 12, overflow: 'hidden', marginBottom: 12,
-            borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.9 : 1,
-            position: 'relative',
-          })}>
-          <Image
-            source={{ uri: entry.photoUrl }}
-            style={{ width: '100%', height: 200, backgroundColor: colors.border }}
-            resizeMode="cover"
-          />
-          <View style={{
-            position: 'absolute', bottom: 8, right: 8,
-            backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 8,
-            paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4,
-          }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>🔍 Tap to enlarge</Text>
-          </View>
-        </Pressable>
-      ) : null}
-
-      <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>
-        {expanded || !needsTruncation ? entry.content : entry.content.slice(0, PREVIEW_LENGTH) + '…'}
-      </Text>
-
-      {needsTruncation && (
-        <Pressable onPress={() => setExpanded(!expanded)} style={{ marginTop: 8, paddingVertical: 4 }}>
-          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-            {expanded ? '▲ Show less' : '▼ Read full entry'}
-          </Text>
-        </Pressable>
-      )}
-    </View>
-  );
-}
-
-const PHOTO_CATEGORIES = [
-  'Face & Skin',
-  'Physique / Body',
-  'Hairline',
-  'General',
-];
-
-function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onViewGallery: () => void }) {
-  const colors = useColors();
-  const [entry, setEntry] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [photoCategory, setPhotoCategory] = useState<string>('Face & Skin');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
-  const todayDisplay = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      const day = await DisciplineRepo.getJournalDay(date);
+      setEntry(day.content || '');
+      setPhotos(day.photoUrls || []);
+      if (day.content || day.photoUrls.length > 0) {
+        setSaved(true);
+      } else {
+        setSaved(false);
+      }
+    } catch {}
+  };
 
   useEffect(() => {
-    DisciplineRepo.getJournalReflection(today).then(s => {
-      if (s) { setEntry(s); setSaved(true); }
-    });
-    DisciplineRepo.getJournalPhoto(today).then(res => {
-      if (res.photoUrl) setPhotoUri(res.photoUrl);
-      if (res.category) setPhotoCategory(res.category);
-    });
-  }, []);
+    loadData();
+  }, [date]);
 
   const handleTakePhoto = async () => {
     try {
@@ -302,21 +225,20 @@ function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onV
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
         quality: 0.8,
       });
       if (!result.canceled && result.assets?.[0]?.uri) {
-        setPhotoUri(result.assets[0].uri);
+        setPhotos(prev => [...prev, result.assets[0].uri]);
         setSaved(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (e: any) {
       console.warn('Camera error:', e);
-      Alert.alert('Camera Error', 'Could not open camera. You can also pick a photo from your gallery.');
+      Alert.alert('Camera Error', 'Could not open camera.');
     }
   };
 
-  const handlePickPhoto = async () => {
+  const handlePickPhotos = async () => {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
@@ -325,11 +247,12 @@ function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onV
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
+        allowsMultipleSelection: true,
         quality: 0.8,
       });
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        setPhotoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newUris = result.assets.map(a => a.uri).filter(Boolean);
+        setPhotos(prev => [...prev, ...newUris]);
         setSaved(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -339,35 +262,63 @@ function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onV
     }
   };
 
-  const removePhoto = () => {
-    Alert.alert('Remove Photo', 'Are you sure you want to remove today\'s photo?', [
+  const handleRemovePhoto = (index: number) => {
+    Alert.alert('Remove Photo', 'Are you sure you want to remove this photo?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => {
-        setPhotoUri(null);
-        setSaved(false);
-      }},
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          setPhotos(prev => prev.filter((_, i) => i !== index));
+          setSaved(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteEntireEntry = () => {
+    Alert.alert('Delete Entry?', `Delete all notes and photos for ${formattedDate}? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await DisciplineRepo.deleteJournalDay(date);
+          setEntry('');
+          setPhotos([]);
+          setSaved(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onSaved();
+          Alert.alert('Deleted', 'Entry removed successfully.');
+        },
+      },
     ]);
   };
 
   const saveEntry = async () => {
-    if (!entry.trim() && !photoUri) {
-      Alert.alert('Empty Entry', 'Please write a reflection or add a photo before saving.');
+    if (!entry.trim() && photos.length === 0) {
+      Alert.alert('Empty Entry', 'Please write a reflection or add at least one photo before saving.');
       return;
     }
     setIsSaving(true);
     try {
-      let finalPhotoUrl = photoUri;
-      // If photoUri is a local device file, attempt upload to Supabase
-      if (photoUri && !photoUri.startsWith('http')) {
-        try {
-          const uploadedUrl = await JournalSupabaseService.uploadPhoto(photoUri, today);
-          if (uploadedUrl) finalPhotoUrl = uploadedUrl;
-        } catch (e) {
-          console.warn('Supabase upload fallback to local storage:', e);
+      const uploadedPhotos: string[] = [];
+      for (const p of photos) {
+        if (!p.startsWith('http')) {
+          try {
+            const up = await JournalSupabaseService.uploadPhoto(p, date);
+            uploadedPhotos.push(up || p);
+          } catch {
+            uploadedPhotos.push(p);
+          }
+        } else {
+          uploadedPhotos.push(p);
         }
       }
 
-      await DisciplineRepo.setJournalReflection(today, entry, finalPhotoUrl, photoCategory);
+      await DisciplineRepo.setJournalDay(date, entry, uploadedPhotos);
+      setPhotos(uploadedPhotos);
       setSaved(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onSaved();
@@ -378,38 +329,43 @@ function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onV
     }
   };
 
-  const prompts = [
-    "What did I do well today?",
-    "Where did my discipline slip?",
-    "What is one thing I must accomplish tomorrow?",
-  ];
+  const hasExistingData = !!(entry.trim() || photos.length > 0 || saved);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-      {/* Date & Supabase Sync Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Daily Reflection — {todayDisplay}</Text>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 120 }}>
+      {/* Date Header & Cloud Sync */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground }}>
+          {isToday ? 'Today' : formattedDate}
+        </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
           <Text style={{ fontSize: 10 }}>☁️</Text>
-          <Text style={{ color: colors.success, fontSize: 10, fontWeight: '700' }}>Supabase</Text>
+          <Text style={{ color: colors.success, fontSize: 10, fontWeight: '700' }}>Cloud Synced</Text>
         </View>
       </View>
 
-      {/* Prompts Inspiration Card */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 6 }}>💡 Reflection Prompts (Tap to insert)</Text>
-        {prompts.map((p, i) => (
-          <Pressable key={i} onPress={() => setEntry(prev => prev ? prev + '\n\n' + p + '\n' : p + '\n')}>
-            <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>• {p}</Text>
+      {!isToday && (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          backgroundColor: colors.primary + '15', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+          marginBottom: 12, borderWidth: 1, borderColor: colors.primary + '40',
+        }}>
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+            📅 Editing entry for {date}
+          </Text>
+          <Pressable onPress={onResetToToday}>
+            <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800', textDecorationLine: 'underline' }}>
+              Switch to Today
+            </Text>
           </Pressable>
-        ))}
-      </View>
+        </View>
+      )}
 
       {/* Journal Reflection Text Area */}
       <TextInput
         value={entry}
         onChangeText={(t) => { setEntry(t); setSaved(false); }}
-        placeholder="Write your nightly thoughts, wins, and focus for tomorrow..."
+        placeholder="Write your thoughts, daily wins, slips, and focus for tomorrow..."
         placeholderTextColor={colors.muted}
         multiline
         textAlignVertical="top"
@@ -420,440 +376,751 @@ function JournalWriteView({ onSaved, onViewGallery }: { onSaved: () => void; onV
         }}
       />
 
-      {/* ─── 📸 Daily Progress Photo Tracking Section ────────────────────────── */}
+      {/* ─── 📸 Multi-Photo Upload Section ────────────────────────── */}
       <View style={{
         backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 20,
-        borderWidth: 1, borderColor: photoUri ? colors.primary + '60' : colors.border,
+        borderWidth: 1, borderColor: photos.length > 0 ? colors.primary + '50' : colors.border,
       }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>📸 Daily Progress Photo</Text>
-          {photoUri && (
-            <Pressable onPress={removePhoto} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Trash2 size={14} color={colors.error} />
-              <Text style={{ color: colors.error, fontSize: 11, fontWeight: '700' }}>Remove</Text>
-            </Pressable>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>📸 Photos</Text>
+            {photos.length > 0 && (
+              <View style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>{photos.length}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ color: colors.muted, fontSize: 11 }}>Upload multiple photos</Text>
         </View>
-        <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 12 }}>
-          Track visible changes in skin tone, pigmentation, face symmetry, hairline, or physique.
+
+        <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 14 }}>
+          Take or select pictures from today to track your transformation journey.
         </Text>
 
-        {/* Category Selector Chips */}
-        <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8 }}>
-          Focus Area
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-          {PHOTO_CATEGORIES.map(cat => {
-            const isSelected = photoCategory === cat;
-            return (
-              <Pressable
-                key={cat}
-                onPress={() => { setPhotoCategory(cat); setSaved(false); }}
-                style={({ pressed }) => ({
-                  paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-                  backgroundColor: isSelected ? colors.primary : colors.background,
-                  borderWidth: 1, borderColor: isSelected ? colors.primary : colors.border,
-                  opacity: pressed ? 0.8 : 1,
-                })}>
-                <Text style={{
-                  color: isSelected ? '#FFFFFF' : colors.foreground,
-                  fontSize: 11, fontWeight: '700',
+        {/* Upload Action Buttons */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: photos.length > 0 ? 14 : 0 }}>
+          <Pressable
+            onPress={handleTakePhoto}
+            style={({ pressed }) => ({
+              flex: 1, backgroundColor: colors.primary + '18',
+              borderColor: colors.primary + '50', borderWidth: 1,
+              borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'row', gap: 6, opacity: pressed ? 0.8 : 1,
+            })}>
+            <Camera size={18} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>Take Photo</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handlePickPhotos}
+            style={({ pressed }) => ({
+              flex: 1, backgroundColor: colors.background,
+              borderColor: colors.border, borderWidth: 1,
+              borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'row', gap: 6, opacity: pressed ? 0.8 : 1,
+            })}>
+            <ImageIcon size={18} color={colors.foreground} />
+            <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 12 }}>Add from Gallery</Text>
+          </Pressable>
+        </View>
+
+        {/* Horizontal Scroll of Uploaded Photos */}
+        {photos.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 4 }}>
+            {photos.map((uri, idx) => (
+              <View
+                key={uri + idx}
+                style={{
+                  width: 120, height: 150, borderRadius: 12, overflow: 'hidden',
+                  backgroundColor: colors.border, borderWidth: 1, borderColor: colors.border,
+                  position: 'relative',
+                }}
+              >
+                <Pressable
+                  onPress={() => setPreviewPhoto({
+                    url: uri,
+                    date: formattedDate,
+                    note: entry,
+                    onDelete: () => handleRemovePhoto(idx),
+                  })}
+                  style={{ flex: 1 }}
+                >
+                  <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                </Pressable>
+
+                {/* Badge Number */}
+                <View style={{
+                  position: 'absolute', bottom: 6, left: 6,
+                  backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6,
+                  paddingHorizontal: 5, paddingVertical: 2,
                 }}>
-                  {cat === 'Face & Skin' ? '💆 ' : cat === 'Physique / Body' ? '💪 ' : cat === 'Hairline' ? '💈 ' : '✨ '}
-                  {cat}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                  <Text style={{ color: '#FFFFFF', fontSize: 9.5, fontWeight: '700' }}>#{idx + 1}</Text>
+                </View>
 
-        {/* Photo Display / Action Buttons */}
-        {photoUri ? (
-          <View style={{ borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, position: 'relative' }}>
-            <Image
-              source={{ uri: photoUri }}
-              style={{ width: '100%', height: 260, backgroundColor: colors.border }}
-              resizeMode="cover"
-            />
-            {/* Tag Overlay */}
-            <View style={{
-              position: 'absolute', top: 10, left: 10,
-              backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 8,
-              paddingHorizontal: 10, paddingVertical: 5,
-            }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>🏷️ {photoCategory}</Text>
-            </View>
+                {/* Remove 'X' Button */}
+                <Pressable
+                  onPress={() => handleRemovePhoto(idx)}
+                  style={({ pressed }) => ({
+                    position: 'absolute', top: 6, right: 6,
+                    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                    width: 24, height: 24, borderRadius: 12,
+                    alignItems: 'center', justifyContent: 'center',
+                    opacity: pressed ? 0.7 : 1,
+                  })}>
+                  <X size={14} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            ))}
 
-            {/* Quick Action Bar under photo */}
-            <View style={{
-              flexDirection: 'row', backgroundColor: colors.surface, padding: 10,
-              borderTopWidth: 1, borderTopColor: colors.border, gap: 10,
-            }}>
-              <Pressable
-                onPress={handleTakePhoto}
-                style={({ pressed }) => ({
-                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: colors.background, borderRadius: 10, paddingVertical: 8, gap: 6,
-                  borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.7 : 1,
-                })}>
-                <RefreshCw size={14} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700' }}>Retake</Text>
-              </Pressable>
-              <Pressable
-                onPress={handlePickPhoto}
-                style={({ pressed }) => ({
-                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: colors.background, borderRadius: 10, paddingVertical: 8, gap: 6,
-                  borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.7 : 1,
-                })}>
-                <ImageIcon size={14} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700' }}>Choose New</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <View>
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-              <Pressable
-                onPress={handleTakePhoto}
-                style={({ pressed }) => ({
-                  flex: 1, backgroundColor: colors.primary + '18',
-                  borderColor: colors.primary + '50', borderWidth: 1,
-                  borderRadius: 14, paddingVertical: 18, alignItems: 'center', justifyContent: 'center',
-                  gap: 8, opacity: pressed ? 0.8 : 1,
-                })}>
-                <Camera size={26} color={colors.primary} />
-                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>Take Photo</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handlePickPhoto}
-                style={({ pressed }) => ({
-                  flex: 1, backgroundColor: colors.surface,
-                  borderColor: colors.border, borderWidth: 1,
-                  borderRadius: 14, paddingVertical: 18, alignItems: 'center', justifyContent: 'center',
-                  gap: 8, opacity: pressed ? 0.8 : 1,
-                })}>
-                <ImageIcon size={26} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 13 }}>From Gallery</Text>
-              </Pressable>
-            </View>
-            <Text style={{ color: colors.muted, fontSize: 11, textAlign: 'center' }}>
-              💡 Consistent morning lighting (e.g. bathroom mirror) yields the best visual progress tracking.
-            </Text>
-          </View>
+            {/* Quick "+ Add More" card */}
+            <Pressable
+              onPress={handlePickPhotos}
+              style={({ pressed }) => ({
+                width: 100, height: 150, borderRadius: 12,
+                borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
+                backgroundColor: colors.background,
+                alignItems: 'center', justifyContent: 'center', gap: 6,
+                opacity: pressed ? 0.7 : 1,
+              })}>
+              <Plus size={22} color={colors.muted} />
+              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700' }}>Add More</Text>
+            </Pressable>
+          </ScrollView>
         )}
       </View>
 
       {/* Save Button */}
       <Pressable onPress={saveEntry} disabled={isSaving} style={({ pressed }) => ({
         backgroundColor: saved ? colors.success : colors.primary,
-        borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+        borderRadius: 14, paddingVertical: 15, alignItems: 'center',
         opacity: pressed || isSaving ? 0.85 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8,
       })}>
         {isSaving ? (
           <>
             <ActivityIndicator color="#FFFFFF" size="small" />
-            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>Saving & Syncing...</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>Saving & Syncing...</Text>
           </>
         ) : (
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>
-            {saved ? '✓ Saved & Synced' : 'Save Reflection & Photo'}
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>
+            {saved ? '✓ Saved & Synced' : 'Save Reflection & Photos'}
           </Text>
         )}
       </Pressable>
 
-      {saved && (
-        <View style={{ marginTop: 12, alignItems: 'center' }}>
-          <Text style={{ color: colors.success, fontSize: 12, textAlign: 'center', fontWeight: '600' }}>
-            ✓ Successfully saved locally and backed up to Supabase cloud.
+      {/* Delete Entry Button */}
+      {hasExistingData && (
+        <Pressable
+          onPress={handleDeleteEntireEntry}
+          style={({ pressed }) => ({
+            marginTop: 14, paddingVertical: 12, borderRadius: 12,
+            borderWidth: 1, borderColor: colors.error + '50',
+            backgroundColor: colors.error + '10',
+            alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'row', gap: 6, opacity: pressed ? 0.7 : 1,
+          })}>
+          <Trash2 size={15} color={colors.error} />
+          <Text style={{ color: colors.error, fontSize: 13, fontWeight: '700' }}>
+            Delete Entry for {date}
           </Text>
-          <Pressable onPress={onViewGallery} style={{ marginTop: 8 }}>
-            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-              📸 View your progress photos in Gallery →
-            </Text>
-          </Pressable>
-        </View>
+        </Pressable>
       )}
+
+      {/* Link to Calendar */}
+      <Pressable onPress={onViewCalendar} style={{ marginTop: 18, alignItems: 'center' }}>
+        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+          📅 View past reflections & photos in Calendar →
+        </Text>
+      </Pressable>
+
+      <PhotoDetailModal
+        photo={previewPhoto}
+        onClose={() => setPreviewPhoto(null)}
+      />
     </ScrollView>
   );
 }
 
-function JournalHistoryView({
+// ─── 📅 Unified Calendar & History View ────────────────────────────────────────
+
+function JournalCalendarView({
   refreshKey,
+  selectedDate,
+  onSelectDate,
+  onEditDate,
   onPhotoPress,
 }: {
   refreshKey: number;
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+  onEditDate: (date: string) => void;
   onPhotoPress: (photo: ActivePhotoModal) => void;
 }) {
   const colors = useColors();
-  const [history, setHistory] = useState<JournalEntry[]>([]);
-  const [search, setSearch] = useState('');
-  const [onlyPhotos, setOnlyPhotos] = useState(false);
 
-  const loadHistory = async () => {
+  const parsedDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
+  const [viewYear, setViewYear] = useState(() => parsedDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => parsedDate.getMonth()); // 0-11
+
+  const [entryMap, setEntryMap] = useState<Record<string, { hasReflection: boolean; hasPhotos: boolean; photoCount: number }>>({});
+  const [selectedDayData, setSelectedDayData] = useState<{
+    date: string;
+    content?: string;
+    photoUrls: string[];
+    mood?: string;
+    tags?: string[];
+  } | null>(null);
+  const [loadingDay, setLoadingDay] = useState(false);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const loadEntryMap = async () => {
     try {
-      const entries = await DisciplineRepo.getAllJournalReflections();
-      const filtered = entries
-        .filter(e => (!!e.content && e.content.trim().length > 0) || !!e.photoUrl)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setHistory(filtered);
-    } catch {}
+      const map = await DisciplineRepo.getEntryDatesMap();
+      setEntryMap(map);
+    } catch (e) {
+      console.warn('Error loading entry map:', e);
+    }
   };
 
-  useEffect(() => { loadHistory(); }, [refreshKey]);
-  useFocusEffect(useCallback(() => { loadHistory(); }, []));
+  const loadSelectedDay = async (date: string) => {
+    setLoadingDay(true);
+    try {
+      const day = await DisciplineRepo.getJournalDay(date);
+      setSelectedDayData(day);
+    } catch (e) {
+      console.warn('Error loading selected day:', e);
+    } finally {
+      setLoadingDay(false);
+    }
+  };
 
-  const visible = history.filter(h => {
-    const matchesSearch = !search.trim() || h.content.toLowerCase().includes(search.toLowerCase());
-    const matchesPhoto = !onlyPhotos || !!h.photoUrl;
-    return matchesSearch && matchesPhoto;
+  useEffect(() => {
+    loadEntryMap();
+  }, [refreshKey]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadEntryMap();
+      loadSelectedDay(selectedDate);
+    }, [selectedDate])
+  );
+
+  useEffect(() => {
+    loadSelectedDay(selectedDate);
+  }, [selectedDate, refreshKey]);
+
+  // Calendar month navigation
+  const prevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(y => y - 1);
+    } else {
+      setViewMonth(m => m - 1);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(y => y + 1);
+    } else {
+      setViewMonth(m => m + 1);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const jumpToToday = () => {
+    const now = new Date();
+    setViewYear(now.getFullYear());
+    setViewMonth(now.getMonth());
+    onSelectDate(today);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const monthTitle = new Date(viewYear, viewMonth, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
   });
 
+  // Monday-first: (day + 6) % 7
+  const firstDayOfWeek = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const formattedSelectedDate = (() => {
+    try {
+      return new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return selectedDate;
+    }
+  })();
+
+  const handleDeletePhoto = (photoUrl: string) => {
+    Alert.alert('Delete Photo?', 'Are you sure you want to delete this photo from this entry? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await DisciplineRepo.deleteJournalPhoto(selectedDate, photoUrl);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          loadSelectedDay(selectedDate);
+          loadEntryMap();
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteReflection = () => {
+    Alert.alert('Delete Reflection?', `Delete the reflection note for ${selectedDate}? Photos will be kept.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Reflection',
+        style: 'destructive',
+        onPress: async () => {
+          await DisciplineRepo.deleteJournalReflectionOnly(selectedDate);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          loadSelectedDay(selectedDate);
+          loadEntryMap();
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteEntireDay = () => {
+    Alert.alert('Delete Entire Day Entry?', `Delete all reflection notes and photos for ${selectedDate}? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Everything',
+        style: 'destructive',
+        onPress: async () => {
+          await DisciplineRepo.deleteJournalDay(selectedDate);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          loadSelectedDay(selectedDate);
+          loadEntryMap();
+        },
+      },
+    ]);
+  };
+
+  const hasData = Boolean(
+    (selectedDayData?.content && selectedDayData.content.trim().length > 0) ||
+    (selectedDayData?.photoUrls && selectedDayData.photoUrls.length > 0)
+  );
+
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ padding: 16, paddingBottom: 8 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 8 }}>Past Entries</Text>
-        <TextInput
-          placeholder="Search journal reflections..."
-          placeholderTextColor={colors.muted}
-          value={search}
-          onChangeText={setSearch}
-          style={{
-            backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-            borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, color: colors.foreground, fontSize: 13,
-          }}
-        />
-
-        {/* Filter Toggle */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-          <Text style={{ color: colors.muted, fontSize: 11 }}>
-            {history.length} {history.length === 1 ? 'entry' : 'entries'} total
-            {search.trim() || onlyPhotos ? ` · ${visible.length} match` : ''}
-          </Text>
-          <Pressable
-            onPress={() => setOnlyPhotos(!onlyPhotos)}
-            style={({ pressed }) => ({
-              paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
-              backgroundColor: onlyPhotos ? colors.primary + '20' : colors.surface,
-              borderWidth: 1, borderColor: onlyPhotos ? colors.primary : colors.border,
-              opacity: pressed ? 0.7 : 1,
-            })}>
-            <Text style={{ color: onlyPhotos ? colors.primary : colors.muted, fontSize: 11, fontWeight: '700' }}>
-              📸 Photos only
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
-        {visible.length === 0 ? (
-          <View style={{ alignItems: 'center', padding: 30 }}>
-            <Text style={{ fontSize: 40, marginBottom: 10 }}>📔</Text>
-            <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center' }}>
-              {history.length === 0
-                ? "No past entries yet. Write today's reflection and capture a progress photo."
-                : 'No entries match your search criteria.'}
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
+      {/* ─── Calendar Card ────────────────────────────────────────── */}
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: 16, padding: 14,
+        borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+      }}>
+        {/* Month Header & Controls */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <CalendarIcon size={16} color={colors.primary} />
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground }}>
+              {monthTitle}
             </Text>
           </View>
-        ) : (
-          visible.map(h => (
-            <JournalHistoryCard
-              key={h.date}
-              entry={h}
-              onPhotoPress={onPhotoPress}
-            />
-          ))
-        )}
-      </ScrollView>
-    </View>
-  );
-}
 
-// ─── 📸 Dedicated Progress Photo Gallery View ─────────────────────────────────
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Pressable
+              onPress={jumpToToday}
+              style={({ pressed }) => ({
+                paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8,
+                backgroundColor: colors.primary + '18', borderWidth: 1, borderColor: colors.primary + '35',
+                opacity: pressed ? 0.7 : 1,
+              })}>
+              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>Today</Text>
+            </Pressable>
 
-function JournalGalleryView({
-  refreshKey,
-  onPhotoPress,
-  onTakePhoto,
-}: {
-  refreshKey: number;
-  onPhotoPress: (photo: ActivePhotoModal) => void;
-  onTakePhoto: () => void;
-}) {
-  const colors = useColors();
-  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+            <Pressable
+              onPress={prevMonth}
+              style={({ pressed }) => ({
+                width: 32, height: 32, borderRadius: 8,
+                backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
+                alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
+              })}>
+              <ChevronLeft size={16} color={colors.foreground} />
+            </Pressable>
 
-  const loadPhotos = async () => {
-    try {
-      const all = await PhotoRepo.getAll();
-      setPhotos(all);
-    } catch {}
-  };
-
-  useEffect(() => { loadPhotos(); }, [refreshKey]);
-  useFocusEffect(useCallback(() => { loadPhotos(); }, []));
-
-  const categories = ['All', 'Face & Skin', 'Physique / Body', 'Hairline'];
-
-  const filteredPhotos = photos.filter(p => {
-    if (selectedCategory === 'All') return true;
-    return p.category.toLowerCase().includes(selectedCategory.toLowerCase());
-  });
-
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Category Pills & Count */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>Transformation Gallery</Text>
-          <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
-            {filteredPhotos.length} {filteredPhotos.length === 1 ? 'photo' : 'photos'}
-          </Text>
+            <Pressable
+              onPress={nextMonth}
+              style={({ pressed }) => ({
+                width: 32, height: 32, borderRadius: 8,
+                backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
+                alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
+              })}>
+              <ChevronRight size={16} color={colors.foreground} />
+            </Pressable>
+          </View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-          {categories.map(cat => {
-            const isSelected = selectedCategory === cat;
+        {/* Weekday Labels (Mon - Sun) */}
+        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(w => (
+            <View key={w} style={{ width: '14.28%', alignItems: 'center' }}>
+              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700' }}>{w}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Days Grid */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {/* Leading empty cells */}
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+            <View key={`empty-${i}`} style={{ width: '14.28%', height: 46 }} />
+          ))}
+
+          {/* Month Days */}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const dayNum = i + 1;
+            const dayStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+            const isSelected = dayStr === selectedDate;
+            const isToday = dayStr === today;
+            const entryInfo = entryMap[dayStr];
+            const hasRef = Boolean(entryInfo?.hasReflection);
+            const hasPics = Boolean(entryInfo?.hasPhotos);
+
             return (
               <Pressable
-                key={cat}
-                onPress={() => setSelectedCategory(cat)}
+                key={dayStr}
+                onPress={() => {
+                  onSelectDate(dayStr);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
                 style={({ pressed }) => ({
-                  paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-                  backgroundColor: isSelected ? colors.primary : colors.surface,
-                  borderWidth: 1, borderColor: isSelected ? colors.primary : colors.border,
-                  marginRight: 8, opacity: pressed ? 0.8 : 1,
+                  width: '14.28%', height: 46,
+                  alignItems: 'center', justifyContent: 'center',
+                  opacity: pressed ? 0.7 : 1,
                 })}>
-                <Text style={{
-                  color: isSelected ? '#FFFFFF' : colors.foreground,
-                  fontSize: 11, fontWeight: '700',
+                <View style={{
+                  width: 34, height: 36, borderRadius: 10,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: isSelected
+                    ? colors.primary
+                    : isToday
+                    ? colors.primary + '18'
+                    : 'transparent',
+                  borderWidth: isSelected
+                    ? 0
+                    : isToday
+                    ? 1.5
+                    : 0,
+                  borderColor: colors.primary,
                 }}>
-                  {cat}
-                </Text>
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: isSelected ? '800' : isToday ? '800' : '600',
+                    color: isSelected ? '#FFFFFF' : isToday ? colors.primary : colors.foreground,
+                  }}>
+                    {dayNum}
+                  </Text>
+
+                  {/* Indicator Dots */}
+                  <View style={{ flexDirection: 'row', gap: 2.5, height: 4, marginTop: 2, alignItems: 'center', justifyContent: 'center' }}>
+                    {hasRef && (
+                      <View style={{
+                        width: 4, height: 4, borderRadius: 2,
+                        backgroundColor: isSelected ? '#A7F3D0' : '#10B981',
+                      }} />
+                    )}
+                    {hasPics && (
+                      <View style={{
+                        width: 4, height: 4, borderRadius: 2,
+                        backgroundColor: isSelected ? '#BAE6FD' : '#06B6D4',
+                      }} />
+                    )}
+                  </View>
+                </View>
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
+
+        {/* Legend */}
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+          gap: 18, paddingTop: 10, marginTop: 4,
+          borderTopWidth: 1, borderColor: colors.border + '60',
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
+            <Text style={{ fontSize: 11, color: colors.muted, fontWeight: '700' }}>Reflection</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#06B6D4' }} />
+            <Text style={{ fontSize: 11, color: colors.muted, fontWeight: '700' }}>Photos</Text>
+          </View>
+        </View>
       </View>
 
-      {/* Grid Display */}
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-        {filteredPhotos.length === 0 ? (
-          <View style={{ alignItems: 'center', padding: 36, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 44, marginBottom: 12 }}>📸</Text>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground, marginBottom: 6 }}>No Photos Yet</Text>
-            <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
-              Take a daily photo of your face, skin, hairline, or physique to track your physical transformation journey over time.
+      {/* ─── Selected Day Details ────────────────────────────────────── */}
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+        borderWidth: 1, borderColor: colors.border,
+      }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <View>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground }}>
+              {formattedSelectedDate}
+            </Text>
+            <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
+              {selectedDate === today ? 'Today' : selectedDate}
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() => onEditDate(selectedDate)}
+            style={({ pressed }) => ({
+              paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
+              backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 5,
+              opacity: pressed ? 0.85 : 1,
+            })}>
+            <Plus size={13} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
+              {hasData ? 'Edit / Add' : 'Add Entry'}
+            </Text>
+          </Pressable>
+        </View>
+
+        {loadingDay ? (
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.primary} size="small" />
+          </View>
+        ) : !hasData ? (
+          <View style={{
+            padding: 24, alignItems: 'center', borderRadius: 12,
+            borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
+          }}>
+            <Text style={{ fontSize: 30, marginBottom: 8 }}>📅</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
+              No Entry for this Date
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 16, lineHeight: 18 }}>
+              Record a daily reflection or upload progress photos to track your journey.
             </Text>
             <Pressable
-              onPress={onTakePhoto}
+              onPress={() => onEditDate(selectedDate)}
               style={({ pressed }) => ({
-                backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12,
-                borderRadius: 12, opacity: pressed ? 0.85 : 1,
+                backgroundColor: colors.primary + '20', borderWidth: 1, borderColor: colors.primary,
+                paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10,
+                opacity: pressed ? 0.8 : 1,
               })}>
-              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>📸 Take Today's Progress Photo</Text>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '800' }}>
+                ✍️ Write or Upload for this Date
+              </Text>
             </Pressable>
           </View>
         ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {filteredPhotos.map((photo) => (
-              <Pressable
-                key={photo.id}
-                onPress={() => onPhotoPress({
-                  url: photo.uri,
-                  date: photo.date,
-                  category: photo.category,
-                  note: photo.notes,
-                })}
-                style={({ pressed }) => ({
-                  width: '48%', backgroundColor: colors.surface, borderRadius: 14,
-                  overflow: 'hidden', borderWidth: 1, borderColor: colors.border,
-                  opacity: pressed ? 0.85 : 1, position: 'relative', marginBottom: 6,
-                })}>
-                <Image
-                  source={{ uri: photo.uri }}
-                  style={{ width: '100%', height: 180, backgroundColor: colors.border }}
-                  resizeMode="cover"
-                />
-                {/* Category chip */}
-                <View style={{
-                  position: 'absolute', top: 8, left: 8,
-                  backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6,
-                  paddingHorizontal: 6, paddingVertical: 3,
-                }}>
-                  <Text style={{ color: '#FFFFFF', fontSize: 9.5, fontWeight: '700' }}>
-                    {photo.category}
-                  </Text>
-                </View>
-                {/* Date footer */}
-                <View style={{ padding: 8 }}>
-                  <Text style={{ color: colors.foreground, fontSize: 11, fontWeight: '700' }}>
-                    {photo.date}
-                  </Text>
-                  {photo.notes ? (
-                    <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }} numberOfLines={1}>
-                      {photo.notes}
+          <>
+            {/* 1. Written Reflection Card */}
+            {selectedDayData?.content && selectedDayData.content.trim().length > 0 && (
+              <View style={{
+                backgroundColor: colors.background, borderRadius: 12, padding: 14,
+                marginBottom: 14, borderWidth: 1, borderColor: colors.border,
+              }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: colors.foreground, textTransform: 'uppercase' }}>
+                      Daily Reflection
                     </Text>
-                  ) : null}
+                  </View>
+
+                  <Pressable
+                    onPress={handleDeleteReflection}
+                    hitSlop={8}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}>
+                    <Trash2 size={14} color={colors.error} />
+                  </Pressable>
                 </View>
-              </Pressable>
-            ))}
-          </View>
+
+                <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>
+                  {selectedDayData.content}
+                </Text>
+              </View>
+            )}
+
+            {/* 2. Photos Section: Horizontal Swipe / Scroll Gallery */}
+            {selectedDayData?.photoUrls && selectedDayData.photoUrls.length > 0 && (
+              <View style={{ marginBottom: 14 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#06B6D4' }} />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.foreground }}>
+                      Photos ({selectedDayData.photoUrls.length})
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: colors.muted }}>Swipe to browse →</Text>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                  {selectedDayData.photoUrls.map((url, idx) => (
+                    <View
+                      key={`${url}-${idx}`}
+                      style={{
+                        width: 200, height: 260, borderRadius: 14, overflow: 'hidden',
+                        backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
+                        position: 'relative',
+                      }}>
+                      <Pressable
+                        style={{ width: '100%', height: '100%' }}
+                        onPress={() => onPhotoPress({
+                          url,
+                          date: selectedDate,
+                          note: selectedDayData.content,
+                          onDelete: () => handleDeletePhoto(url),
+                        })}>
+                        <Image
+                          source={{ uri: url }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </Pressable>
+
+                      {/* Badge Number */}
+                      <View style={{
+                        position: 'absolute', bottom: 8, left: 8,
+                        backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6,
+                        paddingHorizontal: 6, paddingVertical: 3,
+                      }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
+                          #{idx + 1} of {selectedDayData.photoUrls.length}
+                        </Text>
+                      </View>
+
+                      {/* Direct Delete Button */}
+                      <Pressable
+                        onPress={() => handleDeletePhoto(url)}
+                        style={({ pressed }) => ({
+                          position: 'absolute', top: 8, right: 8,
+                          backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                          width: 28, height: 28, borderRadius: 14,
+                          alignItems: 'center', justifyContent: 'center',
+                          opacity: pressed ? 0.7 : 1,
+                        })}>
+                        <Trash2 size={14} color="#FFFFFF" />
+                      </Pressable>
+                    </View>
+                  ))}
+
+                  {/* Quick "+ Add More" card at the end */}
+                  <Pressable
+                    onPress={() => onEditDate(selectedDate)}
+                    style={({ pressed }) => ({
+                      width: 120, height: 260, borderRadius: 14,
+                      borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
+                      backgroundColor: colors.background,
+                      alignItems: 'center', justifyContent: 'center', gap: 8,
+                      opacity: pressed ? 0.7 : 1,
+                    })}>
+                    <Plus size={24} color={colors.primary} />
+                    <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700' }}>Add More</Text>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* 3. Delete Entire Day Button */}
+            <Pressable
+              onPress={handleDeleteEntireDay}
+              style={({ pressed }) => ({
+                marginTop: 6, paddingVertical: 12, borderRadius: 12,
+                borderWidth: 1, borderColor: colors.error + '40',
+                backgroundColor: colors.error + '10',
+                alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'row', gap: 6, opacity: pressed ? 0.7 : 1,
+              })}>
+              <Trash2 size={14} color={colors.error} />
+              <Text style={{ color: colors.error, fontSize: 12, fontWeight: '700' }}>
+                Delete All Entries for {selectedDate}
+              </Text>
+            </Pressable>
+          </>
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
+// ─── 📔 Journal Tab Master Container (2 Subtabs: Write & Calendar) ───────────
+
 function JournalScreen() {
   const colors = useColors();
-  const [journalView, setJournalView] = useState<'write' | 'history' | 'gallery'>('write');
+  const [journalTab, setJournalTab] = useState<'write' | 'calendar'>('write');
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [activePhotoModal, setActivePhotoModal] = useState<ActivePhotoModal | null>(null);
 
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <View style={{ flex: 1 }}>
-      {/* Sub-view Navigation Tabs */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6, gap: 6 }}>
-        {([
-          { k: 'write' as const, label: '✍️ Write & Track' },
-          { k: 'history' as const, label: '📚 Reflections' },
-          { k: 'gallery' as const, label: '📸 Progress Photos' },
-        ]).map(tab => (
-          <Pressable key={tab.k} onPress={() => setJournalView(tab.k)}
-            style={({ pressed }) => ({
-              flex: 1, paddingVertical: 9, borderRadius: 12,
-              backgroundColor: journalView === tab.k ? colors.primary : colors.surface,
-              borderWidth: 1, borderColor: journalView === tab.k ? colors.primary : colors.border,
-              alignItems: 'center', opacity: pressed ? 0.85 : 1,
-            })}>
-            <Text style={{
-              color: journalView === tab.k ? '#FFFFFF' : colors.foreground,
-              fontWeight: '700', fontSize: 11,
-            }}>{tab.label}</Text>
-          </Pressable>
-        ))}
+      {/* 2-Tab Navigation Bar */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6, gap: 8 }}>
+        <Pressable
+          onPress={() => setJournalTab('write')}
+          style={({ pressed }) => ({
+            flex: 1, paddingVertical: 10, borderRadius: 12,
+            backgroundColor: journalTab === 'write' ? colors.primary : colors.surface,
+            borderWidth: 1, borderColor: journalTab === 'write' ? colors.primary : colors.border,
+            alignItems: 'center', opacity: pressed ? 0.85 : 1,
+            flexDirection: 'row', justifyContent: 'center', gap: 6,
+          })}>
+          <Text style={{
+            color: journalTab === 'write' ? '#FFFFFF' : colors.foreground,
+            fontWeight: '800', fontSize: 12,
+          }}>
+            ✍️ {selectedDate === today ? "Today's Entry" : `Edit (${selectedDate})`}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setJournalTab('calendar')}
+          style={({ pressed }) => ({
+            flex: 1, paddingVertical: 10, borderRadius: 12,
+            backgroundColor: journalTab === 'calendar' ? colors.primary : colors.surface,
+            borderWidth: 1, borderColor: journalTab === 'calendar' ? colors.primary : colors.border,
+            alignItems: 'center', opacity: pressed ? 0.85 : 1,
+            flexDirection: 'row', justifyContent: 'center', gap: 6,
+          })}>
+          <CalendarIcon size={14} color={journalTab === 'calendar' ? '#FFFFFF' : colors.foreground} />
+          <Text style={{
+            color: journalTab === 'calendar' ? '#FFFFFF' : colors.foreground,
+            fontWeight: '800', fontSize: 12,
+          }}>
+            📅 Calendar & History
+          </Text>
+        </Pressable>
       </View>
 
-      {journalView === 'write' && (
+      {journalTab === 'write' ? (
         <JournalWriteView
-          onSaved={() => setRefreshKey(k => k + 1)}
-          onViewGallery={() => setJournalView('gallery')}
+          date={selectedDate}
+          onSaved={() => {
+            setRefreshKey(k => k + 1);
+          }}
+          onViewCalendar={() => setJournalTab('calendar')}
+          onResetToToday={() => setSelectedDate(today)}
         />
-      )}
-      {journalView === 'history' && (
-        <JournalHistoryView
+      ) : (
+        <JournalCalendarView
           refreshKey={refreshKey}
+          selectedDate={selectedDate}
+          onSelectDate={(d) => setSelectedDate(d)}
+          onEditDate={(d) => {
+            setSelectedDate(d);
+            setJournalTab('write');
+          }}
           onPhotoPress={setActivePhotoModal}
-        />
-      )}
-      {journalView === 'gallery' && (
-        <JournalGalleryView
-          refreshKey={refreshKey}
-          onPhotoPress={setActivePhotoModal}
-          onTakePhoto={() => setJournalView('write')}
         />
       )}
 
