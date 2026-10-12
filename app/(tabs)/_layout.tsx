@@ -2,11 +2,11 @@ import { Tabs, router } from 'expo-router';
 import { View, Text, Pressable, StyleSheet, Platform, Alert, Modal, ScrollView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/use-colors';
-import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight } from 'lucide-react-native';
+import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight, Flame } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { motionSpring } from '@/lib/motion';
+import { motionSpring, Tap } from '@/lib/motion';
 
 interface TabIconProps {
   IconComponent: any;
@@ -140,19 +140,20 @@ export default function TabLayout() {
 
       {/* Floating Urge Button (hidden when keyboard is open to avoid blocking text input) */}
       {!keyboardVisible && (
-        <Pressable
+        <Tap
           onPress={() => setUrgeModalVisible(true)}
-          style={({ pressed }) => ({
+          scaleTo={0.9}
+          style={{
             position: 'absolute', right: 20, bottom: insets.bottom + 70,
             backgroundColor: colors.error, width: 56, height: 56,
             borderRadius: 28, alignItems: 'center', justifyContent: 'center',
             shadowColor: colors.error, shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
-            opacity: pressed ? 0.8 : 1, zIndex: 100,
-          })}
+            shadowOpacity: 0.35, shadowRadius: 8, elevation: 8,
+            zIndex: 100,
+          }}
         >
-          <Text style={{ fontSize: 24 }}>🚨</Text>
-        </Pressable>
+          <Flame size={26} color="#FFFFFF" strokeWidth={2.4} />
+        </Tap>
       )}
 
       {/* Urge Modal Bottom Sheet */}
@@ -160,9 +161,12 @@ export default function TabLayout() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 20 + insets.bottom }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: colors.error }}>🚨 Urge Mode</Text>
-              <Pressable onPress={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }} style={{ padding: 4, backgroundColor: colors.background, borderRadius: 16 }}>
-                <X size={24} color={colors.foreground} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Flame size={22} color={colors.error} strokeWidth={2.5} />
+                <Text style={{ fontSize: 20, fontWeight: '900', color: colors.error }}>Urge Mode</Text>
+              </View>
+              <Pressable onPress={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }} style={{ padding: 6, backgroundColor: colors.background, borderRadius: 16 }}>
+                <X size={20} color={colors.foreground} />
               </Pressable>
             </View>
 
@@ -184,12 +188,18 @@ export default function TabLayout() {
                   })}
                 </ScrollView>
                 <View style={{ marginTop: 16, padding: 12, backgroundColor: colors.success + '20', borderRadius: 12, borderColor: colors.success + '40', borderWidth: 1 }}>
-                  <Text style={{ color: colors.success, fontWeight: '600', textAlign: 'center', fontSize: 13 }}>Don't throw away your progress. You got this. 🔥</Text>
+                  <Text style={{ color: colors.success, fontWeight: '600', textAlign: 'center', fontSize: 13 }}>Don't throw away your progress. You got this.</Text>
                 </View>
               </View>
             ) : (
               <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                <Text style={{ fontSize: 48, marginBottom: 16 }}>💪</Text>
+                <View style={{
+                  width: 72, height: 72, borderRadius: 36,
+                  backgroundColor: colors.primary + '18',
+                  alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                }}>
+                  <Dumbbell size={36} color={colors.primary} />
+                </View>
                 <Text style={{ fontSize: 24, fontWeight: '800', color: colors.foreground, marginBottom: 8 }}>Do it now!</Text>
                 <Text style={{ fontSize: 16, color: colors.muted, marginBottom: 24 }}>{selectedUrgeAction.label}</Text>
                 <Pressable onPress={completeAction} style={({ pressed }) => ({

@@ -17,7 +17,7 @@ import {
 } from '@/lib/db/database';
 import {
   QUOTES, NAVAL_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
-  DEFAULT_MILESTONES,
+  DEFAULT_MILESTONES, PM_ACTIVES_ROTATION,
 } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
 
@@ -444,6 +444,14 @@ export default function DashboardScreen() {
   const dayName = getDayOfWeek().charAt(0).toUpperCase() + getDayOfWeek().slice(1);
   const phaseLabels = { 1: 'Foundation', 2: 'Build', 3: 'Maximize' };
 
+  const getShortActiveName = (day: string) => {
+    const full = PM_ACTIVES_ROTATION[day] || '';
+    if (full.includes('Adapalene')) return 'Adapalene';
+    if (full.includes('Alpha Arbutin')) return 'Alpha Arbutin';
+    if (full.includes('REST')) return 'Barrier Rest';
+    return 'Skincare PM';
+  };
+
   /** Map a schedule task to { tabPath, subTab } so "View" lands on the right section. */
   const resolveRouteForTask = (item: { task: string; category: string }): { tabPath: string; subTab: string } | null => {
     const t = item.task.toLowerCase();
@@ -511,7 +519,7 @@ export default function DashboardScreen() {
                 {getGreeting()},
               </Text>
               <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground, marginTop: 2, letterSpacing: -0.5 }}>
-                {profile?.name || 'FORGE'} 🔥
+                {profile?.name || 'FORGE'}
               </Text>
             </View>
 
@@ -647,13 +655,15 @@ export default function DashboardScreen() {
             />
 
             <MetricCard
-              icon={Activity}
-              title="Current Weight"
-              value={profile?.currentWeight || 45}
-              unit="kg"
-              subtitle="Target: 58 kg"
-              accentColor={colors.primary}
-              onPress={() => router.push('/settings')}
+              icon={Sparkles}
+              title="Tonight's Active"
+              value={getShortActiveName(dayName)}
+              subtitle="Tap for routine"
+              accentColor="#F472B6"
+              onPress={async () => {
+                await NavRepo.setPendingSubTab('/(tabs)/appearance', 'skincare');
+                router.navigate('/(tabs)/appearance');
+              }}
             />
 
             <MetricCard

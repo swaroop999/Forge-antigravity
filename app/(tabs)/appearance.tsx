@@ -1,23 +1,23 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Info, Sparkles, Shield, Sun, Moon } from 'lucide-react-native';
+import { Check, Info, Sparkles, Shield, Sun, Moon, Scissors, Star } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, Modal } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
-import { SubTabBar } from '@/components/sub-tab-bar';
+import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, AppearanceRepo, NavRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION, type SkincareStep } from '@/lib/db/seeds';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
-const TABS = [
-  { key: 'skincare' as Tab, label: 'Skincare', icon: '🧴' },
-  { key: 'tanremoval' as Tab, label: 'Tan', icon: '☀️' },
-  { key: 'hair' as Tab, label: 'Hair', icon: '🌿' },
-  { key: 'bodycare' as Tab, label: 'Body', icon: '🧼' },
-  { key: 'looksmax' as Tab, label: 'Looksmax', icon: '⭐' },
+const TABS: SubTabItem[] = [
+  { key: 'skincare', label: 'Skincare', icon: Sparkles },
+  { key: 'tanremoval', label: 'Tan', icon: Sun },
+  { key: 'hair', label: 'Hair', icon: Scissors },
+  { key: 'bodycare', label: 'Body', icon: Shield },
+  { key: 'looksmax', label: 'Looksmax', icon: Star },
 ];
 
 // ─── Skincare Step Detail Modal ────────────────────────────────────────────────
@@ -1019,7 +1019,7 @@ export default function AppearanceScreen() {
     <ScreenContainer>
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Appearance ✨</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Appearance</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>Skincare · Tan · Hair · Body · Looksmax</Text>
         </View>
 

@@ -4,8 +4,14 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/use-colors';
 import { Tap } from '@/lib/motion';
 
+export interface SubTabItem {
+  key: string;
+  label: string;
+  icon?: React.ComponentType<{ size: number; color: string; strokeWidth?: number }> | string;
+}
+
 interface SubTabBarProps {
-  tabs: { key: string; label: string; icon: string }[];
+  tabs: SubTabItem[];
   activeTab: string;
   onTabChange: (key: string) => void;
 }
@@ -29,6 +35,7 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
+          const Icon = typeof tab.icon !== 'string' ? tab.icon : null;
           return (
             <Tap
               key={tab.key}
@@ -46,7 +53,11 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
                 borderColor: isActive ? colors.primary : colors.border,
               }}
             >
-              <Text style={{ fontSize: 13 }}>{tab.icon}</Text>
+              {Icon ? (
+                <Icon size={14} color={isActive ? '#FFFFFF' : colors.muted} strokeWidth={isActive ? 2.4 : 2} />
+              ) : tab.icon ? (
+                <Text style={{ fontSize: 13 }}>{tab.icon as string}</Text>
+              ) : null}
               <Text
                 style={{
                   fontSize: 12,

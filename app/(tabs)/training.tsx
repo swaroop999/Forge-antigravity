@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Check } from 'lucide-react-native';
+import { Check, Dumbbell, Calendar, BookOpen, TrendingUp, Activity, Star } from 'lucide-react-native';
 import {
   ScrollView, View, Text, Pressable, TextInput, Alert, Modal,
   RefreshControl, FlatList, Image,
@@ -8,7 +8,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
-import { SubTabBar } from '@/components/sub-tab-bar';
+import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, NavRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
@@ -16,13 +16,13 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'workout' | 'program' | 'library' | 'progress' | 'posture' | 'priority';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'workout', label: "Today", icon: '💪' },
-  { key: 'program', label: 'Program', icon: '📋' },
-  { key: 'library', label: 'Library', icon: '📚' },
-  { key: 'progress', label: 'Progress', icon: '📈' },
-  { key: 'posture', label: 'Posture', icon: '🧘' },
-  { key: 'priority', label: 'Priority', icon: '⭐' },
+const TABS: SubTabItem[] = [
+  { key: 'workout', label: "Today", icon: Dumbbell },
+  { key: 'program', label: 'Program', icon: Calendar },
+  { key: 'library', label: 'Library', icon: BookOpen },
+  { key: 'progress', label: 'Progress', icon: TrendingUp },
+  { key: 'posture', label: 'Posture', icon: Activity },
+  { key: 'priority', label: 'Priority', icon: Star },
 ];
 
 // ─── Animated Exercise Visual ─────────────────────────────────────────────────
@@ -971,7 +971,7 @@ export default function TrainingScreen() {
       <View style={{ flex: 1 }}>
         {/* Header */}
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Training 💪</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Training</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>Phase {phase} · {dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1)}</Text>
         </View>
 

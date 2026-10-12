@@ -1,20 +1,20 @@
 import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check } from 'lucide-react-native';
+import { Check, Utensils, Pill, Droplets } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
-import { SubTabBar } from '@/components/sub-tab-bar';
+import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'meals' | 'supplements' | 'water';
-const TABS = [
-  { key: 'meals' as Tab, label: 'Meals', icon: '🍽️' },
-  { key: 'supplements' as Tab, label: 'Supplements', icon: '💊' },
-  { key: 'water' as Tab, label: 'Water', icon: '💧' },
+const TABS: SubTabItem[] = [
+  { key: 'meals', label: 'Meals', icon: Utensils },
+  { key: 'supplements', label: 'Supplements', icon: Pill },
+  { key: 'water', label: 'Water', icon: Droplets },
 ];
 
 // ─── Today's Meals ─────────────────────────────────────────────────────────────
@@ -351,7 +351,7 @@ export default function NutritionScreen() {
     <ScreenContainer>
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Nutrition 🍽️</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Nutrition</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>2,600–2,800 kcal · 90–110g protein</Text>
         </View>
 

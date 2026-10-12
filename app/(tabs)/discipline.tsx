@@ -2,10 +2,10 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, Alert, Image, Modal, ActivityIndicator } from "react-native";
-import { Camera, Image as ImageIcon, Trash2, X, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Check } from 'lucide-react-native';
+import { Camera, Image as ImageIcon, Trash2, X, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Check, Brain, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
-import { SubTabBar } from '@/components/sub-tab-bar';
+import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DisciplineRepo, NavRepo, PhotoRepo, type ProgressPhoto } from '@/lib/db/database';
 import { JournalSupabaseService } from '@/lib/supabase';
@@ -13,10 +13,10 @@ import { KNOWLEDGE_ARTICLES } from '@/lib/db/seeds';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'dopamine' | 'journal' | 'knowledge';
-const TABS = [
-  { key: 'dopamine' as Tab, label: 'Dopamine', icon: '🧠' },
-  { key: 'journal' as Tab, label: 'Journal', icon: '📔' },
-  { key: 'knowledge' as Tab, label: 'Knowledge', icon: '📚' },
+const TABS: SubTabItem[] = [
+  { key: 'dopamine', label: 'Dopamine', icon: Brain },
+  { key: 'journal', label: 'Journal', icon: BookOpen },
+  { key: 'knowledge', label: 'Knowledge', icon: GraduationCap },
 ];
 
 // ─── Dopamine Reset ────────────────────────────────────────────────────────────
@@ -1228,7 +1228,7 @@ export default function DisciplineScreen() {
     <ScreenContainer>
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Discipline 🧠</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Discipline</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>Mindset · Reflection · Learning</Text>
         </View>
 
