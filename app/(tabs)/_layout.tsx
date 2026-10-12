@@ -1,9 +1,12 @@
 import { Tabs, router } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Animated, Modal, ScrollView, Keyboard } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Alert, Modal, ScrollView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/use-colors';
 import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { motionSpring } from '@/lib/motion';
 
 interface TabIconProps {
   IconComponent: any;
@@ -13,38 +16,32 @@ interface TabIconProps {
 
 function TabIcon({ IconComponent, label, focused }: TabIconProps) {
   const colors = useColors();
-  const scale = useRef(new Animated.Value(focused ? 1.1 : 1)).current;
 
-  useEffect(() => {
-    Animated.spring(scale, {
-      toValue: focused ? 1.15 : 1,
-      useNativeDriver: true,
-      friction: 5,
-    }).start();
-  }, [focused]);
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(focused ? 1.12 : 1, motionSpring.smooth) }],
+  }));
 
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4, minWidth: 54 }}>
-      <Animated.View style={{ transform: [{ scale }] }}>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 6, minWidth: 54 }}>
+      <Animated.View style={iconAnimatedStyle}>
         <IconComponent 
-          size={focused ? 24 : 22} 
+          size={focused ? 23 : 21} 
           color={focused ? colors.primary : colors.muted} 
           strokeWidth={focused ? 2.5 : 2} 
         />
       </Animated.View>
-      {focused && (
-        <Text
-          style={{
-            fontSize: 9.5,
-            fontWeight: '700',
-            color: colors.primary,
-            textAlign: 'center',
-            marginTop: 4,
-          }}
-        >
-          {label}
-        </Text>
-      )}
+      <Text
+        style={{
+          fontSize: 9.5,
+          fontWeight: focused ? '800' : '600',
+          color: focused ? colors.primary : colors.muted,
+          textAlign: 'center',
+          marginTop: 3,
+          opacity: focused ? 1 : 0.65,
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }

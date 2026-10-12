@@ -12,6 +12,7 @@ import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, NavRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'workout' | 'program' | 'library' | 'progress' | 'posture' | 'priority';
 
@@ -978,14 +979,14 @@ export default function TrainingScreen() {
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
         {/* Content */}
-        <View style={{ flex: 1 }}>
+        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
           {activeTab === 'workout' && <TodaysWorkout phase={phase} dayOfWeek={dayOfWeek} />}
           {activeTab === 'program' && <ProgramOverview phase={phase} />}
           {activeTab === 'library' && <ExerciseLibrary />}
           {activeTab === 'progress' && <TrainingProgress />}
           {activeTab === 'posture' && <PostureScreen />}
           {activeTab === 'priority' && <PriorityMovements />}
-        </View>
+        </Animated.View>
       </View>
     </ScreenContainer>
   );

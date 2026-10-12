@@ -8,6 +8,7 @@ import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'meals' | 'supplements' | 'water';
 const TABS = [
@@ -356,11 +357,11 @@ export default function NutritionScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <View style={{ flex: 1 }}>
+        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
           {activeTab === 'meals' && <TodaysMeals />}
           {activeTab === 'supplements' && <SupplementsScreen />}
           {activeTab === 'water' && <WaterTracker />}
-        </View>
+        </Animated.View>
       </View>
     </ScreenContainer>
   );

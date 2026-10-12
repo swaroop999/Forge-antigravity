@@ -10,6 +10,7 @@ import { useColors } from '@/hooks/use-colors';
 import { DisciplineRepo, NavRepo, PhotoRepo, type ProgressPhoto } from '@/lib/db/database';
 import { JournalSupabaseService } from '@/lib/supabase';
 import { KNOWLEDGE_ARTICLES } from '@/lib/db/seeds';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'dopamine' | 'journal' | 'knowledge';
 const TABS = [
@@ -1233,11 +1234,11 @@ export default function DisciplineScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <View style={{ flex: 1 }}>
+        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
           {activeTab === 'dopamine' && <DopamineResetScreen />}
           {activeTab === 'journal' && <JournalScreen />}
           {activeTab === 'knowledge' && <KnowledgeScreen />}
-        </View>
+        </Animated.View>
       </View>
     </ScreenContainer>
   );

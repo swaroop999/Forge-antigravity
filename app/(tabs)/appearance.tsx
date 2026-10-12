@@ -9,6 +9,7 @@ import { SubTabBar } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, AppearanceRepo, NavRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION, type SkincareStep } from '@/lib/db/seeds';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
 const TABS = [
@@ -1024,13 +1025,13 @@ export default function AppearanceScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <View style={{ flex: 1 }}>
+        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
           {activeTab === 'skincare' && <SkincareScreen />}
           {activeTab === 'tanremoval' && <TanRemovalScreen />}
           {activeTab === 'hair' && <HairCareScreen />}
           {activeTab === 'bodycare' && <BodyCareScreen />}
           {activeTab === 'looksmax' && <LooksmaxScreen />}
-        </View>
+        </Animated.View>
       </View>
     </ScreenContainer>
   );
