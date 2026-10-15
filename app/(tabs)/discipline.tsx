@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, Alert, Image, Modal, ActivityIndicator } from "react-native";
@@ -231,7 +230,6 @@ function JournalWriteView({
       if (!result.canceled && result.assets?.[0]?.uri) {
         setPhotos(prev => [...prev, result.assets[0].uri]);
         setSaved(false);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (e: any) {
       console.warn('Camera error:', e);
@@ -255,7 +253,6 @@ function JournalWriteView({
         const newUris = result.assets.map(a => a.uri).filter(Boolean);
         setPhotos(prev => [...prev, ...newUris]);
         setSaved(false);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (e: any) {
       console.warn('Photo picker error:', e);
@@ -272,7 +269,6 @@ function JournalWriteView({
         onPress: () => {
           setPhotos(prev => prev.filter((_, i) => i !== index));
           setSaved(false);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         },
       },
     ]);
@@ -289,7 +285,6 @@ function JournalWriteView({
           setEntry('');
           setPhotos([]);
           setSaved(false);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onSaved();
           Alert.alert('Deleted', 'Entry removed successfully.');
         },
@@ -321,7 +316,6 @@ function JournalWriteView({
       await DisciplineRepo.setJournalDay(date, entry, uploadedPhotos);
       setPhotos(uploadedPhotos);
       setSaved(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onSaved();
     } catch (e) {
       Alert.alert('Error', 'Failed to save journal reflection.');
@@ -618,7 +612,6 @@ function JournalCalendarView({
     } else {
       setViewMonth(m => m - 1);
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const nextMonth = () => {
@@ -628,7 +621,6 @@ function JournalCalendarView({
     } else {
       setViewMonth(m => m + 1);
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const jumpToToday = () => {
@@ -636,7 +628,6 @@ function JournalCalendarView({
     setViewYear(now.getFullYear());
     setViewMonth(now.getMonth());
     onSelectDate(today);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const monthTitle = new Date(viewYear, viewMonth, 1).toLocaleDateString('en-US', {
@@ -669,7 +660,6 @@ function JournalCalendarView({
         style: 'destructive',
         onPress: async () => {
           await DisciplineRepo.deleteJournalPhoto(selectedDate, photoUrl);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           loadSelectedDay(selectedDate);
           loadEntryMap();
         },
@@ -685,7 +675,6 @@ function JournalCalendarView({
         style: 'destructive',
         onPress: async () => {
           await DisciplineRepo.deleteJournalReflectionOnly(selectedDate);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           loadSelectedDay(selectedDate);
           loadEntryMap();
         },
@@ -701,7 +690,6 @@ function JournalCalendarView({
         style: 'destructive',
         onPress: async () => {
           await DisciplineRepo.deleteJournalDay(selectedDate);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           loadSelectedDay(selectedDate);
           loadEntryMap();
         },
@@ -792,10 +780,7 @@ function JournalCalendarView({
             return (
               <Pressable
                 key={dayStr}
-                onPress={() => {
-                  onSelectDate(dayStr);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
+                onPress={() => onSelectDate(dayStr)}
                 style={({ pressed }) => ({
                   width: '14.28%', height: 46,
                   alignItems: 'center', justifyContent: 'center',

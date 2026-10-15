@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Info, Sparkles, Shield, Sun, Moon, Scissors, Star } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, Modal } from "react-native";
@@ -184,7 +183,6 @@ function SkincareScreen() {
   }, []);
 
   const toggleAM = async (step: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...amDone, [step]: !amDone[step] };
     setAmDone(n);
     await AppearanceRepo.setSkincareAM(today, n);
@@ -196,7 +194,6 @@ function SkincareScreen() {
   };
 
   const togglePM = async (step: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...pmDone, [step]: !pmDone[step] };
     setPmDone(n);
     await AppearanceRepo.setSkincarePM(today, n);
@@ -216,14 +213,12 @@ function SkincareScreen() {
   }, []);
 
   const toggleArchivePatchProtocol = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const next = !patchProtocolArchived;
     setPatchProtocolArchived(next);
     AsyncStorage.setItem('patch_protocol_archived', next ? 'true' : 'false').catch(() => {});
   };
 
   const openStepInfo = (step: SkincareStep) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedStep(step);
     setInfoModalVisible(true);
   };
@@ -620,7 +615,7 @@ function HairCareScreen() {
         
         {/* Daily 4-Min Scalp Massage */}
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setMassageDone(!massageDone); }}
+          onPress={() => setMassageDone(!massageDone)}
           style={({ pressed }) => ({
             flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 10,
             backgroundColor: massageDone ? colors.success + '15' : colors.background,
@@ -648,7 +643,7 @@ function HairCareScreen() {
 
         {/* Rosemary Oil */}
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setOilDone(!oilDone); }}
+          onPress={() => setOilDone(!oilDone)}
           style={({ pressed }) => ({
             flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 10,
             backgroundColor: oilDone ? colors.success + '15' : colors.background,
@@ -676,7 +671,7 @@ function HairCareScreen() {
 
         {/* 0.5mm Weekly Dermastamping */}
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setDermastampDone(!dermastampDone); }}
+          onPress={() => setDermastampDone(!dermastampDone)}
           style={({ pressed }) => ({
             flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12,
             backgroundColor: dermastampDone ? colors.success + '15' : colors.background,
@@ -814,7 +809,6 @@ function LooksmaxScreen() {
   }, [today]);
 
   const toggleAction = (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setActionsDone(prev => {
       const next = { ...prev, [key]: !prev[key] };
       AsyncStorage.setItem(`looksmax_actions_${today}`, JSON.stringify(next)).catch(() => {});

@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, Dumbbell, Calendar, BookOpen, TrendingUp, Activity, Star } from 'lucide-react-native';
 import {
@@ -263,7 +262,6 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   };
 
   const completeSet = (exerciseId: string, restSecs: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSets(prev => {
       const ex = prev[exerciseId] || { done: 0, weights: [] };
       const newSets = { ...prev, [exerciseId]: { ...ex, done: ex.done + 1 } };
@@ -278,7 +276,6 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   const undoLastSet = () => {
     const targetId = lastCompletedExercise;
     if (!targetId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSets(prev => {
       const ex = prev[targetId];
       if (!ex || ex.done <= 0) return prev;
@@ -292,7 +289,6 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   };
 
   const undoSetForExercise = (exerciseId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSets(prev => {
       const ex = prev[exerciseId];
       if (!ex || ex.done <= 0) return prev;
@@ -306,7 +302,6 @@ function TodaysWorkout({ phase, dayOfWeek }: { phase: number; dayOfWeek: string 
   };
 
   const saveWorkout = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const log: WorkoutLog = {
       id: today, date: today, phase,
       dayType: workout?.type || '', warmupDone: true,

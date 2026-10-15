@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Utensils, Pill, Droplets } from 'lucide-react-native';
 import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
@@ -37,7 +36,6 @@ function TodaysMeals() {
   }, []);
 
   const toggleMeal = async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newDone = { ...mealsDone, [id]: !mealsDone[id] };
     setMealsDone(newDone);
     let log = await DailyLogRepo.getForDate(today);
@@ -179,7 +177,6 @@ function SupplementsScreen() {
   }, []);
 
   const toggle = async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const n = { ...checked, [id]: !checked[id] };
     setChecked(n);
     const today = new Date().toISOString().split('T')[0];

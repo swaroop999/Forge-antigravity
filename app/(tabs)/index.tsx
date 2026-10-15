@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Dimensions, RefreshControl } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import {
   Activity, Flame, Droplets, Dumbbell, Settings, Check, ChevronRight,
-  Plus, Sparkles, Bot, Calendar, ArrowUpRight, ShieldCheck, Trophy
+  Plus, Sparkles, Bot, Calendar, ArrowUpRight, ShieldCheck, Quote, RotateCw
 } from "lucide-react-native";
 import { NavRepo } from '@/lib/db/database';
 import { router } from 'expo-router';
@@ -12,12 +11,12 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  AppRepo, DailyLogRepo, ProfileRepo, HabitRepo, WorkoutRepo, MilestoneRepo,
+  AppRepo, DailyLogRepo, ProfileRepo, HabitRepo, WorkoutRepo,
   type DailyLog, type UserProfile,
 } from '@/lib/db/database';
 import {
-  QUOTES, NAVAL_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
-  DEFAULT_MILESTONES, PM_ACTIVES_ROTATION,
+  QUOTES, NAVAL_QUOTES, WISDOM_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
+  PM_ACTIVES_ROTATION,
 } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
 
@@ -101,13 +100,13 @@ function ProgressRing({
       </Svg>
 
       <View style={{ alignItems: 'center' }}>
-        <Text style={{ fontSize: 36, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 }}>
+        <Text style={{ fontSize: 28, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 }}>
           {Math.round(percentage)}%
         </Text>
-        <Text style={{ fontSize: 13, fontWeight: '800', color: color, marginTop: 1 }}>
+        <Text style={{ fontSize: 11.5, fontWeight: '800', color: color, marginTop: 1 }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 11, fontWeight: '600', color: colors.muted, marginTop: 2 }}>
+        <Text style={{ fontSize: 10, fontWeight: '600', color: colors.muted, marginTop: 1 }}>
           {sublabel}
         </Text>
       </View>
@@ -328,15 +327,12 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [log, setLog] = useState<DailyLog | null>(null);
-  const [wisdomSource, setWisdomSource] = useState<'forge' | 'naval'>('forge');
-  const [forgeIndex, setForgeIndex] = useState(0);
-  const [navalIndex, setNavalIndex] = useState(0);
+  const [quoteIndex, setQuoteIndex] = useState(0);
   const [dayNumber, setDayNumber] = useState(1);
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [scheduleItems, setScheduleItems] = useState<any[]>([]);
   const [completedItems, setCompletedItems] = useState<Record<string, boolean>>({});
   const [weeklyData, setWeeklyData] = useState<number[]>([]);
-  const [milestones, setMilestones] = useState<typeof DEFAULT_MILESTONES>([]);
 
   const load = useCallback(async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -366,23 +362,13 @@ export default function DashboardScreen() {
       setCompletedItems(map);
     } catch {}
 
-    // Random quote indices
-    setForgeIndex(Math.floor(Math.random() * QUOTES.length));
-    setNavalIndex(Math.floor(Math.random() * NAVAL_QUOTES.length));
+    // Random quote index from diverse multi-source feed
+    setQuoteIndex(Math.floor(Math.random() * WISDOM_QUOTES.length));
 
     // Weekly data
     const logs7 = await DailyLogRepo.getLast7Days();
     const pcts = logs7.map(l2 => l2.totalTasksCount > 0 ? Math.round((l2.completedTasksCount / l2.totalTasksCount) * 100) : 0);
     setWeeklyData(pcts.reverse());
-
-    // Milestones
-    const msList = await MilestoneRepo.getAll();
-    if (msList.length > 0) setMilestones(msList);
-    else {
-      const ms = DEFAULT_MILESTONES.map(m => ({ ...m, completed: false }));
-      setMilestones(ms);
-      await MilestoneRepo.save(ms);
-    }
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -394,18 +380,12 @@ export default function DashboardScreen() {
   }, [load]);
 
   const nextQuote = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (wisdomSource === 'naval') {
-      setNavalIndex((prev) => (prev + 1) % NAVAL_QUOTES.length);
-    } else {
-      setForgeIndex((prev) => (prev + 1) % QUOTES.length);
-    }
+    setQuoteIndex((prev) => (prev + 1) % WISDOM_QUOTES.length);
   };
 
-  const currentQuote = wisdomSource === 'naval' ? NAVAL_QUOTES[navalIndex] : QUOTES[forgeIndex];
+  const currentWisdom = WISDOM_QUOTES[quoteIndex] || WISDOM_QUOTES[0];
 
   const toggleScheduleItem = useCallback(async (item: any) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const key = item.time + item.task;
     const newCompleted = { ...completedItems, [key]: !completedItems[key] };
     setCompletedItems(newCompleted);
@@ -426,7 +406,6 @@ export default function DashboardScreen() {
   }, [completedItems, scheduleItems]);
 
   const incrementWater = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const current = log?.waterGlasses || 0;
     const newCount = current + 1;
     const today = new Date().toISOString().split('T')[0];
@@ -501,9 +480,6 @@ export default function DashboardScreen() {
     router.push(route.tabPath as any);
   };
 
-  const phaseMs = DEFAULT_MILESTONES.filter(m => m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365));
-  const doneMs = milestones.filter(m => (m as any).completed && m.days === (phase === 1 ? 30 : phase === 2 ? 90 : 365)).length;
-
   return (
     <ScreenContainer>
       <ScrollView
@@ -564,45 +540,45 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── 🎯 Today's Hero Progress Card ─────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
           <View style={{
             backgroundColor: colors.surface,
-            borderRadius: 26,
-            padding: 20,
+            borderRadius: 24,
+            padding: 16,
             borderWidth: 1,
             borderColor: colors.border,
             alignItems: 'center',
           }}>
             {/* Card Header Row */}
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <View>
-                <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.muted, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.muted, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   Daily Performance
                 </Text>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground, marginTop: 1 }}>
+                <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginTop: 1 }}>
                   {dayName} Protocol
                 </Text>
               </View>
 
               <View style={{
                 backgroundColor: completionPct >= 80 ? colors.success + '20' : colors.primary + '18',
-                borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
+                borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3,
                 borderWidth: 1, borderColor: completionPct >= 80 ? colors.success + '40' : colors.primary + '35',
               }}>
                 <Text style={{
                   color: completionPct >= 80 ? colors.success : colors.primary,
-                  fontSize: 10, fontWeight: '800',
+                  fontSize: 9.5, fontWeight: '800',
                 }}>
                   {completionPct >= 100 ? 'COMPLETED' : completionPct >= 60 ? 'ON TRACK' : 'IN PROGRESS'}
                 </Text>
               </View>
             </View>
 
-            {/* Center Glowing Progress Ring */}
+            {/* Center Glowing Progress Ring (scaled down by 20%) */}
             <ProgressRing
               percentage={completionPct}
-              size={185}
-              strokeWidth={15}
+              size={148}
+              strokeWidth={12}
               color={colors.primary}
               label="Forge Score"
               sublabel={`${completedCount} of ${totalTasks} tasks`}
@@ -611,25 +587,25 @@ export default function DashboardScreen() {
             {/* Bottom 3 Pillars */}
             <View style={{
               width: '100%', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-              marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border + '60',
+              marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: colors.border + '60',
             }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600' }}>Tasks</Text>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.foreground, marginTop: 2 }}>
+                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Tasks</Text>
+                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.foreground, marginTop: 1 }}>
                   {completedCount}/{totalTasks}
                 </Text>
               </View>
-              <View style={{ width: 1, height: 22, backgroundColor: colors.border }} />
+              <View style={{ width: 1, height: 20, backgroundColor: colors.border }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600' }}>Program</Text>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.primary, marginTop: 2 }}>
+                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Program</Text>
+                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.primary, marginTop: 1 }}>
                   {phaseLabels[phase]}
                 </Text>
               </View>
-              <View style={{ width: 1, height: 22, backgroundColor: colors.border }} />
+              <View style={{ width: 1, height: 20, backgroundColor: colors.border }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600' }}>Streak</Text>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: colors.warning, marginTop: 2 }}>
+                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Streak</Text>
+                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.warning, marginTop: 1 }}>
                   {dayNumber}d 🔥
                 </Text>
               </View>
@@ -667,30 +643,6 @@ export default function DashboardScreen() {
             />
 
             <MetricCard
-              icon={Droplets}
-              title="Hydration"
-              value={log?.waterGlasses || 0}
-              unit="/ 12 gl"
-              subtitle="Tap + to add glass"
-              accentColor="#38BDF8"
-              onPress={() => router.navigate('/(tabs)/nutrition')}
-              extraAction={
-                <Tap
-                  onPress={incrementWater}
-                  scaleTo={0.88}
-                  style={{
-                    width: 26, height: 26, borderRadius: 13,
-                    backgroundColor: '#38BDF822',
-                    borderWidth: 1, borderColor: '#38BDF8',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <Plus size={14} color="#38BDF8" />
-                </Tap>
-              }
-            />
-
-            <MetricCard
               icon={Dumbbell}
               title="Training"
               value={dayName}
@@ -698,6 +650,67 @@ export default function DashboardScreen() {
               accentColor="#A78BFA"
               onPress={() => router.navigate('/(tabs)/training')}
             />
+
+            {/* Daily Quote Card replacing Hydration */}
+            <Tap
+              onPress={nextQuote}
+              scaleTo={0.96}
+              style={{
+                width: (width - 40 - 10) / 2,
+                backgroundColor: colors.surface,
+                borderRadius: 20,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+                justifyContent: 'space-between',
+                minHeight: 122,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{
+                  width: 34, height: 34, borderRadius: 11,
+                  backgroundColor: '#F59E0B18',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Quote size={17} color="#F59E0B" />
+                </View>
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 3,
+                  backgroundColor: colors.background,
+                  borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3,
+                  borderWidth: 1, borderColor: colors.border,
+                }}>
+                  <RotateCw size={10} color={colors.primary} />
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: colors.primary }}>Next</Text>
+                </View>
+              </View>
+
+              <View style={{ marginTop: 8 }}>
+                <Text
+                  numberOfLines={3}
+                  style={{
+                    fontSize: 10.5,
+                    fontStyle: 'italic',
+                    color: colors.foreground,
+                    lineHeight: 14.5,
+                    fontWeight: '500',
+                  }}
+                >
+                  "{currentWisdom.quote}"
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: '800',
+                    color: '#F59E0B',
+                    marginTop: 4,
+                  }}
+                  numberOfLines={1}
+                >
+                  — {currentWisdom.author} {currentWisdom.handle ? `(${currentWisdom.handle})` : ''}
+                </Text>
+              </View>
+            </Tap>
           </View>
         </View>
 
@@ -760,98 +773,6 @@ export default function DashboardScreen() {
               />
             );
           })}
-        </View>
-
-        {/* ── 🏆 Milestones Card ─────────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground, marginBottom: 12 }}>
-            {phase === 1 ? '30' : phase === 2 ? '90' : '365'}-Day Milestones
-          </Text>
-
-          <View style={{
-            backgroundColor: colors.surface, borderRadius: 20, padding: 18,
-            borderWidth: 1, borderColor: colors.border,
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Trophy size={16} color={colors.primary} />
-                <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 13 }}>
-                  {doneMs} of {phaseMs.length} Achieved
-                </Text>
-              </View>
-              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '900' }}>
-                {phaseMs.length > 0 ? Math.round((doneMs / phaseMs.length) * 100) : 0}%
-              </Text>
-            </View>
-
-            <View style={{ height: 6, backgroundColor: colors.background, borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
-              <View style={{
-                height: '100%', backgroundColor: colors.primary, borderRadius: 3,
-                width: `${phaseMs.length > 0 ? (doneMs / phaseMs.length) * 100 : 0}%`,
-              }} />
-            </View>
-
-            <View style={{ marginTop: 12, gap: 4 }}>
-              {phaseMs.slice(0, 3).map((m, idx) => (
-                <Text key={idx} style={{ color: colors.muted, fontSize: 11.5, lineHeight: 18 }}>
-                  • {m.title}
-                </Text>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* ── 💡 Daily Wisdom Quote ─────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <View style={{
-            backgroundColor: colors.surface, borderRadius: 20, padding: 18,
-            borderWidth: 1, borderColor: colors.border,
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <Tap
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWisdomSource('forge'); }}
-                  scaleTo={0.94}
-                  style={{
-                    backgroundColor: wisdomSource === 'forge' ? colors.primary : colors.background,
-                    borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5,
-                    borderWidth: 1, borderColor: wisdomSource === 'forge' ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: wisdomSource === 'forge' ? '#FFFFFF' : colors.muted }}>⚡ Forge</Text>
-                </Tap>
-
-                <Tap
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWisdomSource('naval'); }}
-                  scaleTo={0.94}
-                  style={{
-                    backgroundColor: wisdomSource === 'naval' ? colors.primary : colors.background,
-                    borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5,
-                    borderWidth: 1, borderColor: wisdomSource === 'naval' ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: wisdomSource === 'naval' ? '#FFFFFF' : colors.muted }}>🧠 Naval</Text>
-                </Tap>
-              </View>
-
-              <Tap
-                onPress={nextQuote}
-                scaleTo={0.9}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4 }}
-              >
-                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '800' }}>Next ↻</Text>
-              </Tap>
-            </View>
-
-            <Text style={{ color: colors.foreground, fontSize: 13.5, fontStyle: 'italic', lineHeight: 21 }}>
-              "{currentQuote}"
-            </Text>
-            {wisdomSource === 'naval' && (
-              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700', marginTop: 8, textAlign: 'right' }}>
-                — Naval Ravikant
-              </Text>
-            )}
-          </View>
         </View>
 
         {/* ── 📈 Weekly Completion Bar Chart ─────────────────────── */}

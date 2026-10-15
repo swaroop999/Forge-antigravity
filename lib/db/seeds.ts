@@ -154,6 +154,61 @@ export const NAVAL_QUOTES = [
   "Free education is abundant, all over the internet. It's the desire to learn that's scarce."
 ];
 
+// ─── Curated Multi-Source Wisdom Feed (Twitter/Insta/Stoic Handles) ──────────
+
+export interface WisdomQuote {
+  quote: string;
+  author: string;
+  handle?: string;
+}
+
+export const WISDOM_QUOTES: WisdomQuote[] = [
+  // Naval Ravikant (@naval)
+  { quote: "A fit body, a calm mind, a house full of love. These things cannot be bought — they must be earned.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "Impatience with actions, patience with results.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "Earn with your mind, not your time.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "Desire is a contract you make with yourself to be unhappy until you get what you want.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "All real scorecards are internal. The closer you are to truth, the more peaceful you become.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "Specific knowledge is found by pursuing your genuine curiosity rather than what's hot right now.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "The compound interest on reading, exercising, and meditating is invisible day to day, but staggering over decades.", author: "Naval Ravikant", handle: "@naval" },
+  { quote: "Value your time. It is all you have. It's more important than your money, friends, or anything.", author: "Naval Ravikant", handle: "@naval" },
+
+  // James Clear (@JamesClear)
+  { quote: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear", handle: "@JamesClear" },
+  { quote: "Every action you take is a vote for the type of person you wish to become.", author: "James Clear", handle: "@JamesClear" },
+  { quote: "Small habits don't add up. They compound.", author: "James Clear", handle: "@JamesClear" },
+  { quote: "Missing once is an accident. Missing twice is the start of a new habit.", author: "James Clear", handle: "@JamesClear" },
+  { quote: "The most effective way to change your habits is to focus not on what you want to achieve, but on who you wish to become.", author: "James Clear", handle: "@JamesClear" },
+
+  // David Goggins (@davidgoggins)
+  { quote: "When your mind is telling you you're done, you're really only 40 percent done.", author: "David Goggins", handle: "@davidgoggins" },
+  { quote: "You have to build calluses on your brain just like how you build calluses on your hands.", author: "David Goggins", handle: "@davidgoggins" },
+  { quote: "Don't stop when you're tired. Stop when you're done.", author: "David Goggins", handle: "@davidgoggins" },
+  { quote: "The most important conversation you will ever have is the one you have with yourself.", author: "David Goggins", handle: "@davidgoggins" },
+
+  // Dr. Andrew Huberman (@hubermanlab)
+  { quote: "Behavior drives cognition. You cannot think your way into a new way of acting; you have to act your way into a new way of thinking.", author: "Andrew Huberman", handle: "@hubermanlab" },
+  { quote: "Viewing morning sunlight within 30-60 minutes of waking triggers the optimal circadian cortisol spike for peak energy and evening melatonin release.", author: "Andrew Huberman", handle: "@hubermanlab" },
+  { quote: "Friction is where neuroplasticity happens. When an effort feels hard, that is precisely the trigger that reorganizes your neural circuitry.", author: "Andrew Huberman", handle: "@hubermanlab" },
+  { quote: "Physical fitness is not vanity; it is the physiological substrate for mental resilience, focus, and longevity.", author: "Andrew Huberman", handle: "@hubermanlab" },
+
+  // Alex Hormozi (@AlexHormozi)
+  { quote: "You don't become confident by shouting affirmations in the mirror, but by having a stack of undeniable proof that you are who you say you are.", author: "Alex Hormozi", handle: "@AlexHormozi" },
+  { quote: "The longer you can delay gratification, the more successful you will become. Play games that have indefinite horizons.", author: "Alex Hormozi", handle: "@AlexHormozi" },
+  { quote: "Doing boring work consistently is the real superpower.", author: "Alex Hormozi", handle: "@AlexHormozi" },
+
+  // Marcus Aurelius & Stoics
+  { quote: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius", handle: "Meditations" },
+  { quote: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius", handle: "Meditations" },
+  { quote: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus", handle: "Discourses" },
+  { quote: "He who fears death will never do anything worthy of a man who is alive.", author: "Seneca", handle: "Letters from a Stoic" },
+
+  // Forge Protocol
+  { quote: "The standard is the standard. Win the morning, own the day, forge the future.", author: "Forge", handle: "Protocol" },
+  { quote: "Consistency beats intensity every single day. Show up even when you don't feel like it.", author: "Forge", handle: "Protocol" },
+  { quote: "Your future body, skin, and mind are being constructed by the choices you make in the next 60 seconds.", author: "Forge", handle: "Protocol" },
+];
+
 
 // ─── 93 Exercises ─────────────────────────────────────────────────────────────
 

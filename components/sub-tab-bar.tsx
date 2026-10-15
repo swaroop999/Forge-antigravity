@@ -1,6 +1,5 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/use-colors';
 import { Tap } from '@/lib/motion';
 
@@ -21,7 +20,6 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
 
   const handleSelect = (key: string) => {
     if (activeTab !== key) {
-      Haptics.selectionAsync();
       onTabChange(key);
     }
   };

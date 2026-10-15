@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 // ─── 🏃 Central Motion & Physics Presets ──────────────────────────────────────
 export const motionSpring = {
@@ -57,9 +56,6 @@ export function Tap({
       {...rest}
       onPressIn={(e) => {
         scale.value = withSpring(scaleTo, motionSpring.tactile);
-        if (haptic) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
