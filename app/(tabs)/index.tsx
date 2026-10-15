@@ -15,7 +15,7 @@ import {
   type DailyLog, type UserProfile,
 } from '@/lib/db/database';
 import {
-  QUOTES, NAVAL_QUOTES, WISDOM_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
+  QUOTES, NAVAL_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
   PM_ACTIVES_ROTATION,
 } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
@@ -327,7 +327,9 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [log, setLog] = useState<DailyLog | null>(null);
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [wisdomSource, setWisdomSource] = useState<'forge' | 'naval'>('forge');
+  const [forgeIndex, setForgeIndex] = useState(0);
+  const [navalIndex, setNavalIndex] = useState(0);
   const [dayNumber, setDayNumber] = useState(1);
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [scheduleItems, setScheduleItems] = useState<any[]>([]);
@@ -362,8 +364,9 @@ export default function DashboardScreen() {
       setCompletedItems(map);
     } catch {}
 
-    // Random quote index from diverse multi-source feed
-    setQuoteIndex(Math.floor(Math.random() * WISDOM_QUOTES.length));
+    // Random quote indices
+    setForgeIndex(Math.floor(Math.random() * QUOTES.length));
+    setNavalIndex(Math.floor(Math.random() * NAVAL_QUOTES.length));
 
     // Weekly data
     const logs7 = await DailyLogRepo.getLast7Days();
@@ -380,10 +383,14 @@ export default function DashboardScreen() {
   }, [load]);
 
   const nextQuote = () => {
-    setQuoteIndex((prev) => (prev + 1) % WISDOM_QUOTES.length);
+    if (wisdomSource === 'naval') {
+      setNavalIndex((prev) => (prev + 1) % NAVAL_QUOTES.length);
+    } else {
+      setForgeIndex((prev) => (prev + 1) % QUOTES.length);
+    }
   };
 
-  const currentWisdom = WISDOM_QUOTES[quoteIndex] || WISDOM_QUOTES[0];
+  const currentQuote = wisdomSource === 'naval' ? NAVAL_QUOTES[navalIndex] : QUOTES[forgeIndex];
 
   const toggleScheduleItem = useCallback(async (item: any) => {
     const key = item.time + item.task;
@@ -652,14 +659,12 @@ export default function DashboardScreen() {
             />
 
             {/* Daily Quote Card replacing Hydration */}
-            <Tap
-              onPress={nextQuote}
-              scaleTo={0.96}
+            <View
               style={{
                 width: (width - 40 - 10) / 2,
                 backgroundColor: colors.surface,
                 borderRadius: 20,
-                padding: 14,
+                padding: 13,
                 borderWidth: 1,
                 borderColor: colors.border,
                 justifyContent: 'space-between',
@@ -668,24 +673,72 @@ export default function DashboardScreen() {
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{
-                  width: 34, height: 34, borderRadius: 11,
-                  backgroundColor: '#F59E0B18',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Quote size={17} color="#F59E0B" />
-                </View>
-                <View style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 3,
+                  flexDirection: 'row',
                   backgroundColor: colors.background,
-                  borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3,
-                  borderWidth: 1, borderColor: colors.border,
+                  borderRadius: 10,
+                  padding: 2,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                 }}>
-                  <RotateCw size={10} color={colors.primary} />
-                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: colors.primary }}>Next</Text>
+                  <Tap
+                    onPress={() => setWisdomSource('forge')}
+                    scaleTo={0.92}
+                    style={{
+                      paddingHorizontal: 6,
+                      paddingVertical: 2.5,
+                      borderRadius: 7,
+                      backgroundColor: wisdomSource === 'forge' ? colors.primary : 'transparent',
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 9.5,
+                      fontWeight: '800',
+                      color: wisdomSource === 'forge' ? '#FFFFFF' : colors.muted,
+                    }}>
+                      Forge
+                    </Text>
+                  </Tap>
+                  <Tap
+                    onPress={() => setWisdomSource('naval')}
+                    scaleTo={0.92}
+                    style={{
+                      paddingHorizontal: 6,
+                      paddingVertical: 2.5,
+                      borderRadius: 7,
+                      backgroundColor: wisdomSource === 'naval' ? colors.primary : 'transparent',
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 9.5,
+                      fontWeight: '800',
+                      color: wisdomSource === 'naval' ? '#FFFFFF' : colors.muted,
+                    }}>
+                      Naval
+                    </Text>
+                  </Tap>
                 </View>
+
+                <Tap
+                  onPress={nextQuote}
+                  scaleTo={0.9}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 3,
+                    backgroundColor: colors.background,
+                    borderRadius: 9,
+                    paddingHorizontal: 6,
+                    paddingVertical: 3,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <RotateCw size={9} color={colors.primary} />
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: colors.primary }}>Next</Text>
+                </Tap>
               </View>
 
-              <View style={{ marginTop: 8 }}>
+              <Tap onPress={nextQuote} scaleTo={0.98} style={{ marginTop: 8 }}>
                 <Text
                   numberOfLines={3}
                   style={{
@@ -696,21 +749,21 @@ export default function DashboardScreen() {
                     fontWeight: '500',
                   }}
                 >
-                  "{currentWisdom.quote}"
+                  "{currentQuote}"
                 </Text>
                 <Text
                   style={{
                     fontSize: 9.5,
                     fontWeight: '800',
-                    color: '#F59E0B',
+                    color: colors.primary,
                     marginTop: 4,
                   }}
                   numberOfLines={1}
                 >
-                  — {currentWisdom.author} {currentWisdom.handle ? `(${currentWisdom.handle})` : ''}
+                  {wisdomSource === 'naval' ? '— Naval Ravikant' : '— Forge Protocol'}
                 </Text>
-              </View>
-            </Tap>
+              </Tap>
+            </View>
           </View>
         </View>
 
