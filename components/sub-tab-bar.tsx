@@ -25,11 +25,11 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
   };
 
   return (
-    <View style={{ paddingVertical: 6 }}>
+    <View style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border + '70' }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
@@ -42,25 +42,26 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
+                height: 34,
+                gap: 5,
                 backgroundColor: isActive ? colors.primary : colors.surface,
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
+                borderRadius: 10,
+                paddingHorizontal: 12,
                 borderWidth: 1,
                 borderColor: isActive ? colors.primary : colors.border,
               }}
             >
               {Icon ? (
-                <Icon size={14} color={isActive ? '#FFFFFF' : colors.muted} strokeWidth={isActive ? 2.4 : 2} />
+                <Icon size={13} color={isActive ? '#FFFFFF' : colors.muted} strokeWidth={isActive ? 2.4 : 2} />
               ) : tab.icon ? (
-                <Text style={{ fontSize: 13 }}>{tab.icon as string}</Text>
+                <Text style={{ fontSize: 12 }}>{tab.icon as string}</Text>
               ) : null}
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 11.5,
                   fontWeight: isActive ? '800' : '600',
-                  color: isActive ? '#FFFFFF' : colors.foreground,
+                  color: isActive ? '#FFFFFF' : colors.muted,
+                  letterSpacing: 0.1,
                 }}
               >
                 {tab.label}

@@ -321,16 +321,10 @@ export const WORKOUT_PROGRAMS: WorkoutDay[] = [
       { exerciseId: 'side-plank', sets: 2, reps: '20 sec each', restSeconds: 45, notes: 'Build duration weekly' },
     ]
   },
-  // PHASE 1 - Wednesday: REST
+  // PHASE 1 - Wednesday (Moved from Thursday)
   {
-    phase: 1, dayOfWeek: 'wednesday', type: 'REST DAY',
-    description: '20 min walk + full posture routine + daily priority movements',
-    exercises: []
-  },
-  // PHASE 1 - Thursday
-  {
-    phase: 1, dayOfWeek: 'thursday', type: 'Upper Pull',
-    description: 'Back, Biceps — 30 min max',
+    phase: 1, dayOfWeek: 'wednesday', type: 'Upper Pull',
+    description: 'Back Width, Biceps, Rear Delts — 30 min max',
     exercises: [
       { exerciseId: 'dead-hangs', sets: 3, reps: 'Max time', restSeconds: 60, notes: 'Track seconds, beat last week' },
       { exerciseId: 'negative-pullup', sets: 3, reps: '5', restSeconds: 90, notes: 'Jump up, lower 5 sec slowly' },
@@ -340,23 +334,36 @@ export const WORKOUT_PROGRAMS: WorkoutDay[] = [
       { exerciseId: 'face-pulls', sets: 3, reps: '15', restSeconds: 45, notes: 'Posture correction + rear delts' },
     ]
   },
-  // PHASE 1 - Friday
+  // PHASE 1 - Thursday (Moved from Friday)
   {
-    phase: 1, dayOfWeek: 'friday', type: 'Full Body + Core',
-    description: 'Full body strength — 30 min max',
+    phase: 1, dayOfWeek: 'thursday', type: 'Full Body + Core',
+    description: 'Full body compound strength — 30 min max',
     exercises: [
       { exerciseId: 'standard-pushup', sets: 3, reps: 'Max', restSeconds: 60, notes: 'Track total reps weekly' },
       { exerciseId: 'bw-squats', sets: 3, reps: '20', restSeconds: 60, notes: 'Add tempo (3 sec down)' },
       { exerciseId: 'inverted-row', sets: 3, reps: '10', restSeconds: 60, notes: 'Pull chest to table edge' },
       { exerciseId: 'reverse-lunge', sets: 3, reps: '10 each', restSeconds: 60, notes: 'Step back, not forward' },
-      { exerciseId: 'hollow-body', sets: 3, reps: '20 sec', restSeconds: 45, notes: 'Core' },
+      { exerciseId: 'hollow-body', sets: 3, reps: '20 sec', restSeconds: 45, notes: 'Core compression' },
       { exerciseId: 'superman', sets: 3, reps: '20 sec', restSeconds: 45, notes: 'Lower back + posture' },
+    ]
+  },
+  // PHASE 1 - Friday (Upper Hypertrophy & Arms)
+  {
+    phase: 1, dayOfWeek: 'friday', type: 'Upper Hypertrophy',
+    description: 'Shoulders, Arms, Upper Chest & V-Taper — 30 min max',
+    exercises: [
+      { exerciseId: 'incline-pushup', sets: 3, reps: '12-15', restSeconds: 60, notes: 'Controlled chest stretch' },
+      { exerciseId: 'chin-up', sets: 3, reps: '5-8', restSeconds: 75, notes: 'Use negative or band assist if needed' },
+      { exerciseId: 'lateral-raise', sets: 4, reps: '15', restSeconds: 45, notes: 'Extra side-delt volume for shoulder width' },
+      { exerciseId: 'hammer-curls', sets: 3, reps: '12', restSeconds: 45, notes: 'Forearm + brachialis thickness' },
+      { exerciseId: 'tricep-extension-bag', sets: 3, reps: '12', restSeconds: 45, notes: 'Long head tricep stretch' },
+      { exerciseId: 'bicycle-crunches', sets: 3, reps: '15 each', restSeconds: 45, notes: 'Obliques & core definition' },
     ]
   },
   // PHASE 1 - Saturday
   {
     phase: 1, dayOfWeek: 'saturday', type: 'Priority Movements',
-    description: '30 min focus on your specific weak points',
+    description: '30 min focus on your specific weak points (Delts, Neck, Traps)',
     exercises: [
       { exerciseId: 'priority-lateral-raise', sets: 4, reps: '15', restSeconds: 45, notes: 'Width — your #1 visual weakness' },
       { exerciseId: 'neck-curls', sets: 3, reps: '15', restSeconds: 45, notes: 'Thick neck = masculine presence' },
@@ -366,10 +373,10 @@ export const WORKOUT_PROGRAMS: WorkoutDay[] = [
       { exerciseId: 'dead-hangs', sets: 3, reps: 'Max time', restSeconds: 60, notes: 'Spinal decompression + grip' },
     ]
   },
-  // PHASE 1 - Sunday
+  // PHASE 1 - Sunday: REST DAY (Moved from Wednesday to Sunday)
   {
-    phase: 1, dayOfWeek: 'sunday', type: 'Full Rest',
-    description: 'Complete rest. No training. Walk if desired. Focus on recovery, skincare, weekly planning.',
+    phase: 1, dayOfWeek: 'sunday', type: 'REST DAY',
+    description: 'Full Rest & Recovery: 20 min walk + full posture routine + skincare reset & weekly planning',
     exercises: []
   },
 
@@ -404,7 +411,7 @@ export const WORKOUT_PROGRAMS: WorkoutDay[] = [
   },
   // PHASE 2 - Wednesday
   {
-    phase: 2, dayOfWeek: 'wednesday', type: 'Legs',
+    phase: 2, dayOfWeek: 'wednesday', type: 'Legs & Lower Body',
     description: 'Phase 2 Leg Day — 45 min',
     exercises: [
       { exerciseId: 'weighted-bulgarian', sets: 4, reps: '10 each', restSeconds: 90 },
@@ -458,8 +465,93 @@ export const WORKOUT_PROGRAMS: WorkoutDay[] = [
   },
   // PHASE 2 - Sunday
   {
-    phase: 2, dayOfWeek: 'sunday', type: 'Full Rest',
-    description: 'Complete rest. Recovery, skincare deep treatment, weekly planning.',
+    phase: 2, dayOfWeek: 'sunday', type: 'REST DAY',
+    description: 'Full Rest & Recovery: 20 min walk, posture routine, skincare deep treatment, weekly planning.',
+    exercises: []
+  },
+
+  // PHASE 3 - Monday
+  {
+    phase: 3, dayOfWeek: 'monday', type: 'Advanced Push (Strength + Delts)',
+    description: 'Phase 3 Heavy Push — 50 min',
+    exercises: [
+      { exerciseId: 'archer-pushup', sets: 4, reps: '8 each', restSeconds: 75 },
+      { exerciseId: 'handstand-pushup', sets: 4, reps: '6-10', restSeconds: 90 },
+      { exerciseId: 'weighted-pushup', sets: 4, reps: '12-15', restSeconds: 60 },
+      { exerciseId: 'priority-lateral-raise', sets: 5, reps: '15', restSeconds: 45 },
+      { exerciseId: 'tricep-dips-elevated', sets: 4, reps: '12-15', restSeconds: 60 },
+      { exerciseId: 'l-sit', sets: 3, reps: '20 sec', restSeconds: 45 },
+    ]
+  },
+  // PHASE 3 - Tuesday
+  {
+    phase: 3, dayOfWeek: 'tuesday', type: 'Advanced Pull (V-Taper Width)',
+    description: 'Phase 3 Heavy Pull — 50 min',
+    exercises: [
+      { exerciseId: 'wide-grip-pullup', sets: 4, reps: '8-10', restSeconds: 90 },
+      { exerciseId: 'archer-pullup', sets: 3, reps: '5 each', restSeconds: 90 },
+      { exerciseId: 'bent-over-row', sets: 4, reps: '12-15', restSeconds: 60 },
+      { exerciseId: 'priority-shrugs', sets: 4, reps: '15', restSeconds: 60 },
+      { exerciseId: 'bicep-curls-bag', sets: 4, reps: '12', restSeconds: 60 },
+      { exerciseId: 'face-pulls', sets: 4, reps: '20', restSeconds: 45 },
+    ]
+  },
+  // PHASE 3 - Wednesday
+  {
+    phase: 3, dayOfWeek: 'wednesday', type: 'Advanced Legs & Power',
+    description: 'Phase 3 Lower Body — 50 min',
+    exercises: [
+      { exerciseId: 'pistol-squat', sets: 4, reps: '6-8 each', restSeconds: 90 },
+      { exerciseId: 'weighted-bulgarian', sets: 4, reps: '12 each', restSeconds: 75 },
+      { exerciseId: 'hip-thrusts', sets: 4, reps: '15', restSeconds: 60 },
+      { exerciseId: 'jump-squats', sets: 3, reps: '15', restSeconds: 60 },
+      { exerciseId: 'single-calf-raise', sets: 4, reps: '20 each', restSeconds: 45 },
+      { exerciseId: 'hanging-leg-raises', sets: 4, reps: '12', restSeconds: 60 },
+    ]
+  },
+  // PHASE 3 - Thursday
+  {
+    phase: 3, dayOfWeek: 'thursday', type: 'Push Hypertrophy + Core',
+    description: 'Phase 3 Upper Volume — 45 min',
+    exercises: [
+      { exerciseId: 'decline-pushup', sets: 4, reps: '15', restSeconds: 60 },
+      { exerciseId: 'overhead-press-bag', sets: 4, reps: '12', restSeconds: 60 },
+      { exerciseId: 'priority-lateral-raise', sets: 5, reps: '15', restSeconds: 45 },
+      { exerciseId: 'diamond-pushup', sets: 4, reps: '12', restSeconds: 60 },
+      { exerciseId: 'ab-roller', sets: 4, reps: '12', restSeconds: 60 },
+    ]
+  },
+  // PHASE 3 - Friday
+  {
+    phase: 3, dayOfWeek: 'friday', type: 'Pull Hypertrophy + Posterior',
+    description: 'Phase 3 Back & Arms — 45 min',
+    exercises: [
+      { exerciseId: 'chin-up', sets: 4, reps: '8-12', restSeconds: 90 },
+      { exerciseId: 'inverted-row', sets: 4, reps: '15', restSeconds: 60 },
+      { exerciseId: 'rear-delt-flyes', sets: 4, reps: '15', restSeconds: 45 },
+      { exerciseId: 'hammer-curls', sets: 4, reps: '12', restSeconds: 45 },
+      { exerciseId: 'reverse-curls', sets: 3, reps: '15', restSeconds: 45 },
+      { exerciseId: 'hanging-leg-raises', sets: 3, reps: '12', restSeconds: 45 },
+    ]
+  },
+  // PHASE 3 - Saturday
+  {
+    phase: 3, dayOfWeek: 'saturday', type: 'Priority Aesthetic Specialization',
+    description: '35 min Side Delts, Neck, Traps & Decompression',
+    exercises: [
+      { exerciseId: 'priority-lateral-raise', sets: 5, reps: '15-20', restSeconds: 45 },
+      { exerciseId: 'neck-curls', sets: 4, reps: '20', restSeconds: 45 },
+      { exerciseId: 'neck-extensions', sets: 4, reps: '20', restSeconds: 45 },
+      { exerciseId: 'neck-side-flexion', sets: 3, reps: '15 each', restSeconds: 45 },
+      { exerciseId: 'priority-shrugs', sets: 4, reps: '15', restSeconds: 60 },
+      { exerciseId: 'band-pull-aparts', sets: 4, reps: '25', restSeconds: 30 },
+      { exerciseId: 'dead-hangs', sets: 4, reps: 'Max time', restSeconds: 60 },
+    ]
+  },
+  // PHASE 3 - Sunday
+  {
+    phase: 3, dayOfWeek: 'sunday', type: 'REST DAY',
+    description: 'Full Rest & Recovery: 20 min walk, posture routine, skincare deep treatment, weekly planning.',
     exercises: []
   },
 ];
@@ -847,7 +939,7 @@ export const SATURDAY_SCHEDULE: ScheduleItem[] = [
   { time: '8:00 AM', task: 'Wake + water', category: 'nutrition' },
   { time: '8:15 AM', task: 'Posture routine', category: 'training' },
   { time: '8:30 AM', task: 'Skincare AM Routine', category: 'skincare' },
-  { time: '9:00 AM', task: 'Breakfast + AM supplements (B12, Omega-3) + D3 60K sachet', category: 'nutrition' },
+  { time: '9:00 AM', task: 'Breakfast + AM supplements (B12, Omega-3)', category: 'nutrition' },
   { time: '10:00 AM', task: 'Priority Hypertrophy Focus (Side Delts, Neck, Traps)', category: 'training' },
   { time: '11:00 AM', task: 'Protein shake + shower', category: 'nutrition' },
   { time: '11:30 AM', task: 'Meal prep (2 hours)', category: 'nutrition' },
@@ -863,10 +955,10 @@ export const SATURDAY_SCHEDULE: ScheduleItem[] = [
 ];
 
 export const SUNDAY_SCHEDULE: ScheduleItem[] = [
-  { time: '8:00 AM', task: 'Wake + water', category: 'nutrition' },
-  { time: '8:15 AM', task: 'Posture routine', category: 'training' },
+  { time: '8:00 AM', task: 'Wake + water (Rest & Recovery Day)', category: 'nutrition' },
+  { time: '8:15 AM', task: 'Posture routine + Spinal decompression', category: 'training' },
   { time: '8:30 AM', task: 'Skincare AM Routine', category: 'skincare' },
-  { time: '9:00 AM', task: 'Breakfast + AM supplements (B12, Omega-3)', category: 'nutrition' },
+  { time: '9:00 AM', task: 'Breakfast + AM supplements (B12, Omega-3) + D3 60K sachet', category: 'nutrition' },
   { time: '10:00 AM', task: '0.5mm Hairline Dermastamp + Rosemary Oil', category: 'appearance' },
   { time: '10:45 AM', task: 'Multani Mitti + Rose Water Face Pack', category: 'skincare' },
   { time: '11:15 AM', task: 'Let pack dry (15-20 min) — reading/reflection', category: 'discipline' },
@@ -874,13 +966,14 @@ export const SUNDAY_SCHEDULE: ScheduleItem[] = [
   { time: '12:00 PM', task: 'Lunch + Zinc Picolinate (strictly after meal)', category: 'nutrition' },
   { time: '1:00 PM', task: 'Weekly review + Planning', category: 'discipline' },
   { time: '3:00 PM', task: 'Reading / Hobby', category: 'discipline' },
+  { time: '5:30 PM', task: '20 min active recovery walk outside', category: 'training' },
   { time: '6:00 PM', task: 'Evening snack', category: 'nutrition' },
   { time: '9:00 PM', task: 'Dinner with protein', category: 'nutrition' },
   { time: '9:30 PM', task: 'Skincare PM (Barrier Rest Night + Nivea Soft)', category: 'skincare' },
   { time: '10:00 PM', task: 'Journal', category: 'discipline' },
   { time: '10:30 PM', task: 'Nutrabay Magnesium Glycinate (1-2 tabs) + Turmeric milk', category: 'nutrition' },
   { time: '10:45 PM', task: 'Phone out', category: 'sleep' },
-  { time: '11:00 PM', task: 'Sleep', category: 'sleep' },
+  { time: '11:00 PM', task: 'Sleep (back-sleeping)', category: 'sleep' },
 ];
 
 // ─── Milestones ────────────────────────────────────────────────────────────────
@@ -894,8 +987,8 @@ export const DEFAULT_MILESTONES = [
   { id: 'm30-05', phase: 1, days: 30, title: 'Skincare AM + PM daily (30 days straight)' },
   { id: 'm30-06', phase: 1, days: 30, title: 'Adapalene 0.1% rotation established' },
   { id: 'm30-07', phase: 1, days: 30, title: 'Natural Hairline Protocol: Rosemary Oil + 0.5mm Dermastamping' },
-  { id: 'm30-08', phase: 1, days: 30, title: 'Working out 4x/week (4 consecutive weeks)' },
-  { id: 'm30-09', phase: 1, days: 30, title: 'Priority movements 5x/week' },
+  { id: 'm30-08', phase: 1, days: 30, title: 'Training Mon–Sat consistently (Sunday Rest Day)' },
+  { id: 'm30-09', phase: 1, days: 30, title: 'Priority movements 6x/week' },
 
   { id: 'm30-10', phase: 1, days: 30, title: 'Porn reduced to 1-2x/week' },
   { id: 'm30-11', phase: 1, days: 30, title: 'Phone out of bedroom (30 days straight)' },
@@ -914,7 +1007,7 @@ export const DEFAULT_MILESTONES = [
   { id: 'm90-06', phase: 2, days: 90, title: 'Lateral raises with 10kg+' },
   { id: 'm90-07', phase: 2, days: 90, title: 'Skin: acne 70% cleared, marks fading' },
   { id: 'm90-08', phase: 2, days: 90, title: 'Tan: 80%+ removed' },
-  { id: 'm90-09', phase: 2, days: 90, title: 'Hair: dandruff gone, fall reduced, Minoxidil consistent' },
+  { id: 'm90-09', phase: 2, days: 90, title: 'Hair: dandruff gone, fall reduced, Rosemary + Dermastamp consistent' },
   { id: 'm90-10', phase: 2, days: 90, title: 'Posture visibly improved (Day 1 vs Day 90 photo)' },
   { id: 'm90-11', phase: 2, days: 90, title: 'Morning routine established (60+ consecutive days)' },
   { id: 'm90-12', phase: 2, days: 90, title: 'Porn: 1x/week or less' },

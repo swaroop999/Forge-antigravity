@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  ScrollView, View, Text, Pressable, TextInput, FlatList,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard
+  View, Text, TextInput, FlatList,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '@/components/screen-container';
@@ -9,9 +9,10 @@ import { useColors } from '@/hooks/use-colors';
 import { geminiService } from '@/lib/services/gemini-service';
 import { AppRepo, ProfileRepo } from '@/lib/db/database';
 import { AIQuickPrompts } from '@/components/ai-quick-prompts';
-import { Send } from 'lucide-react-native';
+import { Send, Bot, Trash2, Sparkles, Settings } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import { router } from 'expo-router';
+import { Tap } from '@/lib/motion';
 
 interface ChatMessage {
   id: string;
@@ -20,8 +21,6 @@ interface ChatMessage {
   timestamp: number;
 }
 
-
-
 export default function AICoachScreen() {
   const colors = useColors();
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -29,13 +28,10 @@ export default function AICoachScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showKeySetup, setShowKeySetup] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => { loadApiKey(); }, []);
 
-  // Scroll to end when keyboard opens so input + latest message are visible
   useEffect(() => {
     const sub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
@@ -61,25 +57,6 @@ export default function AICoachScreen() {
     } catch (e) {}
   };
 
-  const saveApiKey = async () => {
-    if (!tempApiKey.trim()) { Alert.alert('Error', 'Please enter a valid API key'); return; }
-    try {
-      await AsyncStorage.setItem('gemini_api_key', tempApiKey);
-      setApiKey(tempApiKey);
-      setIsSetup(true);
-      setShowKeySetup(false);
-      setTempApiKey('');
-      const welcomeMsg: ChatMessage = {
-        id: Date.now().toString(), role: 'ai',
-        content: "Welcome! I'm your FORGE AI Coach 🔥\n\nI have full context of your 365-day transformation plan. I know your goals, your current phase, your struggles, and what you need to do today.\n\nAsk me anything — training form, what to eat, skincare doubts, or when you feel like giving up. I'm here 24/7.\n\nWhat do you need right now?",
-        timestamp: Date.now(),
-      };
-      const newMessages = [welcomeMsg];
-      setMessages(newMessages);
-      await AsyncStorage.setItem('ai_coach_chat_history', JSON.stringify(newMessages));
-    } catch (e) { Alert.alert('Error', 'Failed to save API key'); }
-  };
-
   const sendMessage = async (text?: string) => {
     const msgText = text || inputText;
     if (!msgText.trim() || !apiKey) return;
@@ -98,7 +75,6 @@ export default function AICoachScreen() {
         currentPhase: phase,
         recentMeals: [],
       };
-      // Build chat history for multi-turn context (last 10 messages)
       const historyForContext = messages.slice(-10).map(m => ({
         role: m.role === 'user' ? 'user' as const : 'model' as const,
         parts: [{ text: m.content }],
@@ -133,19 +109,31 @@ export default function AICoachScreen() {
     return (
       <ScreenContainer>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <Text style={{ fontSize: 64, marginBottom: 16 }}>🤖</Text>
-          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.foreground, textAlign: 'center', marginBottom: 16 }}>
-            API Key Required
+          <View style={{
+            width: 64, height: 64, borderRadius: 20,
+            backgroundColor: colors.primary + '18',
+            borderWidth: 1, borderColor: colors.primary + '38',
+            alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+          }}>
+            <Bot size={30} color={colors.primary} />
+          </View>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.foreground, textAlign: 'center', marginBottom: 8, letterSpacing: -0.3 }}>
+            Gemini API Key Required
           </Text>
-          <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 32 }}>
-            Please set your Gemini API Key in the Settings to use the AI Coach.
+          <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center', marginBottom: 24, lineHeight: 19 }}>
+            Configure your Gemini API Key in Settings to unlock 24/7 context-aware coaching across training, nutrition, and skincare.
           </Text>
-          <Pressable
+          <Tap
             onPress={() => router.push('/settings')}
-            style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 24 }}
+            scaleTo={0.96}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20,
+            }}
           >
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>Go to Settings</Text>
-          </Pressable>
+            <Settings size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Open Settings</Text>
+          </Tap>
         </View>
       </ScreenContainer>
     );
@@ -158,15 +146,42 @@ export default function AICoachScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Header */}
-        <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>FORGE AI Coach</Text>
-            <Text style={{ fontSize: 11, color: colors.success }}>● Online — Powered by Gemini 2.0</Text>
+        {/* Compact Header */}
+        <View style={{
+          paddingHorizontal: 18, paddingTop: 6, paddingBottom: 10,
+          borderBottomWidth: 1, borderBottomColor: colors.border,
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{
+              width: 34, height: 34, borderRadius: 10,
+              backgroundColor: colors.primary + '18',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Bot size={18} color={colors.primary} />
+            </View>
+            <View>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.foreground, letterSpacing: -0.3 }}>FORGE AI Coach</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success }} />
+                <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600' }}>Online · Full Protocol Context</Text>
+              </View>
+            </View>
           </View>
-          <Pressable onPress={clearHistory} style={{ padding: 8 }}>
-            <Text style={{ fontSize: 13, color: colors.muted }}>Clear</Text>
-          </Pressable>
+          {messages.length > 0 && (
+            <Tap
+              onPress={clearHistory}
+              scaleTo={0.92}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+                backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5,
+                borderWidth: 1, borderColor: colors.border,
+              }}
+            >
+              <Trash2 size={12} color={colors.muted} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted }}>Clear</Text>
+            </Tap>
+          )}
         </View>
 
         {/* Messages */}
@@ -180,38 +195,51 @@ export default function AICoachScreen() {
           keyboardDismissMode="interactive"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={() => (
-            <View style={{ flex: 1, alignItems: 'center', paddingTop: 40 }}>
-              <Text style={{ fontSize: 48, marginBottom: 16 }}>🔥</Text>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground, marginBottom: 8 }}>Ready to coach you</Text>
-              <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>Ask me anything about your plan, or use a quick prompt below.</Text>
+            <View style={{ flex: 1, alignItems: 'center', paddingTop: 36, paddingHorizontal: 16 }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: 15,
+                backgroundColor: colors.primary + '16',
+                alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+              }}>
+                <Sparkles size={22} color={colors.primary} />
+              </View>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground, marginBottom: 4 }}>
+                Ready to Optimize Your Day
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', lineHeight: 18 }}>
+                Ask about your Mon–Sat split, Sunday active recovery, macro adjustments, or skincare routine.
+              </Text>
             </View>
           )}
           renderItem={({ item }) => (
             <View style={{ marginBottom: 12, alignItems: item.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {item.role === 'ai' && (
-                <Text style={{ fontSize: 10, color: colors.muted, marginBottom: 4, fontWeight: '600' }}>🤖 FORGE AI</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                  <Bot size={11} color={colors.primary} />
+                  <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '700', letterSpacing: 0.4 }}>FORGE AI</Text>
+                </View>
               )}
               <View style={{
-                maxWidth: '82%',
+                maxWidth: '84%',
                 backgroundColor: item.role === 'user' ? colors.primary : colors.surface,
-                borderRadius: 18,
-                borderBottomRightRadius: item.role === 'user' ? 4 : 18,
-                borderBottomLeftRadius: item.role === 'ai' ? 4 : 18,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
+                borderRadius: 16,
+                borderBottomRightRadius: item.role === 'user' ? 4 : 16,
+                borderBottomLeftRadius: item.role === 'ai' ? 4 : 16,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
                 borderWidth: item.role === 'ai' ? 1 : 0,
                 borderColor: colors.border,
               }}>
                 {item.role === 'user' ? (
-                  <Text style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 13.5, lineHeight: 19 }}>
                     {item.content}
                   </Text>
                 ) : (
-                  <Markdown style={{ body: { color: colors.foreground, fontSize: 14, lineHeight: 20 } }}>
+                  <Markdown style={{ body: { color: colors.foreground, fontSize: 13.5, lineHeight: 19 } }}>
                     {item.content}
                   </Markdown>
                 )}
-                <Text style={{ fontSize: 10, color: item.role === 'user' ? 'rgba(255,255,255,0.75)' : colors.muted, marginTop: 6 }}>
+                <Text style={{ fontSize: 9.5, color: item.role === 'user' ? 'rgba(255,255,255,0.72)' : colors.muted, marginTop: 4 }}>
                   {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
@@ -220,15 +248,14 @@ export default function AICoachScreen() {
         />
 
         {isLoading && (
-          <View style={{ paddingHorizontal: 20, paddingBottom: 6, alignItems: 'flex-start' }}>
-            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ paddingHorizontal: 18, paddingBottom: 6, alignItems: 'flex-start' }}>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={{ color: colors.muted, fontSize: 13 }}>Thinking...</Text>
+              <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '600' }}>Analyzing protocol…</Text>
             </View>
           </View>
         )}
 
-        {/* Quick Prompts */}
         {messages.length === 0 && (
           <AIQuickPrompts context="default" onSelectPrompt={(text) => {
             setInputText(text);
@@ -236,19 +263,17 @@ export default function AICoachScreen() {
           }} />
         )}
 
-        {/* Input Bar with solid background and proper flex-end alignment */}
+        {/* Input Bar */}
         <View style={{
           flexDirection: 'row',
           alignItems: 'flex-end',
           paddingHorizontal: 14,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 14 : 10,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 12 : 8,
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          gap: 10,
-          zIndex: 20,
-          elevation: 5,
+          gap: 8,
         }}>
           <TextInput
             placeholder="Ask your coach anything..."
@@ -263,35 +288,34 @@ export default function AICoachScreen() {
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
-              borderRadius: 20,
-              paddingHorizontal: 16,
-              paddingTop: 10,
-              paddingBottom: 10,
+              borderRadius: 14,
+              paddingHorizontal: 14,
+              paddingTop: 9,
+              paddingBottom: 9,
               color: colors.foreground,
-              fontSize: 14,
-              lineHeight: 20,
-              minHeight: 44,
-              maxHeight: 120,
+              fontSize: 13.5,
+              lineHeight: 19,
+              minHeight: 40,
+              maxHeight: 110,
             }}
           />
-          <Pressable
+          <Tap
             onPress={() => sendMessage()}
             disabled={!inputText.trim() || isLoading}
-            style={({ pressed }) => ({
-              width: 44,
-              height: 44,
-              borderRadius: 22,
+            scaleTo={0.92}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
               backgroundColor: inputText.trim() && !isLoading ? colors.primary : colors.surface,
               borderWidth: 1,
               borderColor: inputText.trim() && !isLoading ? colors.primary : colors.border,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.75 : 1,
-              marginBottom: 0,
-            })}
+            }}
           >
-            <Send size={18} color={inputText.trim() && !isLoading ? '#FFFFFF' : colors.muted} />
-          </Pressable>
+            <Send size={16} color={inputText.trim() && !isLoading ? '#FFFFFF' : colors.muted} />
+          </Tap>
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>

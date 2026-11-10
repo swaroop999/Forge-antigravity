@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Utensils, Pill, Droplets } from 'lucide-react-native';
-import { ScrollView, View, Text, Pressable, TextInput, Alert } from "react-native";
+import {
+  Check, Utensils, Pill, Droplets, AlertTriangle, Clock, Package, Target, Plus, Minus, ShieldCheck,
+} from 'lucide-react-native';
+import { ScrollView, View, Text } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
-import { DAILY_MEALS, SUPPLEMENTS, type Meal, type Supplement } from '@/lib/db/seeds';
+import { DAILY_MEALS, SUPPLEMENTS } from '@/lib/db/seeds';
+import { Tap } from '@/lib/motion';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'meals' | 'supplements' | 'water';
@@ -23,8 +26,10 @@ function TodaysMeals() {
   const [mealsDone, setMealsDone] = useState<Record<string, boolean>>({});
   const [junkCount, setJunkCount] = useState(0);
   const today = new Date().toISOString().split('T')[0];
-  const isWeekday = ![0, 6].includes(new Date().getDay());
-  const isSaturday = new Date().getDay() === 6;
+  const dayIdx = new Date().getDay();
+  const isWeekday = ![0, 6].includes(dayIdx);
+  const isSaturday = dayIdx === 6;
+  const isSunday = dayIdx === 0;
 
   useEffect(() => {
     DailyLogRepo.getForDate(today).then(log => {
@@ -53,25 +58,28 @@ function TodaysMeals() {
   const mealsToShow = DAILY_MEALS.filter(m => !m.isPostWorkoutOnly);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       {/* Macro Progress */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>Today's Macros</Text>
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground }}>Today's Macro Targets</Text>
+          <Text style={{ fontSize: 10.5, fontWeight: '700', color: colors.primary }}>Surplus Protocol</Text>
+        </View>
         {[
           { label: 'Calories', current: doneCals, target: totalCals, unit: 'kcal', color: colors.primary },
-          { label: 'Protein', current: doneProtein, target: totalProtein, unit: 'g', color: '#60A5FA' },
+          { label: 'Protein', current: doneProtein, target: totalProtein, unit: 'g', color: '#38BDF8' },
           { label: 'Carbs', current: doneMeals.reduce((s, m) => s + m.carbs, 0), target: 380, unit: 'g', color: colors.warning },
           { label: 'Fats', current: doneMeals.reduce((s, m) => s + m.fats, 0), target: 75, unit: 'g', color: '#FB923C' },
         ].map(macro => {
           const pct = Math.min((macro.current / macro.target) * 100, 100);
           return (
-            <View key={macro.label} style={{ marginBottom: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '600' }}>{macro.label}</Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>{macro.current} / {macro.target} {macro.unit}</Text>
+            <View key={macro.label} style={{ marginBottom: 9 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                <Text style={{ color: colors.foreground, fontSize: 11.5, fontWeight: '700' }}>{macro.label}</Text>
+                <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600' }}>{macro.current} / {macro.target} {macro.unit}</Text>
               </View>
-              <View style={{ height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' }}>
-                <View style={{ height: 8, backgroundColor: macro.color, borderRadius: 4, width: `${pct}%` }} />
+              <View style={{ height: 6, backgroundColor: colors.background, borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ height: '100%', backgroundColor: macro.color, borderRadius: 3, width: `${pct}%` }} />
               </View>
             </View>
           );
@@ -80,80 +88,100 @@ function TodaysMeals() {
 
       {/* Junk Food Rules */}
       <View style={{
-        backgroundColor: isWeekday || (!isWeekday && !isSaturday) ? colors.success + '15' : colors.warning + '15',
-        borderRadius: 12, padding: 14, marginBottom: 16,
-        borderWidth: 1, borderColor: isWeekday || (!isWeekday && !isSaturday) ? colors.success + '40' : colors.warning + '40',
+        backgroundColor: isWeekday || isSunday ? colors.success + '12' : colors.warning + '14',
+        borderRadius: 14, padding: 13, marginBottom: 12,
+        borderWidth: 1, borderColor: isWeekday || isSunday ? colors.success + '38' : colors.warning + '38',
       }}>
-        <Text style={{ color: isWeekday || (!isWeekday && !isSaturday) ? colors.success : colors.warning, fontWeight: '700', marginBottom: 4 }}>
-          {isWeekday ? '✓ Weekday: Zero Junk' : isSaturday ? '⚡ Saturday: 1 Restaurant Cheat Allowed' : '🏠 Sunday: Home Food Only'}
-        </Text>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>
-          {isWeekday ? 'No coke, momos, puff, masala puri, or street food.' : isSaturday ? `Cheat meals used: ${junkCount}/1. Restaurant dinner allowed.` : 'Home-cooked food only. Recovery day.'}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <ShieldCheck size={15} color={isWeekday || isSunday ? colors.success : colors.warning} />
+          <Text style={{ color: isWeekday || isSunday ? colors.success : colors.warning, fontWeight: '800', fontSize: 12.5 }}>
+            {isWeekday ? 'Weekday Protocol: Zero Junk' : isSaturday ? 'Saturday: 1 Controlled Restaurant Meal Allowed' : 'Sunday Recovery: Clean Home Nutrition'}
+          </Text>
+        </View>
+        <Text style={{ color: colors.muted, fontSize: 11.5, lineHeight: 16 }}>
+          {isWeekday
+            ? 'Zero sugary sodas, fried street snacks, or refined bakery items.'
+            : isSaturday
+            ? `Cheat meals used today: ${junkCount}/1. Keep protein high.`
+            : 'Sunday is Rest & Recovery day. Stick to home-cooked whole foods + Vitamin D3 60K with breakfast.'}
         </Text>
         {isSaturday && junkCount === 0 && (
-          <Pressable onPress={() => {
-            const n = junkCount + 1;
-            setJunkCount(n);
-            NutritionRepo.setJunkCount(today, n);
-          }} style={{ backgroundColor: colors.warning, borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 8 }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Mark Cheat Meal Used</Text>
-          </Pressable>
+          <Tap
+            onPress={() => {
+              const n = junkCount + 1;
+              setJunkCount(n);
+              NutritionRepo.setJunkCount(today, n);
+            }}
+            scaleTo={0.96}
+            style={{ backgroundColor: colors.warning, borderRadius: 9, paddingVertical: 8, alignItems: 'center', marginTop: 9 }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11.5 }}>Log Weekly Cheat Meal</Text>
+          </Tap>
         )}
       </View>
 
       {/* Meal Cards */}
-      {mealsToShow.map(meal => (
-        <Pressable key={meal.id} onPress={() => toggleMeal(meal.id)}
-          style={({ pressed }) => ({
-            backgroundColor: mealsDone[meal.id] ? colors.success + '12' : colors.surface,
-            borderRadius: 14, padding: 16, marginBottom: 10,
-            borderWidth: 1, borderColor: mealsDone[meal.id] ? colors.success + '60' : colors.border,
-            opacity: pressed ? 0.85 : 1,
-          })}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{
-                  width: 22, height: 22, borderRadius: 11,
-                  backgroundColor: mealsDone[meal.id] ? colors.success : 'transparent',
-                  borderWidth: 2, borderColor: mealsDone[meal.id] ? colors.success : colors.border,
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {mealsDone[meal.id] && <Check size={14} color="#FFFFFF" />}
+      {mealsToShow.map(meal => {
+        const isDone = !!mealsDone[meal.id];
+        return (
+          <Tap
+            key={meal.id}
+            onPress={() => toggleMeal(meal.id)}
+            scaleTo={0.985}
+            style={{
+              backgroundColor: isDone ? colors.success + '10' : colors.surface,
+              borderRadius: 14, padding: 14, marginBottom: 9,
+              borderWidth: 1, borderColor: isDone ? colors.success + '45' : colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{
+                    width: 22, height: 22, borderRadius: 7,
+                    backgroundColor: isDone ? colors.success : 'transparent',
+                    borderWidth: 1.8, borderColor: isDone ? colors.success : colors.border,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isDone && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: isDone ? colors.success : colors.foreground }}>
+                    Meal {meal.number}: {meal.name}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: mealsDone[meal.id] ? colors.success : colors.foreground }}>
-                  Meal {meal.number}: {meal.name}
-                </Text>
+                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 3, marginLeft: 32 }}>{meal.time}</Text>
               </View>
-              <Text style={{ color: colors.primary, fontSize: 11, marginTop: 4, marginLeft: 30 }}>{meal.time}</Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 13 }}>{meal.calories} kcal</Text>
+                <Text style={{ color: colors.muted, fontSize: 10.5, fontWeight: '600' }}>{meal.protein}g protein</Text>
+              </View>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 14 }}>{meal.calories} kcal</Text>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{meal.protein}g protein</Text>
-            </View>
-          </View>
 
-          {/* Items */}
-          <View style={{ marginTop: 10, marginLeft: 30 }}>
-            {meal.items.map((item, i) => (
-              <Text key={i} style={{ color: mealsDone[meal.id] ? colors.muted : colors.foreground, fontSize: 12, marginBottom: 2, lineHeight: 18 }}>
-                • {item}
+            <View style={{ marginTop: 8, marginLeft: 32 }}>
+              {meal.items.map((item, i) => (
+                <Text key={i} style={{ color: isDone ? colors.muted : colors.foreground, fontSize: 11.5, marginBottom: 2, lineHeight: 17 }}>
+                  • {item}
+                </Text>
+              ))}
+            </View>
+
+            {meal.notes && (
+              <Text style={{ color: colors.warning, fontSize: 11, marginTop: 6, marginLeft: 32, fontStyle: 'italic' }}>
+                Note: {meal.notes}
               </Text>
-            ))}
-          </View>
+            )}
+          </Tap>
+        );
+      })}
 
-          {meal.notes && (
-            <Text style={{ color: colors.warning, fontSize: 11, marginTop: 8, marginLeft: 30, fontStyle: 'italic' }}>⚠️ {meal.notes}</Text>
-          )}
-        </Pressable>
-      ))}
-
-      {/* Post-workout */}
-      {DAILY_MEALS.find(m => m.isPostWorkoutOnly) && (
-        <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-          <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>Post-Workout (If Training Today)</Text>
+      {/* Post-workout (Monday-Saturday training days) */}
+      {!isSunday && DAILY_MEALS.find(m => m.isPostWorkoutOnly) && (
+        <View style={{ backgroundColor: colors.primary + '12', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.primary + '35' }}>
+          <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12.5, marginBottom: 6 }}>
+            Post-Workout Nutrition (Mon–Sat Training Days)
+          </Text>
           {DAILY_MEALS.find(m => m.isPostWorkoutOnly)?.items.map((item, i) => (
-            <Text key={i} style={{ color: colors.foreground, fontSize: 12, marginBottom: 4 }}>• {item}</Text>
+            <Text key={i} style={{ color: colors.foreground, fontSize: 11.5, marginBottom: 3 }}>• {item}</Text>
           ))}
         </View>
       )}
@@ -186,63 +214,88 @@ function SupplementsScreen() {
   const filtered = SUPPLEMENTS.filter(s => s.phase <= phase);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Active Phase Badge (no redundant duplicate selectors) */}
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{
-        backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 16,
-        borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+        backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 12,
+        borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 14 }}>Supplements & Micronutrients</Text>
-          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>Daily intake · Natural DHT & hair follicle support</Text>
+          <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 14 }}>Supplements & Micronutrients</Text>
+          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>Daily stack · Natural DHT & recovery support</Text>
         </View>
-        <View style={{ backgroundColor: colors.primary + '22', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>PHASE {phase}</Text>
+        <View style={{ backgroundColor: colors.primary + '1C', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 }}>
+          <Text style={{ color: colors.primary, fontSize: 10.5, fontWeight: '800' }}>PHASE {phase}</Text>
         </View>
       </View>
 
-      {/* Warnings */}
-      <View style={{ backgroundColor: colors.warning + '15', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.warning + '40' }}>
-        <Text style={{ color: colors.warning, fontWeight: '700', marginBottom: 6 }}>⚠️ Critical Supplement Protocol</Text>
-        <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          • Zinc Picolinate: Strictly IMMEDIATELY after lunch with a full glass of water. NEVER on an empty stomach (causes sudden nausea/spasms).{'\n'}
-          • Triple Strength Fish Oil: Take 1 softgel daily at breakfast with fatty meal. 1 softgel provides 900mg active Omega-3 (550 EPA / 350 DHA) — no need to take 2.{'\n'}
-          • Magnesium Glycinate: Take 2 tablets (60 servings / 120 tabs bottle) 30-45 min before sleep with water/turmeric milk. (Start with 1 tab for 3 days to test digestion).{'\n'}
-          • Creatine: Drink 3.5L water daily while on it.{'\n'}
-          • Vitamin D 60K: Once per week ONLY on Sundays (first 8 weeks).
+      {/* Protocol Rules */}
+      <View style={{ backgroundColor: colors.warning + '14', borderRadius: 14, padding: 13, marginBottom: 12, borderWidth: 1, borderColor: colors.warning + '38' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <AlertTriangle size={14} color={colors.warning} />
+          <Text style={{ color: colors.warning, fontWeight: '800', fontSize: 12.5 }}>Critical Supplement Timing</Text>
+        </View>
+        <Text style={{ color: colors.foreground, fontSize: 11.5, lineHeight: 17 }}>
+          • Zinc Picolinate: Take immediately after lunch with a full glass of water. Never on an empty stomach.{'\n'}
+          • Triple Strength Fish Oil: 1 softgel daily with breakfast (900mg active Omega-3).{'\n'}
+          • Magnesium Glycinate: 2 tablets 30–45 min before sleep with water or warm milk.{'\n'}
+          • Creatine Monohydrate: Maintain 3.5L daily hydration.{'\n'}
+          • Vitamin D3 60K: Once weekly on Sunday morning with breakfast (first 8 weeks).
         </Text>
       </View>
 
-      {filtered.map(supp => (
-        <Pressable key={supp.id} onPress={() => toggle(supp.id)}
-          style={({ pressed }) => ({
-            backgroundColor: checked[supp.id] ? colors.success + '12' : colors.surface,
-            borderRadius: 14, padding: 14, marginBottom: 10,
-            borderWidth: 1, borderColor: checked[supp.id] ? colors.success + '50' : colors.border,
-            opacity: pressed ? 0.8 : 1,
-          })}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <View style={{
-              width: 22, height: 22, borderRadius: 11,
-              backgroundColor: checked[supp.id] ? colors.success : 'transparent',
-              borderWidth: 2, borderColor: checked[supp.id] ? colors.success : colors.border,
-              marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
-            }}>
-              {checked[supp.id] && <Check size={14} color="#FFFFFF" />}
+      {filtered.map(supp => {
+        const isChecked = !!checked[supp.id];
+        return (
+          <Tap
+            key={supp.id}
+            onPress={() => toggle(supp.id)}
+            scaleTo={0.985}
+            style={{
+              backgroundColor: isChecked ? colors.success + '10' : colors.surface,
+              borderRadius: 14, padding: 13, marginBottom: 8,
+              borderWidth: 1, borderColor: isChecked ? colors.success + '45' : colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{
+                width: 22, height: 22, borderRadius: 7,
+                backgroundColor: isChecked ? colors.success : 'transparent',
+                borderWidth: 1.8, borderColor: isChecked ? colors.success : colors.border,
+                marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
+              }}>
+                {isChecked && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '800', fontSize: 13.5, color: isChecked ? colors.success : colors.foreground, textDecorationLine: isChecked ? 'line-through' : 'none' }}>
+                  {supp.name}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                  <Clock size={11} color={colors.primary} />
+                  <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>{supp.timing}</Text>
+                </View>
+                <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>Dose: {supp.dose}</Text>
+                {supp.form && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <Package size={11} color={colors.muted} />
+                    <Text style={{ color: colors.muted, fontSize: 11 }}>{supp.form}</Text>
+                  </View>
+                )}
+                {supp.purpose && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                    <Target size={11} color={colors.foreground} />
+                    <Text style={{ color: colors.foreground, fontSize: 11, opacity: 0.9, flex: 1 }}>{supp.purpose}</Text>
+                  </View>
+                )}
+                {supp.warning && (
+                  <Text style={{ color: colors.warning, fontSize: 11, marginTop: 4, fontWeight: '600' }}>
+                    Note: {supp.warning}
+                  </Text>
+                )}
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', color: checked[supp.id] ? colors.success : colors.foreground, textDecorationLine: checked[supp.id] ? 'line-through' : 'none' }}>
-                {supp.name}
-              </Text>
-              <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>🕐 {supp.timing}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>Dose: {supp.dose}</Text>
-              {supp.form && <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>📦 Bottle: {supp.form}</Text>}
-              {supp.purpose && <Text style={{ color: colors.foreground, fontSize: 11, marginTop: 4, opacity: 0.9 }}>🎯 {supp.purpose}</Text>}
-              {supp.warning && <Text style={{ color: colors.warning, fontSize: 11, marginTop: 4 }}>⚠️ {supp.warning}</Text>}
-            </View>
-          </View>
-        </Pressable>
-      ))}
+          </Tap>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -269,60 +322,89 @@ function WaterTracker() {
   };
 
   const pct = Math.min((glasses / TARGET) * 100, 100);
-  const litres = (glasses * 0.25).toFixed(1);
+  const litres = (glasses * 0.25).toFixed(2);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      {/* Visual */}
-      <View style={{ alignItems: 'center', marginBottom: 30 }}>
-        {/* Water bottle visual */}
-        <View style={{ width: 100, height: 200, borderRadius: 50, backgroundColor: colors.border, overflow: 'hidden', borderWidth: 2, borderColor: colors.primary + '60', position: 'relative' }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      {/* Compact Hydration Card */}
+      <View style={{
+        backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 14,
+        borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 18,
+      }}>
+        {/* Visual Gauge */}
+        <View style={{
+          width: 76, height: 140, borderRadius: 24, backgroundColor: colors.background,
+          overflow: 'hidden', borderWidth: 1.5, borderColor: colors.primary + '50', position: 'relative',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
           <View style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: `${pct}%`, backgroundColor: colors.primary + '80',
-            borderBottomLeftRadius: 48, borderBottomRightRadius: 48,
+            height: `${pct}%`, backgroundColor: colors.primary + '55',
           }} />
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground }}>{litres}L</Text>
-            <Text style={{ fontSize: 11, color: colors.muted }}>of 3.5L</Text>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.foreground }}>{litres}L</Text>
+          <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>/ 3.5L</Text>
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            Daily Hydration
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+            <Text style={{ fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{glasses}</Text>
+            <Text style={{ color: colors.muted, fontSize: 12.5, fontWeight: '600' }}>/ {TARGET} glasses (250ml)</Text>
+          </View>
+
+          <View style={{ height: 6, backgroundColor: colors.background, borderRadius: 3, overflow: 'hidden', marginTop: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 3, width: `${pct}%` }} />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Tap
+              onPress={() => addGlass(-1)}
+              scaleTo={0.94}
+              style={{
+                width: 42, height: 38, backgroundColor: colors.background, borderRadius: 10,
+                borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Minus size={16} color={colors.foreground} />
+            </Tap>
+            <Tap
+              onPress={() => addGlass(1)}
+              scaleTo={0.96}
+              style={{
+                flex: 1, height: 38, backgroundColor: colors.primary, borderRadius: 10,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Plus size={15} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#FFFFFF' }}>Add 250ml</Text>
+            </Tap>
           </View>
         </View>
-        <Text style={{ fontSize: 28, fontWeight: '800', color: colors.primary, marginTop: 20 }}>{glasses}</Text>
-        <Text style={{ color: colors.muted, fontSize: 14 }}>glasses of 14 target</Text>
-        <View style={{ width: '80%', height: 10, backgroundColor: colors.border, borderRadius: 5, overflow: 'hidden', marginTop: 12 }}>
-          <View style={{ height: 10, backgroundColor: colors.primary, borderRadius: 5, width: `${pct}%` }} />
-        </View>
-      </View>
-
-      {/* Buttons */}
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-        <Pressable onPress={() => addGlass(-1)} style={{ flex: 1, backgroundColor: colors.border, borderRadius: 14, paddingVertical: 18, alignItems: 'center' }}>
-          <Text style={{ fontSize: 24, color: colors.foreground }}>−</Text>
-        </Pressable>
-        <Pressable onPress={() => addGlass(1)} style={{ flex: 2, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 18, alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF' }}>+ Add 250ml Glass</Text>
-        </Pressable>
       </View>
 
       {/* Schedule */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.foreground, fontWeight: '700', marginBottom: 12 }}>Hydration Schedule</Text>
+      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 13.5, marginBottom: 10 }}>Hydration Cadence</Text>
         {[
-          { time: '7:30 AM', amt: '500ml', note: 'First thing on waking (lemon water)' },
-          { time: 'With Breakfast', amt: '250ml', note: 'Take with supplements' },
-          { time: '10-11 AM', amt: '500ml', note: 'Sip steadily at work' },
-          { time: 'With Lunch', amt: '250ml', note: 'Drink before/during lunch' },
-          { time: '2-4 PM', amt: '500ml', note: 'Afternoon session' },
+          { time: '7:30 AM', amt: '500ml', note: 'Immediately on waking (warm lemon water)' },
+          { time: 'Breakfast', amt: '250ml', note: 'With morning supplement stack' },
+          { time: '10–11 AM', amt: '500ml', note: 'Steady desk hydration' },
+          { time: 'Lunch', amt: '250ml', note: 'With Zinc Picolinate after meal' },
+          { time: '2–4 PM', amt: '500ml', note: 'Afternoon focus block' },
           { time: 'Pre-Workout', amt: '300ml', note: '30 min before training' },
-          { time: 'Post-Workout', amt: '500ml', note: 'Rehydrate (creatine needs this)' },
-          { time: 'With Dinner', amt: '250ml', note: 'Final glasses' },
+          { time: 'Post-Workout', amt: '500ml', note: 'Cellular rehydration with Creatine' },
+          { time: 'Dinner', amt: '250ml', note: 'Final evening intake' },
         ].map((item, i) => (
-          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < 7 ? 1 : 0, borderBottomColor: colors.border }}>
-            <View>
-              <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: '600' }}>{item.time}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{item.note}</Text>
+          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: i < 7 ? 1 : 0, borderBottomColor: colors.border }}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={{ color: colors.foreground, fontSize: 12.5, fontWeight: '700' }}>{item.time}</Text>
+              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>{item.note}</Text>
             </View>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>{item.amt}</Text>
+            <View style={{ backgroundColor: colors.primary + '16', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 11.5 }}>{item.amt}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -347,9 +429,9 @@ export default function NutritionScreen() {
   return (
     <ScreenContainer>
       <View style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Nutrition</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }}>2,600–2,800 kcal · 90–110g protein</Text>
+        <View style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>Nutrition</Text>
+          <Text style={{ color: colors.muted, fontSize: 11.5, fontWeight: '700' }}>2,600–2,800 kcal · 90–110g protein</Text>
         </View>
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />

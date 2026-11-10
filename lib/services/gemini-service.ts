@@ -85,7 +85,7 @@ Phase: ${currentPhase === 1 ? 'PHASE 1: FOUNDATION (Days 1-30)' : currentPhase =
 CORE PLAN:
 Sleep: 11:30 PM to 7:30 AM (target 8 hours, strict back-sleeping for facial symmetry)
 Nutrition: 2600-2800 kcal daily, 90-110g protein, 3.5L water
-Training: Home workouts 4-5x/week (bodyweight + book-bag + pull-up bar + priority lateral delts/neck/traps for frame width)
+Training: Home workouts 6x/week Monday–Saturday (Mon: Upper Push, Tue: Lower + Core, Wed: Upper Pull, Thu: Full Body + Core, Fri: Upper Hypertrophy, Sat: Priority Movements for Side Delts/Neck/Traps; Sunday: Full Rest & Recovery day)
 Skincare:
   - AM: Lukewarm splash + Alpha Arbutin 2% spot treatment (moustache patch & dark spots) + 10% Niacinamide + Nivea Soft + Aqualogica SPF 50+
   - PM: Gentle cleanser + Bone-Dry Adapalene 0.1% rotation (Mon/Wed/Fri) / Arbutin (Tue/Sat) / Barrier Rest (Thu/Sun) + Nivea Soft + Benzomycin pinpoint only on active inflamed pimples

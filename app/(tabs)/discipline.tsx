@@ -1,14 +1,19 @@
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, Alert, Image, Modal, ActivityIndicator } from "react-native";
-import { Camera, Image as ImageIcon, Trash2, X, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Check, Brain, BookOpen, GraduationCap } from 'lucide-react-native';
+import {
+  Camera, Image as ImageIcon, Trash2, X, ChevronLeft, ChevronRight,
+  Calendar as CalendarIcon, Plus, Check, Brain, BookOpen, GraduationCap,
+  ShieldOff, Smartphone, Cloud, PenLine, ArrowLeft,
+} from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { SubTabBar, type SubTabItem } from '@/components/sub-tab-bar';
 import { useColors } from '@/hooks/use-colors';
-import { DisciplineRepo, NavRepo, PhotoRepo, type ProgressPhoto } from '@/lib/db/database';
+import { DisciplineRepo, NavRepo } from '@/lib/db/database';
 import { JournalSupabaseService } from '@/lib/supabase';
 import { KNOWLEDGE_ARTICLES } from '@/lib/db/seeds';
+import { Tap } from '@/lib/motion';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 type Tab = 'dopamine' | 'journal' | 'knowledge';
@@ -53,51 +58,61 @@ function DopamineResetScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: colors.error, marginBottom: 8 }}>The Dopamine Problem</Text>
-        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 20 }}>
-          Porn and infinite scrolling give you 1000% dopamine spikes. Real life gives 50-100%.{"\n"}
-          Your brain has adapted to expect 1000%. That's why you procrastinate and feel unmotivated.{"\n"}
-          You MUST starve the cheap dopamine to make real effort feel rewarding again.
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.error, marginBottom: 6 }}>Dopamine Baseline Reset</Text>
+        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+          Hyper-stimulating digital content creates artificial 1000% dopamine spikes, numbing your receptor sensitivity to real-world achievement. Starve cheap stimulation so focused work, training, and real connection feel rewarding again.
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-        <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>🔞</Text>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.foreground }}>No Porn</Text>
-          <Text style={{ fontSize: 36, fontWeight: '900', color: pornStreak > 7 ? colors.success : colors.warning, marginVertical: 8 }}>{pornStreak}</Text>
-          <Text style={{ fontSize: 11, color: colors.muted, marginBottom: 12 }}>Days Clean</Text>
-          <Pressable onPress={() => addDay('porn')} style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>+ Add Day</Text>
-          </Pressable>
-          <Pressable onPress={() => resetStreak('porn')} style={{ paddingVertical: 8 }}>
-            <Text style={{ color: colors.error, fontSize: 11, textDecorationLine: 'underline' }}>Reset</Text>
-          </Pressable>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+        <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+          <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: colors.error + '16', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <ShieldOff size={18} color={colors.error} />
+          </View>
+          <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.foreground }}>Zero Porn</Text>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: pornStreak > 7 ? colors.success : colors.warning, marginVertical: 4, letterSpacing: -0.5 }}>{pornStreak}</Text>
+          <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600', marginBottom: 10 }}>Days Clean</Text>
+          <Tap
+            onPress={() => addDay('porn')}
+            scaleTo={0.95}
+            style={{ backgroundColor: colors.primary, paddingVertical: 8, borderRadius: 9, width: '100%', alignItems: 'center', marginBottom: 6 }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11.5 }}>+ Log Clean Day</Text>
+          </Tap>
+          <Tap onPress={() => resetStreak('porn')} scaleTo={0.95} style={{ paddingVertical: 4 }}>
+            <Text style={{ color: colors.error, fontSize: 10.5, fontWeight: '700' }}>Reset Streak</Text>
+          </Tap>
         </View>
 
-        <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>📱</Text>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.foreground }}>No Mindless Scroll</Text>
-          <Text style={{ fontSize: 36, fontWeight: '900', color: socialStreak > 7 ? colors.success : colors.warning, marginVertical: 8 }}>{socialStreak}</Text>
-          <Text style={{ fontSize: 11, color: colors.muted, marginBottom: 12 }}>Days Clean</Text>
-          <Pressable onPress={() => addDay('social')} style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>+ Add Day</Text>
-          </Pressable>
-          <Pressable onPress={() => resetStreak('social')} style={{ paddingVertical: 8 }}>
-            <Text style={{ color: colors.error, fontSize: 11, textDecorationLine: 'underline' }}>Reset</Text>
-          </Pressable>
+        <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+          <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: '#38BDF818', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <Smartphone size={18} color="#38BDF8" />
+          </View>
+          <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.foreground }}>Zero Doomscroll</Text>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: socialStreak > 7 ? colors.success : colors.warning, marginVertical: 4, letterSpacing: -0.5 }}>{socialStreak}</Text>
+          <Text style={{ fontSize: 10.5, color: colors.muted, fontWeight: '600', marginBottom: 10 }}>Days Clean</Text>
+          <Tap
+            onPress={() => addDay('social')}
+            scaleTo={0.95}
+            style={{ backgroundColor: colors.primary, paddingVertical: 8, borderRadius: 9, width: '100%', alignItems: 'center', marginBottom: 6 }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11.5 }}>+ Log Clean Day</Text>
+          </Tap>
+          <Tap onPress={() => resetStreak('social')} scaleTo={0.95} style={{ paddingVertical: 4 }}>
+            <Text style={{ color: colors.error, fontSize: 10.5, fontWeight: '700' }}>Reset Streak</Text>
+          </Tap>
         </View>
       </View>
 
-      <View style={{ backgroundColor: colors.primary + '15', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.primary + '40' }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: 8 }}>Urge Survival Tactics</Text>
+      <View style={{ backgroundColor: colors.primary + '12', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.primary + '38' }}>
+        <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>Urge Interruption Protocol</Text>
         <Text style={{ color: colors.foreground, fontSize: 12, lineHeight: 18 }}>
-          1. <Text style={{ fontWeight: '700' }}>20 Push-ups immediately.</Text> Forces blood to muscles.
-          {"\n"}2. <Text style={{ fontWeight: '700' }}>Cold water on face.</Text> Activates mammalian dive reflex, lowers heart rate.
-          {"\n"}3. <Text style={{ fontWeight: '700' }}>Change rooms.</Text> Physical movement breaks the mental loop.
-          {"\n"}4. <Text style={{ fontWeight: '700' }}>Talk to AI Coach.</Text> Hit the "I want to relapse" quick prompt.
+          1. <Text style={{ fontWeight: '700' }}>20 Push-ups immediately:</Text> Diverts blood flow to skeletal muscle.{"\n"}
+          2. <Text style={{ fontWeight: '700' }}>Cold water on face:</Text> Triggers the mammalian dive reflex and slows heart rate.{"\n"}
+          3. <Text style={{ fontWeight: '700' }}>Leave the room:</Text> Break the environmental cue loop immediately.{"\n"}
+          4. <Text style={{ fontWeight: '700' }}>Use the Urge Shield button:</Text> Tap the red flame icon in the bottom navigation bar anytime.
         </Text>
       </View>
     </ScrollView>
@@ -330,29 +345,32 @@ function JournalWriteView({
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 120 }}>
       {/* Date Header & Cloud Sync */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>
           {isToday ? 'Today' : formattedDate}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
-          <Text style={{ fontSize: 10 }}>☁️</Text>
-          <Text style={{ color: colors.success, fontSize: 10, fontWeight: '700' }}>Cloud Synced</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.success + '18', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, gap: 5 }}>
+          <Cloud size={11} color={colors.success} />
+          <Text style={{ color: colors.success, fontSize: 10, fontWeight: '800' }}>Cloud Synced</Text>
         </View>
       </View>
 
       {!isToday && (
         <View style={{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.primary + '15', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
-          marginBottom: 12, borderWidth: 1, borderColor: colors.primary + '40',
+          backgroundColor: colors.primary + '14', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+          marginBottom: 12, borderWidth: 1, borderColor: colors.primary + '38',
         }}>
-          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-            📅 Editing entry for {date}
-          </Text>
-          <Pressable onPress={onResetToToday}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <CalendarIcon size={13} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+              Editing entry for {date}
+            </Text>
+          </View>
+          <Tap onPress={onResetToToday} scaleTo={0.95}>
             <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800', textDecorationLine: 'underline' }}>
               Switch to Today
             </Text>
-          </Pressable>
+          </Tap>
         </View>
       )}
 
@@ -366,26 +384,27 @@ function JournalWriteView({
         textAlignVertical="top"
         style={{
           backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-          borderRadius: 14, padding: 16, color: colors.foreground, fontSize: 14,
-          minHeight: 160, marginBottom: 16, lineHeight: 22,
+          borderRadius: 14, padding: 14, color: colors.foreground, fontSize: 13.5,
+          minHeight: 150, marginBottom: 14, lineHeight: 20,
         }}
       />
 
-      {/* ─── 📸 Multi-Photo Upload Section ────────────────────────── */}
+      {/* ─── Multi-Photo Upload Section ────────────────────────── */}
       <View style={{
-        backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 20,
-        borderWidth: 1, borderColor: photos.length > 0 ? colors.primary + '50' : colors.border,
+        backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 16,
+        borderWidth: 1, borderColor: photos.length > 0 ? colors.primary + '45' : colors.border,
       }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>📸 Photos</Text>
+            <Camera size={15} color={colors.primary} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground }}>Progress Photos</Text>
             {photos.length > 0 && (
-              <View style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+              <View style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1.5 }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>{photos.length}</Text>
               </View>
             )}
           </View>
-          <Text style={{ color: colors.muted, fontSize: 11 }}>Upload multiple photos</Text>
+          <Text style={{ color: colors.muted, fontSize: 10.5, fontWeight: '600' }}>Multi-photo log</Text>
         </View>
 
         <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 14 }}>
@@ -521,11 +540,13 @@ function JournalWriteView({
       )}
 
       {/* Link to Calendar */}
-      <Pressable onPress={onViewCalendar} style={{ marginTop: 18, alignItems: 'center' }}>
+      <Tap onPress={onViewCalendar} scaleTo={0.96} style={{ marginTop: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+        <CalendarIcon size={13} color={colors.primary} />
         <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-          📅 View past reflections & photos in Calendar →
+          View past reflections & photos in Calendar
         </Text>
-      </Pressable>
+        <ChevronRight size={13} color={colors.primary} />
+      </Tap>
 
       <PhotoDetailModal
         photo={previewPhoto}
@@ -883,27 +904,31 @@ function JournalCalendarView({
           </View>
         ) : !hasData ? (
           <View style={{
-            padding: 24, alignItems: 'center', borderRadius: 12,
+            padding: 22, alignItems: 'center', borderRadius: 12,
             borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
           }}>
-            <Text style={{ fontSize: 30, marginBottom: 8 }}>📅</Text>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primary + '16', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+              <CalendarIcon size={20} color={colors.primary} />
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground, marginBottom: 4 }}>
               No Entry for this Date
             </Text>
-            <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 16, lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 14, lineHeight: 18 }}>
               Record a daily reflection or upload progress photos to track your journey.
             </Text>
-            <Pressable
+            <Tap
               onPress={() => onEditDate(selectedDate)}
-              style={({ pressed }) => ({
-                backgroundColor: colors.primary + '20', borderWidth: 1, borderColor: colors.primary,
-                paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10,
-                opacity: pressed ? 0.8 : 1,
-              })}>
+              scaleTo={0.96}
+              style={{
+                backgroundColor: colors.primary + '1C', borderWidth: 1, borderColor: colors.primary + '50',
+                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+              }}>
+              <PenLine size={13} color={colors.primary} />
               <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '800' }}>
-                ✍️ Write or Upload for this Date
+                Write or Upload for this Date
               </Text>
-            </Pressable>
+            </Tap>
           </View>
         ) : (
           <>
@@ -1051,41 +1076,42 @@ function JournalScreen() {
   return (
     <View style={{ flex: 1 }}>
       {/* 2-Tab Navigation Bar */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6, gap: 8 }}>
-        <Pressable
+      <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingTop: 10, paddingBottom: 6, gap: 8 }}>
+        <Tap
           onPress={() => setJournalTab('write')}
-          style={({ pressed }) => ({
-            flex: 1, paddingVertical: 10, borderRadius: 12,
+          scaleTo={0.96}
+          style={{
+            flex: 1, paddingVertical: 9, borderRadius: 10,
             backgroundColor: journalTab === 'write' ? colors.primary : colors.surface,
             borderWidth: 1, borderColor: journalTab === 'write' ? colors.primary : colors.border,
-            alignItems: 'center', opacity: pressed ? 0.85 : 1,
-            flexDirection: 'row', justifyContent: 'center', gap: 6,
-          })}>
+            alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+          }}>
+          <PenLine size={13} color={journalTab === 'write' ? '#FFFFFF' : colors.foreground} />
           <Text style={{
             color: journalTab === 'write' ? '#FFFFFF' : colors.foreground,
-            fontWeight: '800', fontSize: 12,
+            fontWeight: '800', fontSize: 11.5,
           }}>
-            ✍️ {selectedDate === today ? "Today's Entry" : `Edit (${selectedDate})`}
+            {selectedDate === today ? "Today's Entry" : `Edit (${selectedDate})`}
           </Text>
-        </Pressable>
+        </Tap>
 
-        <Pressable
+        <Tap
           onPress={() => setJournalTab('calendar')}
-          style={({ pressed }) => ({
-            flex: 1, paddingVertical: 10, borderRadius: 12,
+          scaleTo={0.96}
+          style={{
+            flex: 1, paddingVertical: 9, borderRadius: 10,
             backgroundColor: journalTab === 'calendar' ? colors.primary : colors.surface,
             borderWidth: 1, borderColor: journalTab === 'calendar' ? colors.primary : colors.border,
-            alignItems: 'center', opacity: pressed ? 0.85 : 1,
-            flexDirection: 'row', justifyContent: 'center', gap: 6,
-          })}>
-          <CalendarIcon size={14} color={journalTab === 'calendar' ? '#FFFFFF' : colors.foreground} />
+            alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+          }}>
+          <CalendarIcon size={13} color={journalTab === 'calendar' ? '#FFFFFF' : colors.foreground} />
           <Text style={{
             color: journalTab === 'calendar' ? '#FFFFFF' : colors.foreground,
-            fontWeight: '800', fontSize: 12,
+            fontWeight: '800', fontSize: 11.5,
           }}>
-            📅 Calendar & History
+            Calendar & History
           </Text>
-        </Pressable>
+        </Tap>
       </View>
 
       {journalTab === 'write' ? (
@@ -1149,20 +1175,25 @@ function KnowledgeScreen() {
     };
 
     return (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        <Pressable onPress={() => setSelectedId(null)} style={({ pressed }) => ({
-          flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8, opacity: pressed ? 0.7 : 1,
-        })}>
-          <Text style={{ color: colors.primary, fontSize: 16 }}>←</Text>
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>Back</Text>
-        </Pressable>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <Tap
+          onPress={() => setSelectedId(null)}
+          scaleTo={0.96}
+          style={{
+            flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 14, gap: 6,
+            backgroundColor: colors.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9, borderWidth: 1, borderColor: colors.border,
+          }}
+        >
+          <ArrowLeft size={14} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>Back to Knowledge</Text>
+        </Tap>
 
-        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, marginBottom: 6 }}>{article.title}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <View style={{ backgroundColor: colors.surface, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ color: colors.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{article.category}</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.foreground, marginBottom: 6, letterSpacing: -0.3 }}>{article.title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <View style={{ backgroundColor: colors.primary + '1C', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800', textTransform: 'uppercase' }}>{article.category}</Text>
           </View>
-          <Text style={{ color: colors.muted, fontSize: 11 }}>{article.readingTime} min read</Text>
+          <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600' }}>{article.readingTime} min read</Text>
         </View>
 
         {renderMarkdown(article.content)}
@@ -1171,25 +1202,31 @@ function KnowledgeScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-      <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 16 }}>Read these to understand the science behind your transformation plan. Knowledge breeds conviction.</Text>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 14, lineHeight: 18 }}>
+        Evidence-based guides covering hypertrophy, facial aesthetics, endocrine optimization, and dopamine regulation.
+      </Text>
 
       {KNOWLEDGE_ARTICLES.map(a => (
-        <Pressable key={a.id} onPress={() => setSelectedId(a.id)}
-          style={({ pressed }) => ({
-            backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 12,
-            borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.8 : 1,
+        <Tap
+          key={a.id}
+          onPress={() => setSelectedId(a.id)}
+          scaleTo={0.985}
+          style={{
+            backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 9,
+            borderWidth: 1, borderColor: colors.border,
             flexDirection: 'row', alignItems: 'center',
-          })}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{a.category}</Text>
-              <Text style={{ color: colors.muted, fontSize: 10 }}>• {a.readingTime}m read</Text>
+          }}
+        >
+          <View style={{ flex: 1, paddingRight: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Text style={{ color: colors.primary, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>{a.category}</Text>
+              <Text style={{ color: colors.muted, fontSize: 10, fontWeight: '600' }}>· {a.readingTime}m read</Text>
             </View>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>{a.title}</Text>
+            <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.foreground }}>{a.title}</Text>
           </View>
-          <Text style={{ color: colors.muted, fontSize: 16 }}>›</Text>
-        </Pressable>
+          <ChevronRight size={15} color={colors.muted} />
+        </Tap>
       ))}
     </ScrollView>
   );
@@ -1212,9 +1249,9 @@ export default function DisciplineScreen() {
   return (
     <ScreenContainer>
       <View style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground }}>Discipline</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }}>Mindset · Reflection · Learning</Text>
+        <View style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>Discipline</Text>
+          <Text style={{ color: colors.muted, fontSize: 11.5, fontWeight: '700' }}>Mindset · Reflection · Science</Text>
         </View>
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />

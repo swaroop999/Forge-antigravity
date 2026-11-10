@@ -18,26 +18,36 @@ function TabIcon({ IconComponent, label, focused }: TabIconProps) {
   const colors = useColors();
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(focused ? 1.12 : 1, motionSpring.smooth) }],
+    transform: [{ scale: withSpring(focused ? 1.08 : 1, motionSpring.smooth) }],
   }));
 
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 6, minWidth: 54 }}>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4, minWidth: 58 }}>
+      <View
+        style={{
+          width: 18,
+          height: 2.5,
+          borderRadius: 2,
+          backgroundColor: focused ? colors.primary : 'transparent',
+          marginBottom: 4,
+        }}
+      />
       <Animated.View style={iconAnimatedStyle}>
         <IconComponent 
-          size={focused ? 23 : 21} 
+          size={20} 
           color={focused ? colors.primary : colors.muted} 
-          strokeWidth={focused ? 2.5 : 2} 
+          strokeWidth={focused ? 2.4 : 1.9} 
         />
       </Animated.View>
       <Text
         style={{
           fontSize: 9.5,
-          fontWeight: focused ? '800' : '600',
+          fontWeight: focused ? '700' : '600',
           color: focused ? colors.primary : colors.muted,
           textAlign: 'center',
           marginTop: 3,
-          opacity: focused ? 1 : 0.65,
+          letterSpacing: 0.1,
+          opacity: focused ? 1 : 0.7,
         }}
       >
         {label}
@@ -142,71 +152,79 @@ export default function TabLayout() {
       {!keyboardVisible && (
         <Tap
           onPress={() => setUrgeModalVisible(true)}
-          scaleTo={0.9}
+          scaleTo={0.92}
           style={{
-            position: 'absolute', right: 20, bottom: insets.bottom + 70,
-            backgroundColor: colors.error, width: 56, height: 56,
-            borderRadius: 28, alignItems: 'center', justifyContent: 'center',
+            position: 'absolute', right: 16, bottom: insets.bottom + 68,
+            backgroundColor: colors.error, width: 46, height: 46,
+            borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
             shadowColor: colors.error, shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.35, shadowRadius: 8, elevation: 8,
+            shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
             zIndex: 100,
           }}
         >
-          <Flame size={26} color="#FFFFFF" strokeWidth={2.4} />
+          <Flame size={21} color="#FFFFFF" strokeWidth={2.3} />
         </Tap>
       )}
 
       {/* Urge Modal Bottom Sheet */}
       <Modal visible={urgeModalVisible} transparent animationType="slide" onRequestClose={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 20 + insets.bottom }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 20 + insets.bottom, borderTopWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Flame size={22} color={colors.error} strokeWidth={2.5} />
-                <Text style={{ fontSize: 20, fontWeight: '900', color: colors.error }}>Urge Mode</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.error + '18', alignItems: 'center', justifyContent: 'center' }}>
+                  <Flame size={18} color={colors.error} strokeWidth={2.4} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: colors.foreground }}>Emergency Urge Protocol</Text>
+                  <Text style={{ fontSize: 11, color: colors.muted }}>Interrupt the dopamine loop immediately</Text>
+                </View>
               </View>
-              <Pressable onPress={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }} style={{ padding: 6, backgroundColor: colors.background, borderRadius: 16 }}>
-                <X size={20} color={colors.foreground} />
-              </Pressable>
+              <Tap onPress={() => { setUrgeModalVisible(false); setSelectedUrgeAction(null); }} scaleTo={0.9} style={{ width: 32, height: 32, backgroundColor: colors.background, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                <X size={16} color={colors.muted} />
+              </Tap>
             </View>
 
             {!selectedUrgeAction ? (
               <View>
-                <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 16 }}>Choose an action. The urge will pass.</Text>
-                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
                   {URGE_ACTIONS.map(action => {
                     const Icon = action.icon;
                     return (
-                      <Pressable key={action.id} onPress={() => handleUrgeAction(action)} style={({ pressed }) => ({
-                        flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: colors.background, borderRadius: 12, marginBottom: 8, opacity: pressed ? 0.7 : 1
-                      })}>
-                        <Icon size={20} color={action.color} />
-                        <Text style={{ flex: 1, marginLeft: 12, fontSize: 15, fontWeight: '600', color: colors.foreground }}>{action.label}</Text>
-                        <ChevronRight size={18} color={colors.muted} />
-                      </Pressable>
+                      <Tap key={action.id} onPress={() => handleUrgeAction(action)} scaleTo={0.98} style={{
+                        flexDirection: 'row', alignItems: 'center', padding: 13, backgroundColor: colors.background, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border
+                      }}>
+                        <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: action.color + '18', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon size={16} color={action.color} />
+                        </View>
+                        <Text style={{ flex: 1, marginLeft: 12, fontSize: 13.5, fontWeight: '700', color: colors.foreground }}>{action.label}</Text>
+                        <ChevronRight size={16} color={colors.muted} />
+                      </Tap>
                     );
                   })}
                 </ScrollView>
-                <View style={{ marginTop: 16, padding: 12, backgroundColor: colors.success + '20', borderRadius: 12, borderColor: colors.success + '40', borderWidth: 1 }}>
-                  <Text style={{ color: colors.success, fontWeight: '600', textAlign: 'center', fontSize: 13 }}>Don't throw away your progress. You got this.</Text>
+                <View style={{ marginTop: 10, padding: 11, backgroundColor: colors.success + '14', borderRadius: 10, borderColor: colors.success + '35', borderWidth: 1 }}>
+                  <Text style={{ color: colors.success, fontWeight: '700', textAlign: 'center', fontSize: 12 }}>Discipline is choosing what you want most over what you want right now.</Text>
                 </View>
               </View>
             ) : (
-              <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                 <View style={{
-                  width: 72, height: 72, borderRadius: 36,
+                  width: 60, height: 60, borderRadius: 18,
                   backgroundColor: colors.primary + '18',
-                  alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                  alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+                  borderWidth: 1, borderColor: colors.primary + '35',
                 }}>
-                  <Dumbbell size={36} color={colors.primary} />
+                  <Dumbbell size={28} color={colors.primary} />
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: '800', color: colors.foreground, marginBottom: 8 }}>Do it now!</Text>
-                <Text style={{ fontSize: 16, color: colors.muted, marginBottom: 24 }}>{selectedUrgeAction.label}</Text>
-                <Pressable onPress={completeAction} style={({ pressed }) => ({
-                  backgroundColor: colors.primary, width: '100%', paddingVertical: 16, borderRadius: 12, alignItems: 'center', opacity: pressed ? 0.8 : 1
-                })}>
-                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>✓ Done! Urge beaten.</Text>
-                </Pressable>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: colors.foreground, marginBottom: 6 }}>Execute Immediately</Text>
+                <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 22, textAlign: 'center' }}>{selectedUrgeAction.label}</Text>
+                <Tap onPress={completeAction} scaleTo={0.97} style={{
+                  backgroundColor: colors.primary, width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center'
+                }}>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Complete — Urge Defeated</Text>
+                </Tap>
               </View>
             )}
           </View>

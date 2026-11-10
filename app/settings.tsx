@@ -9,6 +9,7 @@ import { Palette, Bell, Trash2, Info, User, ChevronRight, ChevronLeft, Bot, Chec
 import { geminiService, DEFAULT_GEMINI_MODEL } from '@/lib/services/gemini-service';
 import { exportToJSON, pickAndParseBackupFile, getLastBackupDate, getBackupStats, BackupFile, importFromJSON } from '@/lib/backup';
 import { Card } from '@/components/ui/card';
+import { Tap } from '@/lib/motion';
 
 
 export default function SettingsScreen() {
@@ -140,24 +141,27 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16 }}>
-        <Pressable 
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 }}>
+        <Tap 
           onPress={() => router.back()}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            padding: 8, 
-            marginRight: 8,
+          scaleTo={0.92}
+          style={{
+            width: 34, height: 34,
+            marginRight: 10,
             backgroundColor: colors.surface,
-            borderRadius: 20,
-            opacity: pressed ? 0.6 : 1,
-          })}
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: colors.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <ChevronLeft size={24} color={colors.foreground} />
-        </Pressable>
-        <Text style={{ fontSize: 24, fontWeight: '900', color: colors.foreground }}>Settings</Text>
+          <ChevronLeft size={18} color={colors.foreground} />
+        </Tap>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>Settings</Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100, paddingTop: 16 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
         
         {/* AI Coach */}
         <Card title="AI Coach" icon={Bot} color={colors.primary}>
@@ -287,8 +291,8 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
                 
-                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 12, textAlign: 'center' }}>
-                  ⚠️ Your data is stored locally on this device. Regular backups are recommended.
+                <Text style={{ color: colors.muted, fontSize: 11.5, marginTop: 12, textAlign: 'center' }}>
+                  Your data is stored locally on this device. Regular backups are recommended.
                 </Text>
               </View>
             );
@@ -418,8 +422,8 @@ export default function SettingsScreen() {
                     </Pressable>
                   </View>
                   
-                  <Text style={{ color: colors.warning, fontSize: 13, marginTop: 16, fontWeight: '600', textAlign: 'center' }}>
-                    ⚠️ This action cannot be undone.
+                  <Text style={{ color: colors.warning, fontSize: 12.5, marginTop: 14, fontWeight: '700', textAlign: 'center' }}>
+                    This action overwrites or merges local records and cannot be undone.
                   </Text>
                 </View>
               );

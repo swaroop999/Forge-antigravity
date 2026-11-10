@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Dimensions, RefreshControl } from 'react-native';
 import {
-  Activity, Flame, Droplets, Dumbbell, Settings, Check, ChevronRight,
-  Plus, Sparkles, Bot, Calendar, ArrowUpRight, ShieldCheck, Quote, RotateCw
+  Activity, Flame, Dumbbell, Settings, Check, ChevronRight,
+  Sparkles, Bot, ArrowUpRight, RotateCw,
 } from "lucide-react-native";
 import { NavRepo } from '@/lib/db/database';
 import { router } from 'expo-router';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  AppRepo, DailyLogRepo, ProfileRepo, HabitRepo, WorkoutRepo,
+  AppRepo, DailyLogRepo, ProfileRepo,
   type DailyLog, type UserProfile,
 } from '@/lib/db/database';
 import {
-  QUOTES, NAVAL_QUOTES, HABITS, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
-  PM_ACTIVES_ROTATION,
+  QUOTES, NAVAL_QUOTES, WEEKDAY_SCHEDULE, SATURDAY_SCHEDULE, SUNDAY_SCHEDULE,
+  PM_ACTIVES_ROTATION, WORKOUT_PROGRAMS,
 } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
@@ -41,22 +41,20 @@ function getGreeting() {
   return 'Good evening';
 }
 
-// ─── 🏃 Circular Hero Progress Ring ───────────────────────────────────────────
+// ─── 🏃 Compact Circular Progress Ring ─────────────────────────────────────────
 
 function ProgressRing({
   percentage,
-  size = 190,
-  strokeWidth = 16,
+  size = 90,
+  strokeWidth = 8.5,
   color,
   label,
-  sublabel,
 }: {
   percentage: number;
   size?: number;
   strokeWidth?: number;
   color: string;
-  label: string;
-  sublabel: string;
+  label?: string;
 }) {
   const colors = useColors();
   const r = (size - strokeWidth) / 2;
@@ -80,7 +78,7 @@ function ProgressRing({
           stroke={colors.border}
           strokeWidth={strokeWidth}
           fill="none"
-          opacity={0.65}
+          opacity={0.7}
         />
         {/* Dynamic Gradient Ring */}
         <Circle
@@ -100,15 +98,14 @@ function ProgressRing({
       </Svg>
 
       <View style={{ alignItems: 'center' }}>
-        <Text style={{ fontSize: 28, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 }}>
+        <Text style={{ fontSize: 19, fontWeight: '800', color: colors.foreground, letterSpacing: -0.6 }}>
           {Math.round(percentage)}%
         </Text>
-        <Text style={{ fontSize: 11.5, fontWeight: '800', color: color, marginTop: 1 }}>
-          {label}
-        </Text>
-        <Text style={{ fontSize: 10, fontWeight: '600', color: colors.muted, marginTop: 1 }}>
-          {sublabel}
-        </Text>
+        {label ? (
+          <Text style={{ fontSize: 8.5, fontWeight: '800', color: colors.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 1 }}>
+            {label}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -142,51 +139,54 @@ function MetricCard({
       onPress={onPress}
       scaleTo={0.96}
       style={{
-        width: (width - 40 - 10) / 2,
+        width: (width - 36 - 10) / 2,
         backgroundColor: colors.surface,
-        borderRadius: 20,
-        padding: 15,
+        borderRadius: 16,
+        padding: 13,
         borderWidth: 1,
         borderColor: colors.border,
         justifyContent: 'space-between',
-        minHeight: 122,
+        minHeight: 102,
       }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{
-          width: 36, height: 36, borderRadius: 12,
-          backgroundColor: accentColor + '18',
+          width: 30, height: 30, borderRadius: 9,
+          backgroundColor: accentColor + '16',
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <Icon size={18} color={accentColor} />
+          <Icon size={15} color={accentColor} strokeWidth={2.2} />
         </View>
         {extraAction ? extraAction : (
           <View style={{
-            width: 22, height: 22, borderRadius: 11,
+            width: 20, height: 20, borderRadius: 7,
             backgroundColor: colors.background,
             alignItems: 'center', justifyContent: 'center',
             borderWidth: 1, borderColor: colors.border,
           }}>
-            <ArrowUpRight size={12} color={colors.muted} />
+            <ArrowUpRight size={11} color={colors.muted} />
           </View>
         )}
       </View>
 
-      <View style={{ marginTop: 12 }}>
+      <View style={{ marginTop: 9 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 }}>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 16, fontWeight: '800', color: colors.foreground, letterSpacing: -0.4, flexShrink: 1 }}
+          >
             {value}
           </Text>
           {unit ? (
-            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted }}>
+            <Text style={{ fontSize: 10.5, fontWeight: '700', color: colors.muted }}>
               {unit}
             </Text>
           ) : null}
         </View>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.foreground, marginTop: 2 }}>
+        <Text style={{ fontSize: 10.5, fontWeight: '700', color: colors.foreground, marginTop: 2 }}>
           {title}
         </Text>
-        <Text style={{ fontSize: 10, color: colors.muted, marginTop: 1 }} numberOfLines={1}>
+        <Text style={{ fontSize: 9.5, color: colors.muted, marginTop: 1 }} numberOfLines={1}>
           {subtitle}
         </Text>
       </View>
@@ -209,11 +209,11 @@ function ScheduleItem({
 }) {
   const colors = useColors();
   const categoryColors: Record<string, string> = {
-    nutrition: '#00D9A3',
+    nutrition: '#10B981',
     training: '#38BDF8',
     skincare: '#F472B6',
     sleep: '#A78BFA',
-    discipline: '#FFB800',
+    discipline: '#F59E0B',
     appearance: '#FB923C',
     work: '#94A3B8',
   };
@@ -222,46 +222,47 @@ function ScheduleItem({
   return (
     <Tap
       onPress={onPress}
-      scaleTo={0.98}
+      scaleTo={0.985}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        marginBottom: 8,
-        backgroundColor: completed ? colors.success + '0E' : colors.surface,
-        borderRadius: 18,
+        paddingVertical: 11,
+        paddingHorizontal: 14,
+        marginBottom: 7,
+        backgroundColor: completed ? colors.success + '0C' : colors.surface,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: completed ? colors.success + '40' : colors.border,
+        borderColor: completed ? colors.success + '35' : colors.border,
       }}
     >
       {/* Category color bar indicator */}
       <View style={{
-        width: 3.5, height: 38, borderRadius: 2,
+        width: 3, height: 32, borderRadius: 2,
         backgroundColor: completed ? colors.success : c,
-        marginRight: 14,
+        marginRight: 12,
       }} />
 
       <View style={{ flex: 1, paddingRight: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <Text style={{
-            fontSize: 11,
+            fontSize: 10.5,
             color: completed ? colors.success : c,
             fontWeight: '800',
-            letterSpacing: 0.3,
+            letterSpacing: 0.2,
           }}>
             {item.time}
           </Text>
           <View style={{
-            backgroundColor: (completed ? colors.success : c) + '18',
-            borderRadius: 6,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
+            backgroundColor: (completed ? colors.success : c) + '16',
+            borderRadius: 5,
+            paddingHorizontal: 5,
+            paddingVertical: 1.5,
           }}>
             <Text style={{
-              fontSize: 9,
+              fontSize: 8.5,
               fontWeight: '800',
               textTransform: 'uppercase',
+              letterSpacing: 0.3,
               color: completed ? colors.success : c,
             }}>
               {item.category}
@@ -270,50 +271,50 @@ function ScheduleItem({
         </View>
 
         <Text style={{
-          fontSize: 13.5,
+          fontSize: 13,
           fontWeight: completed ? '500' : '700',
           color: completed ? colors.muted : colors.foreground,
           textDecorationLine: completed ? 'line-through' : 'none',
-          lineHeight: 18,
+          lineHeight: 17,
         }}>
           {item.task}
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {onViewDetails && (
           <Tap
             onPress={onViewDetails}
-            scaleTo={0.92}
+            scaleTo={0.93}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 3,
-              backgroundColor: c + '1A',
+              gap: 2,
+              backgroundColor: c + '14',
               borderRadius: 8,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
+              paddingHorizontal: 7,
+              paddingVertical: 4,
               borderWidth: 1,
-              borderColor: c + '30',
+              borderColor: c + '28',
             }}
           >
-            <Text style={{ color: c, fontSize: 10, fontWeight: '800' }}>Details</Text>
+            <Text style={{ color: c, fontSize: 9.5, fontWeight: '800' }}>Open</Text>
             <ChevronRight size={10} color={c} />
           </Tap>
         )}
 
         {/* Circular Checkbox */}
         <View style={{
-          width: 26,
-          height: 26,
-          borderRadius: 13,
+          width: 22,
+          height: 22,
+          borderRadius: 7,
           backgroundColor: completed ? colors.success : 'transparent',
-          borderWidth: 2,
+          borderWidth: 1.8,
           borderColor: completed ? colors.success : colors.border,
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          {completed && <Check size={16} color="#FFFFFF" strokeWidth={3} />}
+          {completed && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
         </View>
       </View>
     </Tap>
@@ -412,23 +413,21 @@ export default function DashboardScreen() {
     setLog({ ...l });
   }, [completedItems, scheduleItems]);
 
-  const incrementWater = async () => {
-    const current = log?.waterGlasses || 0;
-    const newCount = current + 1;
-    const today = new Date().toISOString().split('T')[0];
-    let l = await DailyLogRepo.getForDate(today);
-    if (!l) l = await DailyLogRepo.getDefault(today, scheduleItems);
-    l.waterGlasses = newCount;
-    await DailyLogRepo.save(l);
-    setLog({ ...l });
-  };
-
   const totalTasks = scheduleItems.length;
   const completedCount = Object.values(completedItems).filter(Boolean).length;
   const completionPct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
-  const dayName = getDayOfWeek().charAt(0).toUpperCase() + getDayOfWeek().slice(1);
+  const dayKey = getDayOfWeek();
+  const dayName = dayKey.charAt(0).toUpperCase() + dayKey.slice(1);
   const phaseLabels = { 1: 'Foundation', 2: 'Build', 3: 'Maximize' };
+
+  // Dynamic workout lookup from WORKOUT_PROGRAMS (Mon–Sat active, Sunday Rest Day)
+  const todayWorkout = WORKOUT_PROGRAMS.find(w => w.phase === phase && w.dayOfWeek === dayKey);
+  const isRestDay = !todayWorkout || todayWorkout.exercises.length === 0 || todayWorkout.type.toUpperCase().includes('REST');
+  const todayWorkoutLabel = isRestDay ? 'Rest & Recovery' : (todayWorkout?.type || dayName);
+  const todayWorkoutSub = isRestDay
+    ? 'Sunday active recovery'
+    : `${todayWorkout?.exercises.length || 0} exercises · ${dayName}`;
 
   const getShortActiveName = (day: string) => {
     const full = PM_ACTIVES_ROTATION[day] || '';
@@ -438,7 +437,7 @@ export default function DashboardScreen() {
     return 'Skincare PM';
   };
 
-  /** Map a schedule task to { tabPath, subTab } so "View" lands on the right section. */
+  /** Map a schedule task to { tabPath, subTab } so "Open" lands on the right section. */
   const resolveRouteForTask = (item: { task: string; category: string }): { tabPath: string; subTab: string } | null => {
     const t = item.task.toLowerCase();
     const cat = item.category;
@@ -487,142 +486,161 @@ export default function DashboardScreen() {
     router.push(route.tabPath as any);
   };
 
+  // Compute dynamic weekday letters for the last 7 days ending today
+  const getLast7DayLabels = () => {
+    const shortLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const todayIdx = new Date().getDay();
+    return Array.from({ length: 7 }, (_, i) => shortLetters[(todayIdx - 6 + i + 7) % 7]);
+  };
+  const weekLabels = getLast7DayLabels();
+
   return (
     <ScreenContainer>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 🌟 Header ─────────────────────────────── */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16 }}>
+        {/* ── 🌟 Compact Header ─────────────────────────────── */}
+        <View style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 12 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ fontSize: 13, color: colors.muted, fontWeight: '700' }}>
-                {getGreeting()},
+              <Text style={{ fontSize: 11.5, color: colors.muted, fontWeight: '700', letterSpacing: 0.2 }}>
+                {getGreeting()} · {dayName}
               </Text>
-              <Text style={{ fontSize: 26, fontWeight: '900', color: colors.foreground, marginTop: 2, letterSpacing: -0.5 }}>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, marginTop: 1, letterSpacing: -0.5 }}>
                 {profile?.name || 'FORGE'}
               </Text>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{
+                backgroundColor: colors.primary + '16',
+                borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+                borderWidth: 1, borderColor: colors.primary + '30',
+              }}>
+                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 10.5 }}>
+                  Phase {phase} · {phaseLabels[phase]}
+                </Text>
+              </View>
+
               <Tap
                 onPress={() => router.push('/settings')}
-                scaleTo={0.9}
+                scaleTo={0.92}
                 style={{
-                  width: 38, height: 38, borderRadius: 12,
+                  width: 34, height: 34, borderRadius: 10,
                   backgroundColor: colors.surface,
                   alignItems: 'center', justifyContent: 'center',
                   borderWidth: 1, borderColor: colors.border,
                 }}
               >
-                <Settings size={18} color={colors.foreground} />
+                <Settings size={16} color={colors.foreground} />
               </Tap>
-
-              <View style={{
-                backgroundColor: colors.primary + '18',
-                borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6,
-                borderWidth: 1, borderColor: colors.primary + '35',
-              }}>
-                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 11 }}>
-                  Phase {phase}
-                </Text>
-              </View>
             </View>
           </View>
 
           {/* Micro Progress Bar for 365 Days */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 }}>
-            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '700' }}>
-              Day {dayNumber} of 365
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 8 }}>
+            <Text style={{ color: colors.muted, fontSize: 10.5, fontWeight: '700' }}>
+              Day {dayNumber}/365
             </Text>
-            <View style={{ flex: 1, height: 5, backgroundColor: colors.surface, borderRadius: 3, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-              <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 3, width: `${Math.min((dayNumber / 365) * 100, 100)}%` }} />
+            <View style={{ flex: 1, height: 4, backgroundColor: colors.surface, borderRadius: 2, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+              <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 2, width: `${Math.min((dayNumber / 365) * 100, 100)}%` }} />
             </View>
-            <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>
+            <Text style={{ color: colors.primary, fontSize: 10.5, fontWeight: '800' }}>
               {Math.round((dayNumber / 365) * 100)}%
             </Text>
           </View>
         </View>
 
-        {/* ── 🎯 Today's Hero Progress Card ─────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+        {/* ── 🎯 Compact Horizontal Hero Progress Card ─────────────── */}
+        <Animated.View entering={FadeInDown.duration(220)} style={{ paddingHorizontal: 18, marginBottom: 14 }}>
           <View style={{
             backgroundColor: colors.surface,
-            borderRadius: 24,
-            padding: 16,
+            borderRadius: 18,
+            padding: 14,
             borderWidth: 1,
             borderColor: colors.border,
+            flexDirection: 'row',
             alignItems: 'center',
+            gap: 14,
           }}>
-            {/* Card Header Row */}
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <View>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.muted, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  Daily Performance
-                </Text>
-                <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginTop: 1 }}>
-                  {dayName} Protocol
-                </Text>
-              </View>
-
-              <View style={{
-                backgroundColor: completionPct >= 80 ? colors.success + '20' : colors.primary + '18',
-                borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3,
-                borderWidth: 1, borderColor: completionPct >= 80 ? colors.success + '40' : colors.primary + '35',
-              }}>
-                <Text style={{
-                  color: completionPct >= 80 ? colors.success : colors.primary,
-                  fontSize: 9.5, fontWeight: '800',
-                }}>
-                  {completionPct >= 100 ? 'COMPLETED' : completionPct >= 60 ? 'ON TRACK' : 'IN PROGRESS'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Center Glowing Progress Ring (scaled down by 20%) */}
+            {/* Left: Compact 90px Progress Ring */}
             <ProgressRing
               percentage={completionPct}
-              size={148}
-              strokeWidth={12}
+              size={90}
+              strokeWidth={8.5}
               color={colors.primary}
-              label="Forge Score"
-              sublabel={`${completedCount} of ${totalTasks} tasks`}
+              label="Score"
             />
 
-            {/* Bottom 3 Pillars */}
-            <View style={{
-              width: '100%', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-              marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: colors.border + '60',
-            }}>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Tasks</Text>
-                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.foreground, marginTop: 1 }}>
-                  {completedCount}/{totalTasks}
-                </Text>
+            {/* Right: Protocol Summary & 3 Inline Pillars */}
+            <View style={{ flex: 1, justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flex: 1, paddingRight: 6 }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: colors.muted, letterSpacing: 0.7, textTransform: 'uppercase' }}>
+                    {dayName} Protocol
+                  </Text>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground, marginTop: 1 }} numberOfLines={1}>
+                    {todayWorkoutLabel}
+                  </Text>
+                </View>
+
+                <View style={{
+                  backgroundColor: completionPct >= 80 ? colors.success + '1C' : colors.primary + '16',
+                  borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2.5,
+                  borderWidth: 1, borderColor: completionPct >= 80 ? colors.success + '38' : colors.primary + '30',
+                }}>
+                  <Text style={{
+                    color: completionPct >= 80 ? colors.success : colors.primary,
+                    fontSize: 8.5, fontWeight: '800', letterSpacing: 0.4,
+                  }}>
+                    {completionPct >= 100 ? 'DONE' : completionPct >= 60 ? 'ON TRACK' : 'ACTIVE'}
+                  </Text>
+                </View>
               </View>
-              <View style={{ width: 1, height: 20, backgroundColor: colors.border }} />
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Program</Text>
-                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.primary, marginTop: 1 }}>
-                  {phaseLabels[phase]}
-                </Text>
-              </View>
-              <View style={{ width: 1, height: 20, backgroundColor: colors.border }} />
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>Streak</Text>
-                <Text style={{ fontSize: 14, fontWeight: '900', color: colors.warning, marginTop: 1 }}>
-                  {dayNumber}d 🔥
-                </Text>
+
+              {/* Inline 3 Stat Pillars */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: 10,
+                paddingTop: 9,
+                borderTopWidth: 1,
+                borderColor: colors.border,
+              }}>
+                <View>
+                  <Text style={{ fontSize: 9.5, color: colors.muted, fontWeight: '600' }}>Tasks</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: colors.foreground, marginTop: 1 }}>
+                    {completedCount}/{totalTasks}
+                  </Text>
+                </View>
+                <View style={{ width: 1, height: 18, backgroundColor: colors.border }} />
+                <View>
+                  <Text style={{ fontSize: 9.5, color: colors.muted, fontWeight: '600' }}>Split</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: colors.primary, marginTop: 1 }}>
+                    {isRestDay ? 'Rest' : 'Mon–Sat'}
+                  </Text>
+                </View>
+                <View style={{ width: 1, height: 18, backgroundColor: colors.border }} />
+                <View>
+                  <Text style={{ fontSize: 9.5, color: colors.muted, fontWeight: '600' }}>Streak</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                    <Flame size={12} color={colors.warning} />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.warning }}>
+                      {dayNumber}d
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* ── 📊 Modular 2x2 Vitals Grid ─────────────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground, marginBottom: 12 }}>
+        <Animated.View entering={FadeInDown.delay(40).duration(220)} style={{ paddingHorizontal: 18, marginBottom: 14 }}>
+          <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 9, letterSpacing: -0.2 }}>
             Daily Vitals
           </Text>
 
@@ -632,7 +650,7 @@ export default function DashboardScreen() {
               title="Daily Streak"
               value={dayNumber}
               unit="days"
-              subtitle="Unbroken focus"
+              subtitle="Unbroken discipline"
               accentColor={colors.warning}
               onPress={() => router.navigate('/(tabs)/discipline')}
             />
@@ -641,7 +659,7 @@ export default function DashboardScreen() {
               icon={Sparkles}
               title="Tonight's Active"
               value={getShortActiveName(dayName)}
-              subtitle="Tap for routine"
+              subtitle="Tap for PM skincare"
               accentColor="#F472B6"
               onPress={async () => {
                 await NavRepo.setPendingSubTab('/(tabs)/appearance', 'skincare');
@@ -651,47 +669,47 @@ export default function DashboardScreen() {
 
             <MetricCard
               icon={Dumbbell}
-              title="Training"
-              value={dayName}
-              subtitle="Tap to view session"
-              accentColor="#A78BFA"
+              title="Training Session"
+              value={todayWorkoutLabel}
+              subtitle={todayWorkoutSub}
+              accentColor="#38BDF8"
               onPress={() => router.navigate('/(tabs)/training')}
             />
 
-            {/* Daily Quote Card replacing Hydration */}
+            {/* Daily Quote Card (Forge | Naval) */}
             <View
               style={{
-                width: (width - 40 - 10) / 2,
+                width: (width - 36 - 10) / 2,
                 backgroundColor: colors.surface,
-                borderRadius: 20,
-                padding: 13,
+                borderRadius: 16,
+                padding: 12,
                 borderWidth: 1,
                 borderColor: colors.border,
                 justifyContent: 'space-between',
-                minHeight: 122,
+                minHeight: 102,
               }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{
                   flexDirection: 'row',
                   backgroundColor: colors.background,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   padding: 2,
                   borderWidth: 1,
                   borderColor: colors.border,
                 }}>
                   <Tap
                     onPress={() => setWisdomSource('forge')}
-                    scaleTo={0.92}
+                    scaleTo={0.93}
                     style={{
                       paddingHorizontal: 6,
-                      paddingVertical: 2.5,
-                      borderRadius: 7,
+                      paddingVertical: 2,
+                      borderRadius: 6,
                       backgroundColor: wisdomSource === 'forge' ? colors.primary : 'transparent',
                     }}
                   >
                     <Text style={{
-                      fontSize: 9.5,
+                      fontSize: 9,
                       fontWeight: '800',
                       color: wisdomSource === 'forge' ? '#FFFFFF' : colors.muted,
                     }}>
@@ -700,16 +718,16 @@ export default function DashboardScreen() {
                   </Tap>
                   <Tap
                     onPress={() => setWisdomSource('naval')}
-                    scaleTo={0.92}
+                    scaleTo={0.93}
                     style={{
                       paddingHorizontal: 6,
-                      paddingVertical: 2.5,
-                      borderRadius: 7,
+                      paddingVertical: 2,
+                      borderRadius: 6,
                       backgroundColor: wisdomSource === 'naval' ? colors.primary : 'transparent',
                     }}
                   >
                     <Text style={{
-                      fontSize: 9.5,
+                      fontSize: 9,
                       fontWeight: '800',
                       color: wisdomSource === 'naval' ? '#FFFFFF' : colors.muted,
                     }}>
@@ -726,26 +744,26 @@ export default function DashboardScreen() {
                     alignItems: 'center',
                     gap: 3,
                     backgroundColor: colors.background,
-                    borderRadius: 9,
+                    borderRadius: 7,
                     paddingHorizontal: 6,
-                    paddingVertical: 3,
+                    paddingVertical: 2.5,
                     borderWidth: 1,
                     borderColor: colors.border,
                   }}
                 >
                   <RotateCw size={9} color={colors.primary} />
-                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: colors.primary }}>Next</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '800', color: colors.primary }}>Next</Text>
                 </Tap>
               </View>
 
-              <Tap onPress={nextQuote} scaleTo={0.98} style={{ marginTop: 8 }}>
+              <Tap onPress={nextQuote} scaleTo={0.98} style={{ marginTop: 6 }}>
                 <Text
                   numberOfLines={3}
                   style={{
-                    fontSize: 10.5,
+                    fontSize: 10,
                     fontStyle: 'italic',
                     color: colors.foreground,
-                    lineHeight: 14.5,
+                    lineHeight: 13.5,
                     fontWeight: '500',
                   }}
                 >
@@ -753,10 +771,10 @@ export default function DashboardScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: 9.5,
+                    fontSize: 9,
                     fontWeight: '800',
                     color: colors.primary,
-                    marginTop: 4,
+                    marginTop: 3,
                   }}
                   numberOfLines={1}
                 >
@@ -765,51 +783,51 @@ export default function DashboardScreen() {
               </Tap>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* ── 🤖 Ask FORGE AI Card ──────────────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <Animated.View entering={FadeInDown.delay(80).duration(220)} style={{ paddingHorizontal: 18, marginBottom: 16 }}>
           <Tap
             onPress={() => router.navigate('/(tabs)/ai-coach')}
-            scaleTo={0.98}
+            scaleTo={0.985}
             style={{
               flexDirection: 'row', alignItems: 'center',
               backgroundColor: colors.surface,
-              borderRadius: 20, padding: 16,
-              borderWidth: 1, borderColor: colors.primary + '40',
+              borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14,
+              borderWidth: 1, borderColor: colors.primary + '38',
             }}
           >
             <View style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: colors.primary + '18',
-              alignItems: 'center', justifyContent: 'center', marginRight: 14,
+              width: 36, height: 36, borderRadius: 11,
+              backgroundColor: colors.primary + '16',
+              alignItems: 'center', justifyContent: 'center', marginRight: 12,
             }}>
-              <Bot size={22} color={colors.primary} />
+              <Bot size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>
+              <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground }}>
                 Ask FORGE AI Coach
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
-                24/7 workout form, skincare, diet & mindset
+              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
+                Form checks, macros, skincare & protocol adjustments
               </Text>
             </View>
-            <ChevronRight size={18} color={colors.muted} />
+            <ChevronRight size={16} color={colors.muted} />
           </Tap>
-        </View>
+        </Animated.View>
 
         {/* ── 📋 Today's Schedule & Protocol ─────────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>
+        <View style={{ paddingHorizontal: 18, marginBottom: 18 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, letterSpacing: -0.2 }}>
               Today's Protocol
             </Text>
             <View style={{
-              backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4,
+              backgroundColor: colors.surface, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3,
               borderWidth: 1, borderColor: colors.border,
             }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted }}>
-                {completedCount} of {totalTasks} Done
+              <Text style={{ fontSize: 10.5, fontWeight: '700', color: colors.muted }}>
+                {completedCount}/{totalTasks} Done
               </Text>
             </View>
           </View>
@@ -829,34 +847,32 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── 📈 Weekly Completion Bar Chart ─────────────────────── */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground, marginBottom: 12 }}>
+        <View style={{ paddingHorizontal: 18, marginBottom: 20 }}>
+          <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 10, letterSpacing: -0.2 }}>
             Weekly Consistency
           </Text>
 
           <View style={{
-            backgroundColor: colors.surface, borderRadius: 20, padding: 18,
+            backgroundColor: colors.surface, borderRadius: 16, padding: 14,
             borderWidth: 1, borderColor: colors.border,
           }}>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 85 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 78 }}>
               {weeklyData.length > 0 ? (
                 weeklyData.map((pct, i) => {
-                  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                  const isToday = i === 6;
+                  const isToday = i === weeklyData.length - 1;
                   return (
                     <View key={i} style={{ alignItems: 'center', flex: 1 }}>
                       <View style={{
-                        height: Math.max(12, (pct / 100) * 60),
-                        width: isToday ? 24 : 18, borderRadius: 5,
-                        backgroundColor: isToday ? colors.primary : pct > 70 ? colors.success + '90' : pct > 40 ? colors.warning + '90' : colors.border,
-                        borderWidth: isToday ? 2 : 0, borderColor: isToday ? colors.background : 'transparent',
+                        height: Math.max(10, (pct / 100) * 52),
+                        width: isToday ? 22 : 16, borderRadius: 5,
+                        backgroundColor: isToday ? colors.primary : pct > 70 ? colors.success + '85' : pct > 40 ? colors.warning + '85' : colors.border,
                       }} />
-                      <Text style={{ fontSize: 9.5, color: colors.muted, fontWeight: '600', marginTop: 6 }}>
-                        {days[i]}
+                      <Text style={{ fontSize: 9.5, color: isToday ? colors.foreground : colors.muted, fontWeight: isToday ? '800' : '600', marginTop: 5 }}>
+                        {weekLabels[i] || 'D'}
                       </Text>
                       <Text style={{
-                        fontSize: 9.5, color: isToday ? colors.primary : colors.muted,
-                        fontWeight: isToday ? '900' : '600', marginTop: 2,
+                        fontSize: 9, color: isToday ? colors.primary : colors.muted,
+                        fontWeight: isToday ? '800' : '600', marginTop: 1,
                       }}>
                         {pct}%
                       </Text>
@@ -869,8 +885,8 @@ export default function DashboardScreen() {
                 </View>
               )}
             </View>
-            <Text style={{ color: colors.muted, fontSize: 10.5, textAlign: 'center', marginTop: 10, fontWeight: '500' }}>
-              Daily task completion rate across the last 7 days
+            <Text style={{ color: colors.muted, fontSize: 10, textAlign: 'center', marginTop: 8, fontWeight: '500' }}>
+              7-day rolling protocol completion · Sunday is active recovery
             </Text>
           </View>
         </View>
