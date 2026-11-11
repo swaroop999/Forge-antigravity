@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, Dimensions, RefreshControl } from 'react-native';
 import {
-  Activity, Flame, Dumbbell, Settings, Check, ChevronRight,
-  Sparkles, Bot, ArrowUpRight, RotateCw,
+  Flame, Settings, Check, ChevronRight,
+  Sparkles, ArrowUpRight, RotateCw,
 } from "lucide-react-native";
 import { NavRepo } from '@/lib/db/database';
 import { router } from 'expo-router';
@@ -641,13 +641,13 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── 📊 Modular 2x2 Vitals Grid ─────────────────────── */}
-        <View style={{ paddingHorizontal: 18, marginBottom: 14 }}>
+        {/* ── 📊 Daily Vitals & Full-Width Wisdom Card ─────────────────────── */}
+        <View style={{ paddingHorizontal: 18, marginBottom: 16 }}>
           <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 9, letterSpacing: -0.2 }}>
             Daily Vitals
           </Text>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
             <MetricCard
               icon={Flame}
               title="Daily Streak"
@@ -669,30 +669,26 @@ export default function DashboardScreen() {
                 router.navigate('/(tabs)/appearance');
               }}
             />
+          </View>
 
-            <MetricCard
-              icon={Dumbbell}
-              title="Training Session"
-              value={todayWorkoutLabel}
-              subtitle={todayWorkoutSub}
-              accentColor="#38BDF8"
-              onPress={() => router.navigate('/(tabs)/training')}
-            />
-
-            {/* Daily Quote Card (Forge | Naval) */}
-            <View
-              style={{
-                width: (width - 36 - 10) / 2,
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: colors.border,
-                justifyContent: 'space-between',
-                minHeight: 102,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Full-Width Horizontal Rectangular Quote Card (Forge | Naval) */}
+          <View
+            style={{
+              width: '100%',
+              backgroundColor: colors.surface,
+              borderRadius: 16,
+              padding: 15,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderLeftWidth: 3.5,
+              borderLeftColor: colors.primary,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.muted, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                  Daily Mindset
+                </Text>
                 <View style={{
                   flexDirection: 'row',
                   backgroundColor: colors.background,
@@ -703,16 +699,16 @@ export default function DashboardScreen() {
                 }}>
                   <Tap
                     onPress={() => setWisdomSource('forge')}
-                    scaleTo={0.93}
+                    scaleTo={0.95}
                     style={{
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
+                      paddingHorizontal: 9,
+                      paddingVertical: 3,
                       borderRadius: 6,
                       backgroundColor: wisdomSource === 'forge' ? colors.primary : 'transparent',
                     }}
                   >
                     <Text style={{
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: '800',
                       color: wisdomSource === 'forge' ? '#FFFFFF' : colors.muted,
                     }}>
@@ -721,16 +717,16 @@ export default function DashboardScreen() {
                   </Tap>
                   <Tap
                     onPress={() => setWisdomSource('naval')}
-                    scaleTo={0.93}
+                    scaleTo={0.95}
                     style={{
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
+                      paddingHorizontal: 9,
+                      paddingVertical: 3,
                       borderRadius: 6,
                       backgroundColor: wisdomSource === 'naval' ? colors.primary : 'transparent',
                     }}
                   >
                     <Text style={{
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: '800',
                       color: wisdomSource === 'naval' ? '#FFFFFF' : colors.muted,
                     }}>
@@ -738,85 +734,52 @@ export default function DashboardScreen() {
                     </Text>
                   </Tap>
                 </View>
-
-                <Tap
-                  onPress={nextQuote}
-                  scaleTo={0.9}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 3,
-                    backgroundColor: colors.background,
-                    borderRadius: 7,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2.5,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                  }}
-                >
-                  <RotateCw size={9} color={colors.primary} />
-                  <Text style={{ fontSize: 9, fontWeight: '800', color: colors.primary }}>Next</Text>
-                </Tap>
               </View>
 
-              <Tap onPress={nextQuote} scaleTo={0.98} style={{ marginTop: 6 }}>
-                <Text
-                  numberOfLines={3}
-                  style={{
-                    fontSize: 10,
-                    fontStyle: 'italic',
-                    color: colors.foreground,
-                    lineHeight: 13.5,
-                    fontWeight: '500',
-                  }}
-                >
-                  "{currentQuote}"
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 9,
-                    fontWeight: '800',
-                    color: colors.primary,
-                    marginTop: 3,
-                  }}
-                  numberOfLines={1}
-                >
-                  {wisdomSource === 'naval' ? '— Naval Ravikant' : '— Forge Protocol'}
-                </Text>
+              <Tap
+                onPress={nextQuote}
+                scaleTo={0.93}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: colors.primary + '14',
+                  borderRadius: 8,
+                  paddingHorizontal: 9,
+                  paddingVertical: 4,
+                  borderWidth: 1,
+                  borderColor: colors.primary + '30',
+                }}
+              >
+                <RotateCw size={10.5} color={colors.primary} />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.primary }}>Next Quote</Text>
               </Tap>
             </View>
-          </View>
-        </View>
 
-        {/* ── 🤖 Ask FORGE AI Card ──────────────────────── */}
-        <View style={{ paddingHorizontal: 18, marginBottom: 16 }}>
-          <Tap
-            onPress={() => router.navigate('/(tabs)/ai-coach')}
-            scaleTo={0.985}
-            style={{
-              flexDirection: 'row', alignItems: 'center',
-              backgroundColor: colors.surface,
-              borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14,
-              borderWidth: 1, borderColor: colors.primary + '38',
-            }}
-          >
-            <View style={{
-              width: 36, height: 36, borderRadius: 11,
-              backgroundColor: colors.primary + '16',
-              alignItems: 'center', justifyContent: 'center', marginRight: 12,
-            }}>
-              <Bot size={18} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground }}>
-                Ask FORGE AI Coach
+            <Tap onPress={nextQuote} scaleTo={0.99}>
+              <Text
+                style={{
+                  fontSize: 13.5,
+                  fontStyle: 'italic',
+                  color: colors.foreground,
+                  lineHeight: 20,
+                  fontWeight: '600',
+                }}
+              >
+                "{currentQuote}"
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>
-                Form checks, macros, skincare & protocol adjustments
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '800',
+                  color: colors.primary,
+                  marginTop: 7,
+                }}
+              >
+                {wisdomSource === 'naval' ? '— Naval Ravikant' : '— Forge Protocol'}
               </Text>
-            </View>
-            <ChevronRight size={16} color={colors.muted} />
-          </Tap>
+            </Tap>
+          </View>
         </View>
 
         {/* ── 📋 Today's Schedule & Protocol ─────────────────── */}

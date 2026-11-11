@@ -177,6 +177,30 @@ function ExerciseDetailModal({ exercise, visible, onClose }: { exercise: Exercis
             </View>
           </View>
 
+          {(exercise.duration || exercise.gap || exercise.whenToPerform) && (
+            <View style={{ backgroundColor: colors.primary + '12', borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.primary + '32', gap: 6 }}>
+              <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12.5, marginBottom: 2 }}>Timing & Cadence Protocol</Text>
+              {exercise.duration && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Clock size={12.5} color={colors.primary} />
+                  <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>Duration: <Text style={{ fontWeight: '500' }}>{exercise.duration}</Text></Text>
+                </View>
+              )}
+              {exercise.gap && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <RotateCcw size={12.5} color={colors.warning} />
+                  <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>Rest / Gap: <Text style={{ fontWeight: '500' }}>{exercise.gap}</Text></Text>
+                </View>
+              )}
+              {exercise.whenToPerform && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Calendar size={12.5} color={colors.success} />
+                  <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>When: <Text style={{ fontWeight: '500' }}>{exercise.whenToPerform}</Text></Text>
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border }}>
             <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12.5, marginBottom: 6 }}>Execution</Text>
             <Text style={{ color: colors.foreground, fontSize: 12.5, lineHeight: 19 }}>{exercise.description}</Text>
@@ -934,14 +958,33 @@ function PostureScreen() {
   return (
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 15, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 4 }}>Goal: +1 to 1.5 Inches Visual Height</Text>
-        <Text style={{ color: colors.muted, fontSize: 12.5, lineHeight: 18 }}>
-          Correcting forward head posture, rounded shoulders, and anterior pelvic tilt unlocks immediate stature and shoulder width improvements over 8–12 weeks.
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 6 }}>
+          Posture Cadence & Timing (+1 to 1.5" Visual Height)
         </Text>
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <Clock size={13} color={colors.primary} />
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>
+              Duration: <Text style={{ color: colors.muted, fontWeight: '500' }}>10 min/day total (5 min Morning + 5 min Evening)</Text>
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <RotateCcw size={13} color={colors.warning} />
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>
+              Rest Gaps: <Text style={{ color: colors.muted, fontWeight: '500' }}>15–30 sec between sets · 3–4 hr gap for desk resets</Text>
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <Calendar size={13} color={colors.success} />
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: '700', flex: 1 }}>
+              When: <Text style={{ color: colors.muted, fontWeight: '500' }}>7:00 AM upon waking & 9:00 PM post-desk decompression</Text>
+            </Text>
+          </View>
+        </View>
       </View>
 
       <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 10, letterSpacing: -0.2 }}>
-        Daily Posture Routine (10 min)
+        Daily Posture Routine (Tap any card for execution & GIF demo)
       </Text>
       {postureExercises.map((ex) => {
         const isDone = !!done[ex.id];
@@ -976,9 +1019,34 @@ function PostureScreen() {
                 <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 2 }}>
                   {ex.muscles.join(' · ')}
                 </Text>
-                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4, lineHeight: 17 }}>
-                  {ex.description}
-                </Text>
+
+                {/* Duration, Rest Gap & When to Perform (replaces outer description) */}
+                <View style={{ marginTop: 7, gap: 4 }}>
+                  {ex.duration && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Clock size={11.5} color={colors.primary} />
+                      <Text style={{ color: colors.foreground, fontSize: 11.5, fontWeight: '700', flex: 1 }}>
+                        {ex.duration}
+                      </Text>
+                    </View>
+                  )}
+                  {ex.gap && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <RotateCcw size={11.5} color={colors.warning} />
+                      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600', flex: 1 }}>
+                        Gap: {ex.gap}
+                      </Text>
+                    </View>
+                  )}
+                  {ex.whenToPerform && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={11.5} color={colors.success} />
+                      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600', flex: 1 }}>
+                        When: {ex.whenToPerform}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </Tap>
 
               <Tap
@@ -1020,7 +1088,7 @@ function PostureScreen() {
                 ))}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
                   <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>
-                    View animated form demo & cues
+                    Tap for full description, animated demo & cues
                   </Text>
                   <ChevronRight size={11} color={colors.primary} />
                 </View>
@@ -1061,10 +1129,32 @@ function PriorityMovements() {
   return (
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.primary + '14', borderRadius: 14, padding: 15, marginBottom: 16, borderWidth: 1, borderColor: colors.primary + '38' }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 4 }}>High-Frequency Aesthetic Priorities</Text>
-        <Text style={{ color: colors.foreground, fontSize: 12.5, lineHeight: 18 }}>
-          Lateral delts, upper traps, and neck musculature recover rapidly and create the strongest V-taper frame impression. Hit these with controlled volume throughout the week.
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 6 }}>
+          Priority Schedule, Durations & Recovery Gaps
         </Text>
+        <View style={{ gap: 7 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+            <Clock size={13} color={colors.primary} style={{ marginTop: 2 }} />
+            <Text style={{ color: colors.foreground, fontSize: 11.5, lineHeight: 17, flex: 1 }}>
+              <Text style={{ fontWeight: '800', color: colors.primary }}>Daily Micro-Work (3–5 min · Every Day): </Text>
+              Band Pull-Aparts, Face Pulls & Dead Hangs · 30–60s rest · Do at 7:00 AM or desk breaks.
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+            <RotateCcw size={13} color={colors.warning} style={{ marginTop: 2 }} />
+            <Text style={{ color: colors.foreground, fontSize: 11.5, lineHeight: 17, flex: 1 }}>
+              <Text style={{ fontWeight: '800', color: colors.warning }}>Delts & Traps Finisher (6–8 min · 4–6x/wk): </Text>
+              Lateral Raises, Rear Delt Flyes & Shrugs · 45–60s rest · Last 5 min of workouts (5:45 PM) + Saturday.
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+            <Calendar size={13} color={colors.success} style={{ marginTop: 2 }} />
+            <Text style={{ color: colors.foreground, fontSize: 11.5, lineHeight: 17, flex: 1 }}>
+              <Text style={{ fontWeight: '800', color: colors.success }}>Neck Hypertrophy Block (8 min · Tue, Thu, Sat): </Text>
+              Neck Curls → Extensions → Side Flexion · 45s rest · 48h recovery gap between sessions.
+            </Text>
+          </View>
+        </View>
       </View>
 
       {priority.map((ex) => {
@@ -1099,9 +1189,34 @@ function PriorityMovements() {
                 <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2, fontWeight: '700' }}>
                   {ex.muscles.join(' · ')}
                 </Text>
-                <Text style={{ color: colors.foreground, fontSize: 12, marginTop: 5, lineHeight: 17 }}>
-                  {ex.description}
-                </Text>
+
+                {/* Duration, Rest Gap & When to Perform (replaces outer description) */}
+                <View style={{ marginTop: 7, gap: 4 }}>
+                  {ex.duration && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Clock size={11.5} color={colors.primary} />
+                      <Text style={{ color: colors.foreground, fontSize: 11.5, fontWeight: '700', flex: 1 }}>
+                        {ex.duration}
+                      </Text>
+                    </View>
+                  )}
+                  {ex.gap && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <RotateCcw size={11.5} color={colors.warning} />
+                      <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600', flex: 1 }}>
+                        Gap: {ex.gap}
+                      </Text>
+                    </View>
+                  )}
+                  {ex.whenToPerform && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={11.5} color={colors.success} />
+                      <Text style={{ color: colors.foreground, fontSize: 11, fontWeight: '700', flex: 1 }}>
+                        When: <Text style={{ color: colors.muted, fontWeight: '600' }}>{ex.whenToPerform}</Text>
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </Tap>
 
               <Tap
@@ -1138,7 +1253,7 @@ function PriorityMovements() {
               ))}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
                 <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>
-                  View animated form demo & cues
+                  Tap for full description, animated demo & cues
                 </Text>
                 <ChevronRight size={11} color={colors.primary} />
               </View>
