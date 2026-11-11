@@ -301,6 +301,8 @@ function SupplementsScreen() {
 
 // ─── Water Tracker ────────────────────────────────────────────────────────────
 
+const WATER_BLUE = '#0EA5E9';
+
 function WaterTracker() {
   const colors = useColors();
   const [glasses, setGlasses] = useState(0);
@@ -329,19 +331,19 @@ function WaterTracker() {
         backgroundColor: colors.surface, borderRadius: 18, padding: 22,
         borderWidth: 1, borderColor: colors.border, alignItems: 'center',
       }}>
-        <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16 }}>
+        <Text style={{ fontSize: 10.5, fontWeight: '800', color: WATER_BLUE, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16 }}>
           Daily Hydration Tracker
         </Text>
 
         {/* Visual Water Bottle Fill Gauge */}
         <View style={{
           width: 108, height: 200, borderRadius: 34, backgroundColor: colors.background,
-          overflow: 'hidden', borderWidth: 2, borderColor: colors.primary + '55', position: 'relative',
+          overflow: 'hidden', borderWidth: 2, borderColor: WATER_BLUE + '55', position: 'relative',
           alignItems: 'center', justifyContent: 'center', marginBottom: 18,
         }}>
           <View style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: `${pct}%`, backgroundColor: colors.primary + '55',
+            height: `${pct}%`, backgroundColor: WATER_BLUE + '55',
           }} />
           <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{litres}L</Text>
           <Text style={{ fontSize: 11, color: colors.muted, fontWeight: '700', marginTop: 2 }}>of 3.50L</Text>
@@ -353,7 +355,7 @@ function WaterTracker() {
         </View>
 
         <View style={{ width: '100%', height: 7, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden', marginTop: 12, marginBottom: 18, borderWidth: 1, borderColor: colors.border }}>
-          <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 4, width: `${pct}%` }} />
+          <View style={{ height: '100%', backgroundColor: WATER_BLUE, borderRadius: 4, width: `${pct}%` }} />
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
@@ -371,7 +373,7 @@ function WaterTracker() {
             onPress={() => addGlass(1)}
             scaleTo={0.96}
             style={{
-              flex: 1, height: 44, backgroundColor: colors.primary, borderRadius: 12,
+              flex: 1, height: 44, backgroundColor: WATER_BLUE, borderRadius: 12,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
