@@ -18,7 +18,6 @@ import {
   PM_ACTIVES_ROTATION, WORKOUT_PROGRAMS,
 } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
@@ -558,7 +557,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── 🎯 Compact Horizontal Hero Progress Card ─────────────── */}
-        <Animated.View entering={FadeInDown.duration(220)} style={{ paddingHorizontal: 18, marginBottom: 14 }}>
+        <View style={{ paddingHorizontal: 18, marginBottom: 14 }}>
           <View style={{
             backgroundColor: colors.surface,
             borderRadius: 18,
@@ -640,10 +639,10 @@ export default function DashboardScreen() {
               </View>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* ── 📊 Modular 2x2 Vitals Grid ─────────────────────── */}
-        <Animated.View entering={FadeInDown.delay(40).duration(220)} style={{ paddingHorizontal: 18, marginBottom: 14 }}>
+        <View style={{ paddingHorizontal: 18, marginBottom: 14 }}>
           <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 9, letterSpacing: -0.2 }}>
             Daily Vitals
           </Text>
@@ -787,10 +786,10 @@ export default function DashboardScreen() {
               </Tap>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* ── 🤖 Ask FORGE AI Card ──────────────────────── */}
-        <Animated.View entering={FadeInDown.delay(80).duration(220)} style={{ paddingHorizontal: 18, marginBottom: 16 }}>
+        <View style={{ paddingHorizontal: 18, marginBottom: 16 }}>
           <Tap
             onPress={() => router.navigate('/(tabs)/ai-coach')}
             scaleTo={0.985}
@@ -818,7 +817,7 @@ export default function DashboardScreen() {
             </View>
             <ChevronRight size={16} color={colors.muted} />
           </Tap>
-        </Animated.View>
+        </View>
 
         {/* ── 📋 Today's Schedule & Protocol ─────────────────── */}
         <View style={{ paddingHorizontal: 18, marginBottom: 18 }}>

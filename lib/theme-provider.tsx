@@ -1,7 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Appearance, View, useColorScheme as useSystemColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  ThemeProvider as NavigationThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  type Theme as NavigationTheme,
+} from "@react-navigation/native";
 import { colorScheme as nativewindColorScheme, vars } from "nativewind";
+import * as SystemUI from "expo-system-ui";
 
 import { SchemeColors, type ColorScheme } from "@/constants/theme";
 
@@ -15,18 +22,19 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemScheme = useSystemColorScheme() ?? "light";
+  const systemScheme = useSystemColorScheme() ?? "dark";
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(systemScheme);
   const [loaded, setLoaded] = useState(false);
 
   const applyScheme = useCallback((scheme: ColorScheme) => {
     nativewindColorScheme.set(scheme);
     Appearance.setColorScheme?.(scheme);
+    const palette = SchemeColors[scheme];
+    SystemUI.setBackgroundColorAsync(palette.background).catch(() => {});
     if (typeof document !== "undefined") {
       const root = document.documentElement;
       root.dataset.theme = scheme;
       root.classList.toggle("dark", scheme === "dark");
-      const palette = SchemeColors[scheme];
       Object.entries(palette).forEach(([token, value]) => {
         root.style.setProperty(`--color-${token}`, value);
       });
@@ -59,22 +67,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (loaded) applyScheme(colorScheme);
   }, [applyScheme, colorScheme, loaded]);
 
+  const palette = SchemeColors[colorScheme];
+
+  const navigationTheme: NavigationTheme = useMemo(() => {
+    const base = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: colorScheme === "dark",
+      colors: {
+        ...base.colors,
+        primary: palette.primary,
+        background: palette.background,
+        card: palette.surface,
+        text: palette.foreground,
+        border: palette.border,
+        notification: palette.error,
+      },
+    };
+  }, [colorScheme, palette]);
+
   const themeVariables = useMemo(
     () =>
       vars({
-        "color-primary": SchemeColors[colorScheme].primary,
-        "color-background": SchemeColors[colorScheme].background,
-        "color-surface": SchemeColors[colorScheme].surface,
-        "color-foreground": SchemeColors[colorScheme].foreground,
-        "color-muted": SchemeColors[colorScheme].muted,
-        "color-border": SchemeColors[colorScheme].border,
-        "color-success": SchemeColors[colorScheme].success,
-        "color-warning": SchemeColors[colorScheme].warning,
-        "color-error": SchemeColors[colorScheme].error,
-        "color-tertiary": SchemeColors[colorScheme].tertiary,
-        "color-urge": SchemeColors[colorScheme].urge,
+        "color-primary": palette.primary,
+        "color-background": palette.background,
+        "color-surface": palette.surface,
+        "color-foreground": palette.foreground,
+        "color-muted": palette.muted,
+        "color-border": palette.border,
+        "color-success": palette.success,
+        "color-warning": palette.warning,
+        "color-error": palette.error,
+        "color-tertiary": palette.tertiary,
+        "color-urge": palette.urge,
       }),
-    [colorScheme],
+    [palette],
   );
 
   const value = useMemo(
@@ -87,7 +114,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <View style={[{ flex: 1 }, themeVariables]}>{children}</View>
+      <NavigationThemeProvider value={navigationTheme}>
+        <View style={[{ flex: 1, backgroundColor: palette.background }, themeVariables]}>
+          {children}
+        </View>
+      </NavigationThemeProvider>
     </ThemeContext.Provider>
   );
 }

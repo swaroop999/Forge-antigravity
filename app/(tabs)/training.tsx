@@ -16,7 +16,6 @@ import { useColors } from '@/hooks/use-colors';
 import { AppRepo, WorkoutRepo, DailyLogRepo, TrainingRepo, NavRepo, type WorkoutLog } from '@/lib/db/database';
 import { EXERCISES, WORKOUT_PROGRAMS, type Exercise, type WorkoutDay } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'workout' | 'program' | 'library' | 'progress' | 'posture' | 'priority';
 
@@ -930,6 +929,7 @@ function PostureScreen() {
   const colors = useColors();
   const postureExercises = EXERCISES.filter(e => e.category === 'posture');
   const [done, setDone] = useState<Record<string, boolean>>({});
+  const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<Exercise | null>(null);
 
   return (
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
@@ -943,36 +943,92 @@ function PostureScreen() {
       <Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.foreground, marginBottom: 10, letterSpacing: -0.2 }}>
         Daily Posture Routine (10 min)
       </Text>
-      {postureExercises.map((ex) => (
-        <Tap
-          key={ex.id}
-          onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
-          scaleTo={0.985}
-          style={{
-            backgroundColor: done[ex.id] ? colors.success + '12' : colors.surface,
-            borderRadius: 12, padding: 13, marginBottom: 8,
-            borderWidth: 1, borderColor: done[ex.id] ? colors.success + '45' : colors.border,
-            flexDirection: 'row', alignItems: 'center',
-          }}
-        >
-          <View style={{
-            width: 22, height: 22, borderRadius: 7,
-            backgroundColor: done[ex.id] ? colors.success : 'transparent',
-            borderWidth: 1.8, borderColor: done[ex.id] ? colors.success : colors.border,
-            marginRight: 12, alignItems: 'center', justifyContent: 'center',
-          }}>
-            {done[ex.id] && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+      {postureExercises.map((ex) => {
+        const isDone = !!done[ex.id];
+        return (
+          <View
+            key={ex.id}
+            style={{
+              backgroundColor: isDone ? colors.success + '12' : colors.surface,
+              borderRadius: 14, padding: 14, marginBottom: 10,
+              borderWidth: 1, borderColor: isDone ? colors.success + '50' : colors.border,
+            }}
+          >
+            {/* Header Row: Tap title/DEMO to open animated demo modal, or tap checkbox to mark done */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <Tap
+                onPress={() => setSelectedExerciseForModal(ex)}
+                scaleTo={0.98}
+                style={{ flex: 1, paddingRight: 10 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={{ fontWeight: '800', fontSize: 14.5, color: isDone ? colors.success : colors.foreground, textDecorationLine: isDone ? 'line-through' : 'none' }}>
+                    {ex.name}
+                  </Text>
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 3,
+                    backgroundColor: colors.primary + '1C', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+                  }}>
+                    <Info size={10} color={colors.primary} />
+                    <Text style={{ color: colors.primary, fontSize: 9.5, fontWeight: '800' }}>DEMO</Text>
+                  </View>
+                </View>
+                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 2 }}>
+                  {ex.muscles.join(' · ')}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4, lineHeight: 17 }}>
+                  {ex.description}
+                </Text>
+              </Tap>
+
+              <Tap
+                onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
+                scaleTo={0.92}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: isDone ? colors.success : colors.background,
+                  borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6,
+                  borderWidth: 1.5, borderColor: isDone ? colors.success : colors.border,
+                }}
+              >
+                <View style={{
+                  width: 16, height: 16, borderRadius: 5,
+                  backgroundColor: isDone ? '#FFFFFF' : 'transparent',
+                  borderWidth: isDone ? 0 : 1.5, borderColor: colors.muted,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {isDone && <Check size={11} color={colors.success} strokeWidth={3} />}
+                </View>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: isDone ? '#FFFFFF' : colors.foreground }}>
+                  {isDone ? 'Done' : 'Check'}
+                </Text>
+              </Tap>
+            </View>
+
+            {/* Form Cues Preview Box (tapping opens animated demonstration & full cues) */}
+            {ex.formCues && ex.formCues.length > 0 && (
+              <Tap
+                onPress={() => setSelectedExerciseForModal(ex)}
+                scaleTo={0.99}
+                style={{
+                  backgroundColor: colors.background, borderRadius: 9, padding: 9,
+                  borderWidth: 1, borderColor: colors.border,
+                }}
+              >
+                {ex.formCues.slice(0, 2).map((cue, ci) => (
+                  <Text key={ci} style={{ color: colors.muted, fontSize: 11, marginBottom: 2 }}>• {cue}</Text>
+                ))}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
+                  <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>
+                    View animated form demo & cues
+                  </Text>
+                  <ChevronRight size={11} color={colors.primary} />
+                </View>
+              </Tap>
+            )}
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '700', fontSize: 13.5, color: done[ex.id] ? colors.muted : colors.foreground, textDecorationLine: done[ex.id] ? 'line-through' : 'none' }}>
-              {ex.name}
-            </Text>
-            <Text style={{ color: colors.muted, fontSize: 11.5, marginTop: 2 }} numberOfLines={2}>
-              {ex.description}
-            </Text>
-          </View>
-        </Tap>
-      ))}
+        );
+      })}
 
       <View style={{ backgroundColor: colors.warning + '14', borderRadius: 14, padding: 14, marginTop: 6, borderWidth: 1, borderColor: colors.warning + '35' }}>
         <Text style={{ color: colors.warning, fontWeight: '800', fontSize: 12.5, marginBottom: 6 }}>Visual Proportion Guidelines</Text>
@@ -984,6 +1040,12 @@ function PostureScreen() {
           • Cropped outer layers ending at the hip bone
         </Text>
       </View>
+
+      <ExerciseDetailModal
+        exercise={selectedExerciseForModal}
+        visible={!!selectedExerciseForModal}
+        onClose={() => setSelectedExerciseForModal(null)}
+      />
     </ScrollView>
   );
 }
@@ -994,6 +1056,7 @@ function PriorityMovements() {
   const colors = useColors();
   const priority = EXERCISES.filter(e => e.category === 'priority');
   const [done, setDone] = useState<Record<string, boolean>>({});
+  const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<Exercise | null>(null);
 
   return (
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
@@ -1004,45 +1067,91 @@ function PriorityMovements() {
         </Text>
       </View>
 
-      {priority.map((ex) => (
-        <Tap
-          key={ex.id}
-          onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
-          scaleTo={0.985}
-          style={{
-            backgroundColor: done[ex.id] ? colors.success + '12' : colors.surface,
-            borderRadius: 14, padding: 14, marginBottom: 9,
-            borderWidth: 1, borderColor: done[ex.id] ? colors.success + '45' : colors.border,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <View style={{
-              width: 24, height: 24, borderRadius: 8,
-              backgroundColor: done[ex.id] ? colors.success : colors.primary + '20',
-              borderWidth: 1.8, borderColor: done[ex.id] ? colors.success : colors.primary,
-              marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2,
-            }}>
-              {done[ex.id] && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+      {priority.map((ex) => {
+        const isDone = !!done[ex.id];
+        return (
+          <View
+            key={ex.id}
+            style={{
+              backgroundColor: isDone ? colors.success + '12' : colors.surface,
+              borderRadius: 14, padding: 14, marginBottom: 9,
+              borderWidth: 1, borderColor: isDone ? colors.success + '45' : colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <Tap
+                onPress={() => setSelectedExerciseForModal(ex)}
+                scaleTo={0.98}
+                style={{ flex: 1, paddingRight: 10 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={{ fontWeight: '800', fontSize: 14.5, color: isDone ? colors.success : colors.foreground }}>
+                    {ex.name}
+                  </Text>
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 3,
+                    backgroundColor: colors.primary + '1C', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+                  }}>
+                    <Info size={10} color={colors.primary} />
+                    <Text style={{ color: colors.primary, fontSize: 9.5, fontWeight: '800' }}>DEMO</Text>
+                  </View>
+                </View>
+                <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2, fontWeight: '700' }}>
+                  {ex.muscles.join(' · ')}
+                </Text>
+                <Text style={{ color: colors.foreground, fontSize: 12, marginTop: 5, lineHeight: 17 }}>
+                  {ex.description}
+                </Text>
+              </Tap>
+
+              <Tap
+                onPress={() => setDone(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
+                scaleTo={0.92}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: isDone ? colors.success : colors.background,
+                  borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6,
+                  borderWidth: 1.5, borderColor: isDone ? colors.success : colors.border,
+                }}
+              >
+                <View style={{
+                  width: 16, height: 16, borderRadius: 5,
+                  backgroundColor: isDone ? '#FFFFFF' : 'transparent',
+                  borderWidth: isDone ? 0 : 1.5, borderColor: colors.muted,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {isDone && <Check size={11} color={colors.success} strokeWidth={3} />}
+                </View>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: isDone ? '#FFFFFF' : colors.foreground }}>
+                  {isDone ? 'Done' : 'Check'}
+                </Text>
+              </Tap>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '800', fontSize: 14, color: done[ex.id] ? colors.success : colors.foreground }}>
-                {ex.name}
-              </Text>
-              <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2, fontWeight: '700' }}>
-                {ex.muscles.join(' · ')}
-              </Text>
-              <Text style={{ color: colors.foreground, fontSize: 12, marginTop: 5, lineHeight: 17 }}>
-                {ex.description}
-              </Text>
-              <View style={{ backgroundColor: colors.background, borderRadius: 8, padding: 8, marginTop: 8, borderWidth: 1, borderColor: colors.border }}>
-                {ex.formCues.map((c, i) => (
-                  <Text key={i} style={{ color: colors.success, fontSize: 11, marginBottom: 2 }}>• {c}</Text>
-                ))}
+
+            <Tap
+              onPress={() => setSelectedExerciseForModal(ex)}
+              scaleTo={0.99}
+              style={{ backgroundColor: colors.background, borderRadius: 8, padding: 9, borderWidth: 1, borderColor: colors.border }}
+            >
+              {ex.formCues.map((c, i) => (
+                <Text key={i} style={{ color: colors.success, fontSize: 11, marginBottom: 2 }}>• {c}</Text>
+              ))}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '800' }}>
+                  View animated form demo & cues
+                </Text>
+                <ChevronRight size={11} color={colors.primary} />
               </View>
-            </View>
+            </Tap>
           </View>
-        </Tap>
-      ))}
+        );
+      })}
+
+      <ExerciseDetailModal
+        exercise={selectedExerciseForModal}
+        visible={!!selectedExerciseForModal}
+        onClose={() => setSelectedExerciseForModal(null)}
+      />
     </ScrollView>
   );
 }
@@ -1182,18 +1291,14 @@ export default function TrainingScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View
-          key={activeTab}
-          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
-          style={{ flex: 1 }}
-        >
+        <View style={{ flex: 1 }}>
           {activeTab === 'workout' && <TodaysWorkout phase={phase} dayOfWeek={dayOfWeek} onNavigateTab={setActiveTab} />}
           {activeTab === 'program' && <ProgramOverview phase={phase} />}
           {activeTab === 'library' && <ExerciseLibrary />}
           {activeTab === 'progress' && <TrainingProgress />}
           {activeTab === 'posture' && <PostureScreen />}
           {activeTab === 'priority' && <PriorityMovements />}
-        </Animated.View>
+        </View>
       </View>
     </ScreenContainer>
   );

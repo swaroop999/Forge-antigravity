@@ -1,17 +1,9 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, type ViewProps } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
-import { useIsFocused } from "@react-navigation/native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  Easing,
-} from "react-native-reanimated";
 
 import { cn } from "@/lib/utils";
-import { motionSpring } from "@/lib/motion";
+import { useColors } from "@/hooks/use-colors";
 
 export interface ScreenContainerProps extends ViewProps {
   /**
@@ -34,8 +26,8 @@ export interface ScreenContainerProps extends ViewProps {
 }
 
 /**
- * A container component that properly handles SafeArea, background colors,
- * and smooth focus-based transitions when switching between bottom tabs or screens.
+ * A container component that properly handles SafeArea and solid background colors
+ * with zero opacity flash when switching between screens or bottom tabs.
  */
 export function ScreenContainer({
   children,
@@ -46,49 +38,22 @@ export function ScreenContainer({
   style,
   ...props
 }: ScreenContainerProps) {
-  const isFocused = useIsFocused();
-  const opacity = useSharedValue(1);
-  const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (isFocused) {
-      opacity.value = 0.72;
-      translateY.value = 6;
-      scale.value = 0.992;
-
-      opacity.value = withTiming(1, {
-        duration: 240,
-        easing: Easing.out(Easing.cubic),
-      });
-      translateY.value = withSpring(0, motionSpring.smooth);
-      scale.value = withSpring(1, motionSpring.smooth);
-    }
-  }, [isFocused]);
-
-  const animatedFocusStyle = useAnimatedStyle(() => ({
-    flex: 1,
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
-  }));
+  const colors = useColors();
 
   return (
     <View
-      className={cn(
-        "flex-1",
-        "bg-background",
-        containerClassName
-      )}
+      className={cn("flex-1", "bg-background", containerClassName)}
+      style={{ flex: 1, backgroundColor: colors.background }}
       {...props}
     >
       <SafeAreaView
         edges={edges}
         className={cn("flex-1", safeAreaClassName)}
-        style={style}
+        style={[{ flex: 1, backgroundColor: colors.background }, style]}
       >
-        <Animated.View style={animatedFocusStyle} className={cn("flex-1", className)}>
+        <View className={cn("flex-1", className)} style={{ flex: 1, backgroundColor: colors.background }}>
           {children}
-        </Animated.View>
+        </View>
       </SafeAreaView>
     </View>
   );

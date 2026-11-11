@@ -10,7 +10,6 @@ import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'meals' | 'supplements' | 'water';
 const TABS: SubTabItem[] = [
@@ -326,87 +325,60 @@ function WaterTracker() {
 
   return (
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-      {/* Compact Hydration Card */}
       <View style={{
-        backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 14,
-        borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 18,
+        backgroundColor: colors.surface, borderRadius: 18, padding: 22,
+        borderWidth: 1, borderColor: colors.border, alignItems: 'center',
       }}>
-        {/* Visual Gauge */}
+        <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16 }}>
+          Daily Hydration Tracker
+        </Text>
+
+        {/* Visual Water Bottle Fill Gauge */}
         <View style={{
-          width: 76, height: 140, borderRadius: 24, backgroundColor: colors.background,
-          overflow: 'hidden', borderWidth: 1.5, borderColor: colors.primary + '50', position: 'relative',
-          alignItems: 'center', justifyContent: 'center',
+          width: 108, height: 200, borderRadius: 34, backgroundColor: colors.background,
+          overflow: 'hidden', borderWidth: 2, borderColor: colors.primary + '55', position: 'relative',
+          alignItems: 'center', justifyContent: 'center', marginBottom: 18,
         }}>
           <View style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             height: `${pct}%`, backgroundColor: colors.primary + '55',
           }} />
-          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.foreground }}>{litres}L</Text>
-          <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>/ 3.5L</Text>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{litres}L</Text>
+          <Text style={{ fontSize: 11, color: colors.muted, fontWeight: '700', marginTop: 2 }}>of 3.50L</Text>
         </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            Daily Hydration
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
-            <Text style={{ fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{glasses}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12.5, fontWeight: '600' }}>/ {TARGET} glasses (250ml)</Text>
-          </View>
-
-          <View style={{ height: 6, backgroundColor: colors.background, borderRadius: 3, overflow: 'hidden', marginTop: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-            <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 3, width: `${pct}%` }} />
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Tap
-              onPress={() => addGlass(-1)}
-              scaleTo={0.94}
-              style={{
-                width: 42, height: 38, backgroundColor: colors.background, borderRadius: 10,
-                borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Minus size={16} color={colors.foreground} />
-            </Tap>
-            <Tap
-              onPress={() => addGlass(1)}
-              scaleTo={0.96}
-              style={{
-                flex: 1, height: 38, backgroundColor: colors.primary, borderRadius: 10,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}
-            >
-              <Plus size={15} color="#FFFFFF" strokeWidth={2.5} />
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#FFFFFF' }}>Add 250ml</Text>
-            </Tap>
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+          <Text style={{ fontSize: 30, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{glasses}</Text>
+          <Text style={{ color: colors.muted, fontSize: 13, fontWeight: '600' }}>/ {TARGET} glasses (250ml each)</Text>
         </View>
-      </View>
 
-      {/* Schedule */}
-      <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 13.5, marginBottom: 10 }}>Hydration Cadence</Text>
-        {[
-          { time: '7:30 AM', amt: '500ml', note: 'Immediately on waking (warm lemon water)' },
-          { time: 'Breakfast', amt: '250ml', note: 'With morning supplement stack' },
-          { time: '10–11 AM', amt: '500ml', note: 'Steady desk hydration' },
-          { time: 'Lunch', amt: '250ml', note: 'With Zinc Picolinate after meal' },
-          { time: '2–4 PM', amt: '500ml', note: 'Afternoon focus block' },
-          { time: 'Pre-Workout', amt: '300ml', note: '30 min before training' },
-          { time: 'Post-Workout', amt: '500ml', note: 'Cellular rehydration with Creatine' },
-          { time: 'Dinner', amt: '250ml', note: 'Final evening intake' },
-        ].map((item, i) => (
-          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: i < 7 ? 1 : 0, borderBottomColor: colors.border }}>
-            <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={{ color: colors.foreground, fontSize: 12.5, fontWeight: '700' }}>{item.time}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 1 }}>{item.note}</Text>
-            </View>
-            <View style={{ backgroundColor: colors.primary + '16', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 11.5 }}>{item.amt}</Text>
-            </View>
-          </View>
-        ))}
+        <View style={{ width: '100%', height: 7, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden', marginTop: 12, marginBottom: 18, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 4, width: `${pct}%` }} />
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+          <Tap
+            onPress={() => addGlass(-1)}
+            scaleTo={0.94}
+            style={{
+              width: 52, height: 44, backgroundColor: colors.background, borderRadius: 12,
+              borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Minus size={18} color={colors.foreground} />
+          </Tap>
+          <Tap
+            onPress={() => addGlass(1)}
+            scaleTo={0.96}
+            style={{
+              flex: 1, height: 44, backgroundColor: colors.primary, borderRadius: 12,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <Plus size={17} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Add 250ml Glass</Text>
+          </Tap>
+        </View>
       </View>
     </ScrollView>
   );
@@ -436,15 +408,11 @@ export default function NutritionScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View
-          key={activeTab}
-          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
-          style={{ flex: 1 }}
-        >
+        <View style={{ flex: 1 }}>
           {activeTab === 'meals' && <TodaysMeals />}
           {activeTab === 'supplements' && <SupplementsScreen />}
           {activeTab === 'water' && <WaterTracker />}
-        </Animated.View>
+        </View>
       </View>
     </ScreenContainer>
   );

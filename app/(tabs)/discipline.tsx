@@ -14,7 +14,6 @@ import { DisciplineRepo, NavRepo } from '@/lib/db/database';
 import { JournalSupabaseService } from '@/lib/supabase';
 import { KNOWLEDGE_ARTICLES } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'dopamine' | 'journal' | 'knowledge';
 const TABS: SubTabItem[] = [
@@ -1261,15 +1260,11 @@ export default function DisciplineScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View
-          key={activeTab}
-          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
-          style={{ flex: 1 }}
-        >
+        <View style={{ flex: 1 }}>
           {activeTab === 'dopamine' && <DopamineResetScreen />}
           {activeTab === 'journal' && <JournalScreen />}
           {activeTab === 'knowledge' && <KnowledgeScreen />}
-        </Animated.View>
+        </View>
       </View>
     </ScreenContainer>
   );

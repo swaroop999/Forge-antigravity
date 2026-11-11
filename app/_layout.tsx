@@ -88,12 +88,10 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              animation: "fade_from_bottom",
               gestureEnabled: true,
-              fullScreenGestureEnabled: true,
             }}
           >
-            <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+            <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
             <Stack.Screen
               name="settings"
               options={{
@@ -102,7 +100,7 @@ export default function RootLayout() {
                 gestureEnabled: true,
               }}
             />
-            <Stack.Screen name="oauth/callback" options={{ animation: "fade" }} />
+            <Stack.Screen name="oauth/callback" options={{ animation: "none" }} />
           </Stack>
           <StatusBar style="auto" />
         </QueryClientProvider>
