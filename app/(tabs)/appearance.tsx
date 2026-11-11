@@ -12,7 +12,7 @@ import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, AppearanceRepo, NavRepo } from '@/lib/db/database';
 import { SKINCARE_AM, SKINCARE_PM, PM_ACTIVES_ROTATION, type SkincareStep } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'skincare' | 'tanremoval' | 'hair' | 'bodycare' | 'looksmax';
 const TABS: SubTabItem[] = [
@@ -243,7 +243,7 @@ function SkincareScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <StepDetailModal
         step={selectedStep}
         visible={infoModalVisible}
@@ -537,7 +537,7 @@ function TanRemovalScreen() {
   const colors = useColors();
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <Shield size={18} color={colors.primary} />
@@ -610,7 +610,7 @@ function HairCareScreen() {
   const [dermastampDone, setDermastampDone] = useState(false);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground, marginBottom: 4 }}>
           Natural Hairline & Scalp Protocol
@@ -721,7 +721,7 @@ function HairCareScreen() {
 function BodyCareScreen() {
   const colors = useColors();
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       {[
         {
           title: 'Daily Body Protocol', items: [
@@ -839,7 +839,7 @@ function LooksmaxScreen() {
   ];
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <Text style={{ fontSize: 14, fontWeight: '800', color: colors.foreground }}>Daily Asymmetry Checklist</Text>
@@ -968,7 +968,11 @@ export default function AppearanceScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
+        <Animated.View
+          key={activeTab}
+          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
+          style={{ flex: 1 }}
+        >
           {activeTab === 'skincare' && <SkincareScreen />}
           {activeTab === 'tanremoval' && <TanRemovalScreen />}
           {activeTab === 'hair' && <HairCareScreen />}

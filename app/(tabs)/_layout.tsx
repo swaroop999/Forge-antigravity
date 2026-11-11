@@ -1,11 +1,17 @@
 import { Tabs, router } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Modal, ScrollView, Keyboard } from 'react-native';
+import { View, Text, Pressable, Platform, Modal, ScrollView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/use-colors';
 import { Home, Dumbbell, Utensils, Sparkles, Brain, Bot, X, Snowflake, PenLine, Phone, BookOpen, ChevronRight, Flame } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { motionSpring, Tap } from '@/lib/motion';
 
 interface TabIconProps {
@@ -18,19 +24,34 @@ function TabIcon({ IconComponent, label, focused }: TabIconProps) {
   const colors = useColors();
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(focused ? 1.08 : 1, motionSpring.smooth) }],
+    transform: [
+      { scale: withSpring(focused ? 1.1 : 1, motionSpring.smooth) },
+      { translateY: withSpring(focused ? -1.5 : 0, motionSpring.smooth) },
+    ],
+  }));
+
+  const indicatorAnimatedStyle = useAnimatedStyle(() => ({
+    width: withSpring(focused ? 20 : 4, motionSpring.smooth),
+    opacity: withTiming(focused ? 1 : 0, { duration: 180, easing: Easing.out(Easing.cubic) }),
+  }));
+
+  const labelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(focused ? 1 : 0.68, { duration: 180, easing: Easing.out(Easing.cubic) }),
+    transform: [{ translateY: withSpring(focused ? -0.5 : 0, motionSpring.smooth) }],
   }));
 
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4, minWidth: 58 }}>
-      <View
-        style={{
-          width: 18,
-          height: 2.5,
-          borderRadius: 2,
-          backgroundColor: focused ? colors.primary : 'transparent',
-          marginBottom: 4,
-        }}
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4, minWidth: 60 }}>
+      <Animated.View
+        style={[
+          {
+            height: 2.5,
+            borderRadius: 2,
+            backgroundColor: colors.primary,
+            marginBottom: 4,
+          },
+          indicatorAnimatedStyle,
+        ]}
       />
       <Animated.View style={iconAnimatedStyle}>
         <IconComponent 
@@ -39,20 +60,56 @@ function TabIcon({ IconComponent, label, focused }: TabIconProps) {
           strokeWidth={focused ? 2.4 : 1.9} 
         />
       </Animated.View>
-      <Text
-        style={{
-          fontSize: 9.5,
-          fontWeight: focused ? '700' : '600',
-          color: focused ? colors.primary : colors.muted,
-          textAlign: 'center',
-          marginTop: 3,
-          letterSpacing: 0.1,
-          opacity: focused ? 1 : 0.7,
-        }}
+      <Animated.Text
+        style={[
+          {
+            fontSize: 9.5,
+            fontWeight: focused ? '700' : '600',
+            color: focused ? colors.primary : colors.muted,
+            textAlign: 'center',
+            marginTop: 3,
+            letterSpacing: 0.1,
+          },
+          labelAnimatedStyle,
+        ]}
       >
         {label}
-      </Text>
+      </Animated.Text>
     </View>
+  );
+}
+
+/**
+ * Custom Tactile Tab Bar Button
+ * Replaces the rigid default React Navigation Pressable so pressing any bottom tab
+ * gives a smooth spring compression and release.
+ */
+function AnimatedTabBarButton(props: any) {
+  const { children, style, onPress, onLongPress, accessibilityState, ...rest } = props;
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Pressable
+      {...rest}
+      accessibilityState={accessibilityState}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.92, motionSpring.tactile);
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, motionSpring.release);
+      }}
+      style={[style, { flex: 1, alignItems: 'center', justifyContent: 'center' }]}
+    >
+      <Animated.View style={[{ alignItems: 'center', justifyContent: 'center' }, animatedStyle]}>
+        {children}
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -115,11 +172,13 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          animation: 'fade',
+          tabBarButton: (props) => <AnimatedTabBarButton {...props} />,
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
             borderTopWidth: 1,
-            height: 56 + insets.bottom,
+            height: 58 + insets.bottom,
             paddingBottom: insets.bottom,
             paddingTop: 0,
             elevation: 0,
@@ -154,7 +213,7 @@ export default function TabLayout() {
           onPress={() => setUrgeModalVisible(true)}
           scaleTo={0.92}
           style={{
-            position: 'absolute', right: 16, bottom: insets.bottom + 68,
+            position: 'absolute', right: 16, bottom: insets.bottom + 70,
             backgroundColor: colors.error, width: 46, height: 46,
             borderRadius: 15, alignItems: 'center', justifyContent: 'center',
             borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
@@ -188,7 +247,7 @@ export default function TabLayout() {
 
             {!selectedUrgeAction ? (
               <View>
-                <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ maxHeight: 380 }} overScrollMode="always" bounces={true} showsVerticalScrollIndicator={false}>
                   {URGE_ACTIONS.map(action => {
                     const Icon = action.icon;
                     return (

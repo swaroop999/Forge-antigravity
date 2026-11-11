@@ -10,7 +10,7 @@ import { useColors } from '@/hooks/use-colors';
 import { DailyLogRepo, NutritionRepo, NavRepo, ProfileRepo } from '@/lib/db/database';
 import { DAILY_MEALS, SUPPLEMENTS } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'meals' | 'supplements' | 'water';
 const TABS: SubTabItem[] = [
@@ -58,7 +58,7 @@ function TodaysMeals() {
   const mealsToShow = DAILY_MEALS.filter(m => !m.isPostWorkoutOnly);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       {/* Macro Progress */}
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -214,7 +214,7 @@ function SupplementsScreen() {
   const filtered = SUPPLEMENTS.filter(s => s.phase <= phase);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{
         backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 12,
         borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -325,7 +325,7 @@ function WaterTracker() {
   const litres = (glasses * 0.25).toFixed(2);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       {/* Compact Hydration Card */}
       <View style={{
         backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 14,
@@ -436,7 +436,11 @@ export default function NutritionScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
+        <Animated.View
+          key={activeTab}
+          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
+          style={{ flex: 1 }}
+        >
           {activeTab === 'meals' && <TodaysMeals />}
           {activeTab === 'supplements' && <SupplementsScreen />}
           {activeTab === 'water' && <WaterTracker />}

@@ -500,6 +500,10 @@ export default function DashboardScreen() {
         contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
+        overScrollMode="always"
+        bounces={true}
+        decelerationRate="normal"
+        scrollEventThrottle={16}
       >
         {/* ── 🌟 Compact Header ─────────────────────────────── */}
         <View style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 12 }}>

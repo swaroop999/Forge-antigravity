@@ -190,6 +190,9 @@ export default function AICoachScreen() {
           data={messages}
           keyExtractor={item => item.id}
           style={{ flex: 1 }}
+          overScrollMode="always"
+          bounces={true}
+          decelerationRate="normal"
           contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"

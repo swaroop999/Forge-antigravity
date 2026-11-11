@@ -161,7 +161,7 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>Settings</Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
         
         {/* AI Coach */}
         <Card title="AI Coach" icon={Bot} color={colors.primary}>
@@ -198,28 +198,30 @@ export default function SettingsScreen() {
           />
 
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-            <Pressable
+            <Tap
               onPress={saveAiSettings}
-              style={({ pressed }) => ({
+              scaleTo={0.96}
+              style={{
                 flex: 1, backgroundColor: colors.primary, borderRadius: 10,
-                paddingVertical: 10, alignItems: 'center', opacity: pressed ? 0.7 : 1,
-              })}
+                paddingVertical: 10, alignItems: 'center',
+              }}
             >
               <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Save</Text>
-            </Pressable>
-            <Pressable
+            </Tap>
+            <Tap
               onPress={handleTestConnection}
               disabled={isTesting}
-              style={({ pressed }) => ({
+              scaleTo={0.96}
+              style={{
                 flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
                 borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
-                opacity: pressed || isTesting ? 0.6 : 1,
-              })}
+                opacity: isTesting ? 0.6 : 1,
+              }}
             >
               <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 13 }}>
                 {isTesting ? 'Testing…' : 'Test'}
               </Text>
-            </Pressable>
+            </Tap>
           </View>
 
           {testStatus != null && (
@@ -261,34 +263,35 @@ export default function SettingsScreen() {
                 )}
                 
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Pressable
+                  <Tap
                     onPress={handleExport}
                     disabled={isExporting}
-                    style={({ pressed }) => ({
+                    scaleTo={0.96}
+                    style={{
                       flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
                       borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
                       flexDirection: 'row', justifyContent: 'center', gap: 8,
-                      opacity: pressed || isExporting ? 0.6 : 1,
-                    })}
+                      opacity: isExporting ? 0.6 : 1,
+                    }}
                   >
                     <Download size={16} color={colors.foreground} />
                     <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 13 }}>
                       {isExporting ? 'Exporting...' : 'Export Data'}
                     </Text>
-                  </Pressable>
+                  </Tap>
                   
-                  <Pressable
+                  <Tap
                     onPress={handleImport}
-                    style={({ pressed }) => ({
+                    scaleTo={0.96}
+                    style={{
                       flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1,
                       borderColor: colors.border, paddingVertical: 10, alignItems: 'center',
                       flexDirection: 'row', justifyContent: 'center', gap: 8,
-                      opacity: pressed ? 0.6 : 1,
-                    })}
+                    }}
                   >
                     <Upload size={16} color={colors.foreground} />
                     <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 13 }}>Import Data</Text>
-                  </Pressable>
+                  </Tap>
                 </View>
                 
                 <Text style={{ color: colors.muted, fontSize: 11.5, marginTop: 12, textAlign: 'center' }}>
@@ -357,9 +360,9 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 16, fontWeight: '700', color: colors.error }}>Danger Zone</Text>
           </View>
           
-          <Pressable onPress={handleReset} style={{ backgroundColor: colors.error, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
+          <Tap onPress={handleReset} scaleTo={0.97} style={{ backgroundColor: colors.error, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
             <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Reset All Progress</Text>
-          </Pressable>
+          </Tap>
           <Text style={{ color: colors.error, fontSize: 12, textAlign: 'center', marginTop: 12 }}>
             This action cannot be undone. All logs, streaks, and configurations will be permanently deleted.
           </Text>

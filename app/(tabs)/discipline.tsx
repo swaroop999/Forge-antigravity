@@ -14,7 +14,7 @@ import { DisciplineRepo, NavRepo } from '@/lib/db/database';
 import { JournalSupabaseService } from '@/lib/supabase';
 import { KNOWLEDGE_ARTICLES } from '@/lib/db/seeds';
 import { Tap } from '@/lib/motion';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, Easing } from 'react-native-reanimated';
 
 type Tab = 'dopamine' | 'journal' | 'knowledge';
 const TABS: SubTabItem[] = [
@@ -58,7 +58,7 @@ function DopamineResetScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.error, marginBottom: 6 }}>Dopamine Baseline Reset</Text>
         <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
@@ -342,7 +342,7 @@ function JournalWriteView({
   const hasExistingData = !!(entry.trim() || photos.length > 0 || saved);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 120 }}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
       {/* Date Header & Cloud Sync */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.foreground }}>
@@ -413,29 +413,31 @@ function JournalWriteView({
 
         {/* Upload Action Buttons */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: photos.length > 0 ? 14 : 0 }}>
-          <Pressable
+          <Tap
             onPress={handleTakePhoto}
-            style={({ pressed }) => ({
+            scaleTo={0.96}
+            style={{
               flex: 1, backgroundColor: colors.primary + '18',
               borderColor: colors.primary + '50', borderWidth: 1,
               borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
-              flexDirection: 'row', gap: 6, opacity: pressed ? 0.8 : 1,
-            })}>
+              flexDirection: 'row', gap: 6,
+            }}>
             <Camera size={18} color={colors.primary} />
             <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>Take Photo</Text>
-          </Pressable>
+          </Tap>
 
-          <Pressable
+          <Tap
             onPress={handlePickPhotos}
-            style={({ pressed }) => ({
+            scaleTo={0.96}
+            style={{
               flex: 1, backgroundColor: colors.background,
               borderColor: colors.border, borderWidth: 1,
               borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
-              flexDirection: 'row', gap: 6, opacity: pressed ? 0.8 : 1,
-            })}>
+              flexDirection: 'row', gap: 6,
+            }}>
             <ImageIcon size={18} color={colors.foreground} />
             <Text style={{ color: colors.foreground, fontWeight: '800', fontSize: 12 }}>Add from Gallery</Text>
-          </Pressable>
+          </Tap>
         </View>
 
         {/* Horizontal Scroll of Uploaded Photos */}
@@ -504,11 +506,11 @@ function JournalWriteView({
       </View>
 
       {/* Save Button */}
-      <Pressable onPress={saveEntry} disabled={isSaving} style={({ pressed }) => ({
+      <Tap onPress={saveEntry} disabled={isSaving} scaleTo={0.97} style={{
         backgroundColor: saved ? colors.success : colors.primary,
         borderRadius: 14, paddingVertical: 15, alignItems: 'center',
-        opacity: pressed || isSaving ? 0.85 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8,
-      })}>
+        flexDirection: 'row', justifyContent: 'center', gap: 8,
+      }}>
         {isSaving ? (
           <>
             <ActivityIndicator color="#FFFFFF" size="small" />
@@ -519,24 +521,25 @@ function JournalWriteView({
             {saved ? '✓ Saved & Synced' : 'Save Reflection & Photos'}
           </Text>
         )}
-      </Pressable>
+      </Tap>
 
       {/* Delete Entry Button */}
       {hasExistingData && (
-        <Pressable
+        <Tap
           onPress={handleDeleteEntireEntry}
-          style={({ pressed }) => ({
+          scaleTo={0.97}
+          style={{
             marginTop: 14, paddingVertical: 12, borderRadius: 12,
             borderWidth: 1, borderColor: colors.error + '50',
             backgroundColor: colors.error + '10',
             alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'row', gap: 6, opacity: pressed ? 0.7 : 1,
-          })}>
+            flexDirection: 'row', gap: 6,
+          }}>
           <Trash2 size={15} color={colors.error} />
           <Text style={{ color: colors.error, fontSize: 13, fontWeight: '700' }}>
             Delete Entry for {date}
           </Text>
-        </Pressable>
+        </Tap>
       )}
 
       {/* Link to Calendar */}
@@ -724,7 +727,7 @@ function JournalCalendarView({
   );
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 16, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
       {/* ─── Calendar Card ────────────────────────────────────────── */}
       <View style={{
         backgroundColor: colors.surface, borderRadius: 16, padding: 14,
@@ -740,35 +743,37 @@ function JournalCalendarView({
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Pressable
+            <Tap
               onPress={jumpToToday}
-              style={({ pressed }) => ({
+              scaleTo={0.94}
+              style={{
                 paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8,
                 backgroundColor: colors.primary + '18', borderWidth: 1, borderColor: colors.primary + '35',
-                opacity: pressed ? 0.7 : 1,
-              })}>
+              }}>
               <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>Today</Text>
-            </Pressable>
+            </Tap>
 
-            <Pressable
+            <Tap
               onPress={prevMonth}
-              style={({ pressed }) => ({
+              scaleTo={0.92}
+              style={{
                 width: 32, height: 32, borderRadius: 8,
                 backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
-                alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
-              })}>
+                alignItems: 'center', justifyContent: 'center',
+              }}>
               <ChevronLeft size={16} color={colors.foreground} />
-            </Pressable>
+            </Tap>
 
-            <Pressable
+            <Tap
               onPress={nextMonth}
-              style={({ pressed }) => ({
+              scaleTo={0.92}
+              style={{
                 width: 32, height: 32, borderRadius: 8,
                 backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
-                alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1,
-              })}>
+                alignItems: 'center', justifyContent: 'center',
+              }}>
               <ChevronRight size={16} color={colors.foreground} />
-            </Pressable>
+            </Tap>
           </View>
         </View>
 
@@ -799,14 +804,14 @@ function JournalCalendarView({
             const hasPics = Boolean(entryInfo?.hasPhotos);
 
             return (
-              <Pressable
+              <Tap
                 key={dayStr}
                 onPress={() => onSelectDate(dayStr)}
-                style={({ pressed }) => ({
+                scaleTo={0.92}
+                style={{
                   width: '14.28%', height: 46,
                   alignItems: 'center', justifyContent: 'center',
-                  opacity: pressed ? 0.7 : 1,
-                })}>
+                }}>
                 <View style={{
                   width: 34, height: 36, borderRadius: 10,
                   alignItems: 'center', justifyContent: 'center',
@@ -846,7 +851,7 @@ function JournalCalendarView({
                     )}
                   </View>
                 </View>
-              </Pressable>
+              </Tap>
             );
           })}
         </View>
@@ -884,18 +889,18 @@ function JournalCalendarView({
             </Text>
           </View>
 
-          <Pressable
+          <Tap
             onPress={() => onEditDate(selectedDate)}
-            style={({ pressed }) => ({
+            scaleTo={0.95}
+            style={{
               paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
               backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 5,
-              opacity: pressed ? 0.85 : 1,
-            })}>
+            }}>
             <Plus size={13} color="#FFFFFF" />
             <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
               {hasData ? 'Edit / Add' : 'Add Entry'}
             </Text>
-          </Pressable>
+          </Tap>
         </View>
 
         {loadingDay ? (
@@ -1175,7 +1180,7 @@ function KnowledgeScreen() {
     };
 
     return (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <Tap
           onPress={() => setSelectedId(null)}
           scaleTo={0.96}
@@ -1202,7 +1207,7 @@ function KnowledgeScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 14, lineHeight: 18 }}>
         Evidence-based guides covering hypertrophy, facial aesthetics, endocrine optimization, and dopamine regulation.
       </Text>
@@ -1256,7 +1261,11 @@ export default function DisciplineScreen() {
 
         <SubTabBar tabs={TABS} activeTab={activeTab as string} onTabChange={(k) => setActiveTab(k as Tab)} />
 
-        <Animated.View key={activeTab} entering={FadeIn.duration(160)} style={{ flex: 1 }}>
+        <Animated.View
+          key={activeTab}
+          entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic)).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] })}
+          style={{ flex: 1 }}
+        >
           {activeTab === 'dopamine' && <DopamineResetScreen />}
           {activeTab === 'journal' && <JournalScreen />}
           {activeTab === 'knowledge' && <KnowledgeScreen />}
