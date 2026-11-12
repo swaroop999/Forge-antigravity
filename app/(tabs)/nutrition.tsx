@@ -15,7 +15,7 @@ type Tab = 'meals' | 'supplements' | 'water';
 const TABS: SubTabItem[] = [
   { key: 'meals', label: 'Meals', icon: Utensils },
   { key: 'supplements', label: 'Supplements', icon: Pill },
-  { key: 'water', label: 'Water', icon: Droplets },
+  { key: 'water', label: 'Water', icon: Droplets, activeColor: '#0284C7' },
 ];
 
 // ─── Today's Meals ─────────────────────────────────────────────────────────────
@@ -301,7 +301,8 @@ function SupplementsScreen() {
 
 // ─── Water Tracker ────────────────────────────────────────────────────────────
 
-const WATER_BLUE = '#0EA5E9';
+const WATER_BLUE = '#0284C7';
+const WATER_BLUE_LIGHT = '#38BDF8';
 
 function WaterTracker() {
   const colors = useColors();
@@ -329,32 +330,54 @@ function WaterTracker() {
     <ScrollView style={{ flex: 1 }} overScrollMode="always" bounces={true} decelerationRate="normal" scrollEventThrottle={16} contentContainerStyle={{ padding: 18, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={{
         backgroundColor: colors.surface, borderRadius: 18, padding: 22,
-        borderWidth: 1, borderColor: colors.border, alignItems: 'center',
+        borderWidth: 1.5, borderColor: 'rgba(2, 132, 199, 0.28)', borderTopWidth: 3.5, borderTopColor: WATER_BLUE,
+        alignItems: 'center',
       }}>
-        <Text style={{ fontSize: 10.5, fontWeight: '800', color: WATER_BLUE, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16 }}>
-          Daily Hydration Tracker
-        </Text>
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: 'rgba(2, 132, 199, 0.12)', paddingHorizontal: 12, paddingVertical: 4,
+          borderRadius: 20, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(2, 132, 199, 0.25)',
+        }}>
+          <Droplets size={13} color={WATER_BLUE} strokeWidth={2.5} />
+          <Text style={{ fontSize: 11, fontWeight: '800', color: WATER_BLUE, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            Daily Hydration Tracker
+          </Text>
+        </View>
 
         {/* Visual Water Bottle Fill Gauge */}
         <View style={{
-          width: 108, height: 200, borderRadius: 34, backgroundColor: colors.background,
-          overflow: 'hidden', borderWidth: 2, borderColor: WATER_BLUE + '55', position: 'relative',
+          width: 112, height: 210, borderRadius: 36, backgroundColor: 'rgba(2, 132, 199, 0.08)',
+          overflow: 'hidden', borderWidth: 2.5, borderColor: WATER_BLUE_LIGHT, position: 'relative',
           alignItems: 'center', justifyContent: 'center', marginBottom: 18,
         }}>
+          {/* Animated Water Fill */}
           <View style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: `${pct}%`, backgroundColor: WATER_BLUE + '55',
+            height: `${pct}%`, backgroundColor: WATER_BLUE,
+            borderTopWidth: pct > 0 ? 3 : 0, borderTopColor: '#7DD3FC',
           }} />
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{litres}L</Text>
-          <Text style={{ fontSize: 11, color: colors.muted, fontWeight: '700', marginTop: 2 }}>of 3.50L</Text>
+
+          {/* Litres read-out */}
+          <View style={{
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.35)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
+          }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.5 }}>
+              {litres}L
+            </Text>
+            <Text style={{ fontSize: 11, color: '#E0F2FE', fontWeight: '800', marginTop: 1 }}>
+              of 3.50L
+            </Text>
+          </View>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-          <Text style={{ fontSize: 30, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 }}>{glasses}</Text>
-          <Text style={{ color: colors.muted, fontSize: 13, fontWeight: '600' }}>/ {TARGET} glasses (250ml each)</Text>
+          <Text style={{ fontSize: 34, fontWeight: '900', color: WATER_BLUE, letterSpacing: -0.5 }}>{glasses}</Text>
+          <Text style={{ color: colors.muted, fontSize: 13, fontWeight: '700' }}>/ {TARGET} glasses (250ml each)</Text>
         </View>
 
-        <View style={{ width: '100%', height: 7, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden', marginTop: 12, marginBottom: 18, borderWidth: 1, borderColor: colors.border }}>
+        {/* Water Progress Bar */}
+        <View style={{ width: '100%', height: 8, backgroundColor: 'rgba(2, 132, 199, 0.15)', borderRadius: 4, overflow: 'hidden', marginTop: 12, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(2, 132, 199, 0.3)' }}>
           <View style={{ height: '100%', backgroundColor: WATER_BLUE, borderRadius: 4, width: `${pct}%` }} />
         </View>
 
@@ -363,18 +386,19 @@ function WaterTracker() {
             onPress={() => addGlass(-1)}
             scaleTo={0.94}
             style={{
-              width: 52, height: 44, backgroundColor: colors.background, borderRadius: 12,
-              borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
+              width: 52, height: 46, backgroundColor: colors.background, borderRadius: 12,
+              borderWidth: 1.5, borderColor: 'rgba(2, 132, 199, 0.35)', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Minus size={18} color={colors.foreground} />
+            <Minus size={18} color={WATER_BLUE} strokeWidth={2.5} />
           </Tap>
           <Tap
             onPress={() => addGlass(1)}
             scaleTo={0.96}
             style={{
-              flex: 1, height: 44, backgroundColor: WATER_BLUE, borderRadius: 12,
+              flex: 1, height: 46, backgroundColor: WATER_BLUE, borderRadius: 12,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+              shadowColor: WATER_BLUE, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2,
             }}
           >
             <Plus size={17} color="#FFFFFF" strokeWidth={2.5} />

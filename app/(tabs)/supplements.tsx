@@ -196,11 +196,11 @@ export default function SupplementsScreen() {
             <Text className="text-lg font-bold text-foreground mb-4">Hydration (Creatine)</Text>
             <Text className="text-sm text-muted mb-4">Target: 3.5L per day while on Creatine</Text>
             <View className="flex-row items-center justify-between">
-              <Text className="text-3xl font-bold text-primary">2.1L</Text>
+              <Text className="text-3xl font-bold" style={{ color: '#0284C7' }}>2.1L</Text>
               <Text className="text-sm text-muted">/ 3.5L</Text>
             </View>
             <View className="h-2 bg-border rounded-full overflow-hidden mt-4">
-              <View className="h-full bg-primary" style={{ width: '60%' }} />
+              <View className="h-full" style={{ width: '60%', backgroundColor: '#0284C7' }} />
             </View>
           </View>
         </View>

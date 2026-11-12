@@ -7,6 +7,7 @@ export interface SubTabItem {
   key: string;
   label: string;
   icon?: React.ComponentType<{ size: number; color: string; strokeWidth?: number }> | string;
+  activeColor?: string;
 }
 
 interface SubTabBarProps {
@@ -36,6 +37,7 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
           const Icon = typeof tab.icon !== 'string' ? tab.icon : null;
+          const activeBg = tab.activeColor || colors.primary;
           return (
             <Tap
               key={tab.key}
@@ -46,11 +48,11 @@ export function SubTabBar({ tabs, activeTab, onTabChange }: SubTabBarProps) {
                 alignItems: 'center',
                 height: 34,
                 gap: 5,
-                backgroundColor: isActive ? colors.primary : colors.surface,
+                backgroundColor: isActive ? activeBg : colors.surface,
                 borderRadius: 10,
                 paddingHorizontal: 12,
                 borderWidth: 1,
-                borderColor: isActive ? colors.primary : colors.border,
+                borderColor: isActive ? activeBg : colors.border,
               }}
             >
               {Icon ? (
